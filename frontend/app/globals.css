@@ -1,0 +1,14 @@
+/* styles/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+#nprogress .bar {
+  background: #1890ff !important; /* Warna progress bar */
+  height: 3px !important;
+}
+
+#nprogress .peg {
+  box-shadow: 0 0 10px #1890ff, 0 0 5px #1890ff;
+}
+
