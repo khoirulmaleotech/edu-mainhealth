@@ -25,7 +25,7 @@ export default function TeacherLayout({ children }) {
         <div className='p-8 flex items-center gap-3'>
           {/* Brand Logo & Title */}
           <Image
-            src='/logo-mainhealth.png'
+            src='/images/logo-edumind-transparan.png'
             alt='EduMind Logo'
             width={40}
             height={40}
@@ -36,7 +36,7 @@ export default function TeacherLayout({ children }) {
               EduMind
             </span>
             <span className='text-[10px] font-bold text-slate-500 tracking-[0.2em] uppercase text-nowrap'>
-              Teacher Portal
+              By Educourse
             </span>
           </div>
         </div>

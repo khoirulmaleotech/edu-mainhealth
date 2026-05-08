@@ -23,10 +23,10 @@ export default function ParentLayout({ children }) {
       {/* SIDEBAR NAVIGATION - Warmer Tone */}
       <aside className="hidden lg:flex w-72 bg-white border-r border-slate-100 flex-col sticky top-0 h-screen shadow-sm">
         <div className="p-8 flex items-center gap-3">
-          <Image src="/logo-mainhealth.png" alt="EduMind Logo" width={40} height={40} />
+          <Image src="/images/logo-edumind-transparan.png" alt="EduMind Logo" width={40} height={40} />
           <div className="flex flex-col">
             <span className="text-xl font-black text-primary leading-none tracking-tighter uppercase">EduMind</span>
-            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">Parent Portal</span>
+            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">By Educourse</span>
           </div>
         </div>
 

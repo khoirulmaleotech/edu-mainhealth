@@ -23,10 +23,10 @@ export default function StudentLayout({ children }) {
       {/* SIDEBAR NAVIGATION */}
       <aside className="hidden lg:flex w-72 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen z-30">
         <div className="p-8 flex items-center gap-3">
-          <Image src="/logo-mainhealth.png" alt="Logo" width={45} height={45} />
+          <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={45} height={45} />
           <div className="flex flex-col">
-            <span className="text-xl font-black text-primary leading-none tracking-tighter">educourse</span>
-            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">main health</span>
+            <span className="text-xl font-black text-primary leading-none tracking-tighter">EduMind</span>
+            <span className="text-[10px] font-bold text-slate-400 tracking-widest uppercase">By Educourse</span>
           </div>
         </div>
 
@@ -93,7 +93,7 @@ export default function StudentLayout({ children }) {
                 <p className="text-[11px] font-semibold text-primary mt-1">Siswa - Kelas 12A</p>
               </div>
               <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary flex items-center justify-center overflow-hidden shadow-sm">
-                 <Image src="/logo-mainhealth.png" alt="Avatar" width={30} height={30} />
+                 <Image src="/images/logo-edumind-transparan.png" alt="Avatar" width={30} height={30} />
               </div>
             </div>
           </div>

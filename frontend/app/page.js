@@ -28,7 +28,7 @@ export default function HomePage() {
       <nav className="fixed w-full bg-white/80 backdrop-blur-xl z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-8 py-5 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/images/logo-edumainhealth.png" alt="Logo" width={50} height={50} />
+            <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={50} height={50} />
             <div className="flex flex-col">
               <span className="text-2xl font-black text-primary leading-none tracking-tighter uppercase">EduMind</span>
               <span className="text-[9px] font-bold text-slate-400 tracking-[0.3em] uppercase">By Maleotech</span>
@@ -77,7 +77,7 @@ export default function HomePage() {
           <div className="relative flex justify-center">
              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl"></div>
              <Image 
-                src="/images/logo-edumainhealth.png" 
+                src="/images/logo-edumind-transparan.png" 
                 alt="EduMind Mascot" 
                 width={450} 
                 height={450} 
@@ -161,7 +161,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-20 pb-20 border-b border-white/5">
           <div className="lg:col-span-5 space-y-8">
             <div className="flex items-center gap-4">
-              <Image src="/images/logo-edumainhealth.png" alt="Logo" width={60} height={60} className="brightness-125" />
+              <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={60} height={60} className="brightness-125" />
               <div className="flex flex-col">
                 <span className="text-3xl font-black text-primary leading-none tracking-tighter uppercase">EduMind</span>
                 <span className="text-[10px] font-bold text-slate-500 tracking-[0.3em] uppercase tracking-widest">Global Wellbeing</span>
