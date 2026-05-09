@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { MongoClient, ObjectId } from 'mongodb';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions';
 
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
@@ -50,9 +50,15 @@ export async function POST(request) {
     // Gunakan field patient_id secara eksplisit karena participants mungkin mengandung null
     const studentId = room.patient_id instanceof ObjectId ? room.patient_id.toString() : room.patient_id;
 
+    const senderId = session.user.id ? String(session.user.id) : null;
+
+    if (!senderId) {
+      return NextResponse.json({ success: false, message: "User ID siswa tidak valid" }, { status: 401 });
+    }
+    
     const newMessage = {
       room_id: new ObjectId(roomId),
-      sender_id: session.user.id, // Pastikan ini string ID psikolog
+      sender_id: senderId, // Pastikan ini string ID psikolog
       receiver_id: studentId,
       text: text,
       timestamp: new Date(),

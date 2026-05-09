@@ -50,7 +50,6 @@ export default function StudentChatToPsychologistPage({ params }) {
       text: currentText,
       createdAt: new Date().toISOString(),
     };
-    console.log("🚀 ~ onSend ~ tempMsg:", tempMsg)
 
     setMessages((prev) => [...prev, tempMsg]);
     setInput("");
