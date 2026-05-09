@@ -17,7 +17,7 @@ export default function AdminLayout({ children }) {
   const menuItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard/admin' },
     { name: 'Verifikasi Sekolah', icon: <Building2 size={20} />, path: '/dashboard/admin/verify-schools' },
-    { name: 'Verifikasi Psikolog', icon: <ShieldCheck size={20} />, path: '/dashboard/admin/verify-experts' },
+    { name: 'Verifikasi Psikolog', icon: <ShieldCheck size={20} />, path: '/dashboard/admin/verify-psychologist' },
     { name: 'Manajemen User', icon: <Users size={20} />, path: '/dashboard/admin/users' },
     { name: 'Laporan Sistem', icon: <HeartPulse size={20} />, path: '/dashboard/admin/reports' },
     { name: 'Pengaturan', icon: <Settings size={20} />, path: '/dashboard/admin/settings' },
