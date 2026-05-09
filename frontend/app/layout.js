@@ -1,6 +1,7 @@
 "use client";
 import Script from "next/script";
 import { Urbanist } from 'next/font/google';
+import { NextAuthProvider } from "./providers"; // Import provider baru
 import "./globals.css";
 
 const urbanist = Urbanist({ 
@@ -19,7 +20,12 @@ export default function RootLayout({ children }) {
         <noscript>
           <img height="1" width="1" style={{ display: 'none' }} src="https://www.facebook.com/tr?id=3398693380287170&ev=PageView&noscript=1" />
         </noscript>
-        {children}
+        
+        {/* Bungkus children dengan Provider agar session bisa diakses di semua page */}
+        <NextAuthProvider>
+          {children}
+        </NextAuthProvider>
+
       </body>
     </html>
   );

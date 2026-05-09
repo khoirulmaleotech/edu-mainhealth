@@ -1,0 +1,281 @@
+"use client";
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Building2, CheckCircle, XCircle, Search, 
+  Loader2, Mail, MapPin, Eye, Globe, User, X,
+  Check, AlertTriangle, ChevronLeft, ChevronRight, Filter
+} from 'lucide-react';
+
+export default function VerifySchoolsPage() {
+  const [schools, setSchools] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(null);
+  const [selectedSchool, setSelectedSchool] = useState(null);
+  
+  // State Filter, Search, & Pagination
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  // State Modal Konfirmasi
+  const [confirmAction, setConfirmAction] = useState({ show: false, id: null, name: '', type: '' });
+
+  const fetchSchools = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/verify-school'); 
+      const json = await res.json();
+      if (json.success) setSchools(json.data);
+    } catch (err) {
+      console.error("Gagal load data", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchSchools(); }, []);
+
+  // Logika Filtering & Searching
+  const filteredSchools = useMemo(() => {
+    return schools.filter(school => {
+      const matchesSearch = 
+        school.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        school.admin_email?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = 
+        statusFilter === "all" ? true : 
+        statusFilter === "verified" ? school.is_verified === true : 
+        school.is_verified === false;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [schools, searchTerm, statusFilter]);
+
+  // Pagination Data
+  const totalPages = Math.ceil(filteredSchools.length / itemsPerPage);
+  const currentData = filteredSchools.slice(
+    (currentPage - 1) * itemsPerPage, 
+    currentPage * itemsPerPage
+  );
+
+  // FUNGSI AKSI (FIXED BUG)
+  const executeAction = async () => {
+    if (!confirmAction.id || !confirmAction.type) return;
+
+    const { id, type } = confirmAction;
+    setActionLoading(id);
+    
+    try {
+      const res = await fetch(`/api/admin/verify-school`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          id: id, 
+          action: type // 'approve' atau 'reject'
+        }),
+      });
+
+      const result = await res.json();
+
+      if (res.ok) {
+        setConfirmAction({ show: false, id: null, name: '', type: '' });
+        setSelectedSchool(null);
+        await fetchSchools(); // Refresh data tabel
+      } else {
+        alert(result.message || "Gagal memproses perubahan");
+      }
+    } catch (err) {
+      alert("Terjadi kesalahan koneksi server.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  return (
+    <div className="p-4 md:p-8 space-y-8 relative text-slate-700">
+      
+      {/* 1. MODAL KONFIRMASI AKSI */}
+      {confirmAction.show && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setConfirmAction({ show: false })} />
+          <div className="relative w-full max-w-sm bg-white rounded-[35px] p-8 shadow-2xl text-center animate-in zoom-in-95 duration-200 border border-slate-100">
+            <div className={`w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-6 ${confirmAction.type === 'approve' ? 'bg-emerald-50 text-emerald-500' : 'bg-red-50 text-red-500'}`}>
+              {confirmAction.type === 'approve' ? <CheckCircle size={40} /> : <AlertTriangle size={40} />}
+            </div>
+            <h3 className="text-xl font-black text-slate-800 mb-2">
+              {confirmAction.type === 'approve' ? 'Setujui Sekolah?' : 'Tolak Pendaftaran?'}
+            </h3>
+            <p className="text-sm text-slate-400 font-medium mb-8 leading-relaxed">
+              Konfirmasi untuk <span className="font-bold text-slate-700">{confirmAction.name}</span>.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={executeAction}
+                disabled={actionLoading}
+                className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all ${confirmAction.type === 'approve' ? 'bg-[#00adb5] text-white shadow-lg shadow-[#00adb5]/20' : 'bg-red-500 text-white shadow-lg shadow-red-500/20'}`}
+              >
+                {actionLoading ? <Loader2 className="animate-spin mx-auto" size={18} /> : 'Ya, Lanjutkan'}
+              </button>
+              <button onClick={() => setConfirmAction({ show: false })} className="w-full py-4 text-slate-400 font-bold text-xs uppercase">Batal</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. MODAL DETAIL POPUP */}
+      {selectedSchool && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedSchool(null)} />
+          <div className="relative w-full max-w-2xl bg-white rounded-[40px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100">
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-[#00adb5] text-white rounded-2xl flex items-center justify-center font-black">{selectedSchool.name.charAt(0)}</div>
+                <h2 className="font-black text-slate-800 text-lg">{selectedSchool.name}</h2>
+              </div>
+              <button onClick={() => setSelectedSchool(null)} className="p-2 bg-white rounded-full shadow-sm hover:scale-110 transition-all"><X size={20} className="text-slate-400" /></button>
+            </div>
+            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <DetailBox icon={<User />} label="Admin" value={selectedSchool.admin_name || "Petugas"} />
+              <DetailBox icon={<Mail />} label="Email" value={selectedSchool.admin_email} />
+              <DetailBox icon={<Globe />} label="Website" value={selectedSchool.website || "-"} />
+              <div className="md:col-span-2"><DetailBox icon={<MapPin />} label="Alamat" value={selectedSchool.address} /></div>
+            </div>
+            <div className="p-8 bg-slate-50/50 flex flex-col md:flex-row gap-3">
+              {!selectedSchool.is_verified && (
+                <button 
+                  onClick={() => setConfirmAction({ show: true, id: selectedSchool._id, name: selectedSchool.name, type: 'approve' })}
+                  className="flex-1 py-4 bg-[#00adb5] text-white rounded-2xl font-black uppercase text-[11px] tracking-widest"
+                >
+                  Approve Sekarang
+                </button>
+              )}
+              <button 
+                onClick={() => setConfirmAction({ show: true, id: selectedSchool._id, name: selectedSchool.name, type: 'reject' })}
+                className="px-8 py-4 bg-white text-red-500 border border-red-100 rounded-2xl font-black text-[11px] uppercase"
+              >
+                Hapus Data
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. HEADER & FILTERS */}
+      <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
+        <div>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tighter">Verifikasi Sekolah</h1>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Total {filteredSchools.length} Sekolah Terdaftar</p>
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
+          <div className="bg-white px-4 py-2.5 rounded-2xl border border-slate-200 flex items-center gap-3 shadow-sm flex-1">
+            <Search size={18} className="text-slate-300" />
+            <input 
+              type="text" 
+              placeholder="Cari sekolah/email..." 
+              className="bg-transparent outline-none text-xs font-bold w-full md:w-60"
+              value={searchTerm}
+              onChange={(e) => {setSearchTerm(e.target.value); setCurrentPage(1);}}
+            />
+          </div>
+          <div className="bg-white px-4 py-2.5 rounded-2xl border border-slate-200 flex items-center gap-3 shadow-sm">
+            <Filter size={18} className="text-slate-300" />
+            <select 
+              className="bg-transparent outline-none text-xs font-bold text-slate-600 cursor-pointer"
+              value={statusFilter}
+              onChange={(e) => {setStatusFilter(e.target.value); setCurrentPage(1);}}
+            >
+              <option value="all">Semua Status</option>
+              <option value="verified">Verified</option>
+              <option value="pending">Pending</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. MASTER TABLE */}
+      <div className="bg-white rounded-[35px] border border-slate-200 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+              <tr>
+                <th className="px-6 py-5 border border-slate-200 text-center w-16">No.</th>
+                <th className="px-6 py-5 border border-slate-200">Identitas Sekolah</th>
+                <th className="px-6 py-5 border border-slate-200">Login Admin</th>
+                <th className="px-6 py-5 border border-slate-200 text-center">Status</th>
+                <th className="px-6 py-5 border border-slate-200 text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {loading ? (
+                <tr><td colSpan="5" className="p-20 text-center"><Loader2 className="animate-spin mx-auto mb-2 text-[#00adb5]" /><p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing Database...</p></td></tr>
+              ) : currentData.length === 0 ? (
+                <tr><td colSpan="5" className="p-20 text-center text-slate-400 font-bold italic text-sm">Data tidak ditemukan</td></tr>
+              ) : currentData.map((school, index) => (
+                <tr key={school._id} className="hover:bg-slate-50/50 transition-all group">
+                  <td className="px-6 py-6 border border-slate-200 text-center text-xs font-black text-slate-400 group-hover:text-[#00adb5]">
+                    {(currentPage - 1) * itemsPerPage + index + 1}
+                  </td>
+                  <td className="px-6 py-6 border border-slate-200">
+                    <p className="font-black text-slate-800 text-sm">{school.name}</p>
+                    <p className="text-[10px] text-slate-400 font-bold leading-relaxed">{school.address.substring(0, 45)}...</p>
+                  </td>
+                  <td className="px-6 py-6 border border-slate-200 text-xs font-bold text-slate-600">{school.admin_email}</td>
+                  <td className="px-6 py-6 border border-slate-200 text-center">
+                    <span className={`px-3 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-tighter flex items-center justify-center gap-1.5 mx-auto w-fit ${school.is_verified ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-500 border-red-100'}`}>
+                      {school.is_verified ? <Check size={12}/> : <XCircle size={12}/>} {school.is_verified ? 'Verified' : 'Pending'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-6 border border-slate-200 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button onClick={() => setSelectedSchool(school)} className="p-3 bg-slate-100 text-slate-500 rounded-xl hover:bg-[#00adb5] hover:text-white transition-all"><Eye size={18} /></button>
+                      {!school.is_verified && (
+                        <button onClick={() => setConfirmAction({ show: true, id: school._id, name: school.name, type: 'approve' })} className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all"><Check size={18} /></button>
+                      )}
+                      <button onClick={() => setConfirmAction({ show: true, id: school._id, name: school.name, type: 'reject' })} className="p-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all"><XCircle size={18} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* 5. PAGINATION NAVIGATION */}
+        {!loading && totalPages > 1 && (
+          <div className="p-6 bg-slate-50/50 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {currentPage} of {totalPages}</p>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all">
+                <ChevronLeft size={18} />
+              </button>
+              <div className="flex gap-1">
+                {[...Array(totalPages)].map((_, i) => (
+                  <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-10 h-10 rounded-xl text-xs font-black transition-all border ${currentPage === i + 1 ? 'bg-[#00adb5] text-white border-[#00adb5] shadow-lg shadow-[#00adb5]/20' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}>
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all">
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DetailBox({ icon, label, value }) {
+  return (
+    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-[#00adb5]">{React.cloneElement(icon, { size: 14 })}</span>
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
+      </div>
+      <p className="text-xs font-bold text-slate-700">{value}</p>
+    </div>
+  );
+}
