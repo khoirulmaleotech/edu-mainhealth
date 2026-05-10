@@ -1,15 +1,13 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { 
-  TrendingUp, Calendar, Target, Award, 
-  Heart, Brain, Zap, ShieldCheck, Compass, Loader2 
+  Calendar, Brain, Zap, Clock, Info, Loader2 
 } from 'lucide-react';
 
 export default function StudentProgressPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 1. Fetch data dari API Progress
   useEffect(() => {
     const fetchProgress = async () => {
       try {
@@ -31,196 +29,133 @@ export default function StudentProgressPage() {
     return (
       <div className="h-[500px] flex flex-col items-center justify-center gap-4">
         <Loader2 className="animate-spin text-[#00adb5]" size={48} />
-        <p className="text-sm font-bold text-slate-400 tracking-widest italic">Menganalisis progresmu...</p>
+        <p className="text-sm font-bold text-slate-400 tracking-widest italic">Memuat progresmu...</p>
       </div>
     );
   }
 
-  const summary = data?.summary || { happiness_index: 0, career_readiness: 0, behavior_points: 100, streak_count: 0 };
-  const moodChart = data?.mood_chart || [];
   const cognitiveSkills = data?.cognitive_skills || [];
-  const badges = data?.badges || [];
+  const recentMoods = data?.mood_history || [];
+  const streakCount = data?.streak_count || 0;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
-      {/* 1. Header dengan Summary Eksekutif */}
+      {/* HEADER SIMPLE */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-bold text-slate-800 tracking-tight">Rangkuman Progres</h2>
-          <p className="text-slate-500 mt-1 font-medium text-sm tracking-wide opacity-80">
-            Status: {summary.happiness_index > 7 ? 'Kesehatan Mental Stabil' : 'Perlu Perhatian Khusus'}
+          <p className="text-slate-500 mt-1 font-medium text-sm tracking-wide">
+            Analisis aktivitas dan perkembangan diri secara real-time.
           </p>
         </div>
-        <div className="flex gap-3">
-          <div className="flex items-center gap-2 px-6 py-3 bg-white rounded-2xl text-xs font-bold text-slate-600 border border-slate-100 shadow-sm">
-            <Calendar size={18} className="text-[#00adb5]" /> Periode Mei 2026
-          </div>
+        <div className="flex items-center gap-3 px-5 py-3 bg-white rounded-2xl text-xs font-black text-slate-600 border border-slate-100 shadow-sm">
+          <Calendar size={18} className="text-[#00adb5]" /> MEI 2026
         </div>
-      </div>
-
-      {/* 2. Top Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatCard 
-          icon={<Heart size={24}/>} 
-          label="Indeks Kebahagiaan" 
-          value={`${summary.happiness_index}/10`} 
-          desc="Berdasarkan interaksi harian"
-          color="bg-rose-50 text-rose-500" 
-        />
-        <StatCard 
-          icon={<Compass size={24}/>} 
-          label="Kesiapan Karir" 
-          value={`${summary.career_readiness}%`} 
-          desc="Berdasarkan Talent Mapping"
-          color="bg-amber-50 text-amber-600" 
-        />
-        <StatCard 
-          icon={<ShieldCheck size={24}/>} 
-          label="Poin Perilaku" 
-          value={summary.behavior_points} 
-          desc="Catatan kedisiplinan sekolah"
-          color="bg-emerald-50 text-emerald-600" 
-        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* 3. Mental Health Tracker */}
+        {/* LEFT COLUMN: MOOD & TALENT */}
         <div className="lg:col-span-2 space-y-8">
-          <div className="bg-white p-8 md:p-10 rounded-[40px] border border-slate-100 shadow-sm relative overflow-hidden">
-            <div className="flex justify-between items-start mb-10">
+          
+          {/* RIWAYAT MOOD */}
+          <div className="bg-white p-8 md:p-10 rounded-[45px] border border-slate-100 shadow-sm">
+            <div className="flex justify-between items-center mb-8">
               <div>
-                <h4 className="text-2xl font-bold text-slate-800 tracking-tight">Grafik Kesejahteraan</h4>
-                <p className="text-sm text-slate-400 font-bold tracking-widest mt-1 uppercase text-[10px]">Mental Health Monitoring</p>
+                <h4 className="text-xl font-bold text-slate-800 tracking-tight">Riwayat Perasaan</h4>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Check-in Terakhir</p>
               </div>
-              <div className="px-4 py-2 bg-[#00adb5]/10 text-[#00adb5] rounded-xl text-[10px] font-bold uppercase tracking-widest">
-                Live Data
-              </div>
+              <Clock size={20} className="text-slate-300" />
             </div>
 
-            <div className="flex items-end justify-between h-56 gap-4 mt-4">
-              {moodChart.length > 0 ? moodChart.map((item, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-4 group">
-                  <div className="w-full relative flex flex-col justify-end h-full">
-                    <div 
-                      className={`w-full ${item.value > 70 ? 'bg-[#00adb5]' : 'bg-[#00adb5]/20'} group-hover:scale-x-110 rounded-t-2xl transition-all duration-500 ease-out relative`}
-                      style={{ height: `${item.value}%` }}
-                    >
-                      <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity font-bold whitespace-nowrap">
-                        {item.label}
-                      </div>
+            <div className="space-y-4">
+              {recentMoods.length > 0 ? recentMoods.map((log, i) => (
+                <div key={i} className="flex items-center justify-between p-5 bg-slate-50 hover:bg-white hover:shadow-md transition-all rounded-[28px] border border-transparent hover:border-slate-100 group">
+                  <div className="flex items-center gap-5">
+                    <div className="text-3xl filter drop-shadow-sm group-hover:scale-110 transition-transform">{log.mood}</div>
+                    <div>
+                      <h5 className="font-bold text-slate-800 text-sm">Merasa {log.label}</h5>
+                      <p className="text-[10px] text-slate-400 font-medium">
+                        {new Date(log.createdAt).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
+                      </p>
                     </div>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">{item.day}</span>
+                  <div className="text-[10px] font-black text-[#00adb5] bg-[#00adb5]/10 px-3 py-1 rounded-lg uppercase">Tercatat</div>
                 </div>
               )) : (
-                <div className="w-full h-full flex items-center justify-center text-slate-300 italic text-sm">Belum ada data aktivitas minggu ini</div>
+                <div className="text-center py-10 text-slate-300 italic text-sm">Belum ada riwayat aktivitas</div>
               )}
             </div>
           </div>
 
-          {/* 4. Talent Progress */}
+          {/* TALENT PROGRESS */}
           <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm">
             <div className="flex items-center gap-3 mb-8">
-               <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl">
-                 <Brain size={24} />
-               </div>
+               <div className="p-3 bg-indigo-50 text-indigo-600 rounded-2xl"><Brain size={24} /></div>
                <div>
                  <h4 className="text-lg font-bold text-slate-800 tracking-tight">Hasil EduMind Talent</h4>
-                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest text-[10px]">Kekuatan Potensi Diri</p>
+                 <p className="text-xs text-slate-400 font-bold uppercase tracking-widest text-[10px]">Potensi Diri</p>
                </div>
             </div>
-            
             <div className="space-y-6">
               {cognitiveSkills.length > 0 ? cognitiveSkills.map((skill, i) => (
                 <SkillBar key={i} label={skill.label} value={skill.value} color={skill.color} />
               )) : (
-                <div className="text-center py-6 border-2 border-dashed border-slate-100 rounded-[30px]">
-                  <p className="text-sm text-slate-400 font-bold italic mb-4">Hasil talent mapping belum tersedia.</p>
-                  <button 
-                    onClick={() => window.location.href='/dashboard/student/talent'}
-                    className="px-6 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest"
-                  >
-                    Mulai Asesmen Sekarang
-                  </button>
+                <div className="text-center py-8 border-2 border-dashed border-slate-100 rounded-[35px]">
+                  <p className="text-sm text-slate-400 font-bold italic mb-4">Data belum tersedia.</p>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* 5. Sidebar: Streak & Badges */}
+        {/* RIGHT COLUMN (SIDEBAR) */}
         <div className="space-y-8">
-          <div className="bg-slate-900 p-8 rounded-[40px] text-white shadow-2xl shadow-slate-200">
+          {/* STREAK CARD */}
+          <div className="bg-slate-900 p-8 rounded-[40px] text-white shadow-xl">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
                 <Zap className="text-amber-400 fill-amber-400" size={24} />
               </div>
               <div>
-                <h4 className="font-bold text-xl leading-none">{summary.streak_count} Hari</h4>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Streak Curhat</p>
+                <h4 className="font-bold text-xl leading-none">{streakCount} Hari</h4>
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Konsistensi</p>
               </div>
             </div>
-            <p className="text-sm font-medium text-slate-400 leading-relaxed">
-              Luar biasa! Konsistensimu membantu kami memberikan analisis yang lebih akurat.
+            <p className="text-xs font-medium text-slate-400 leading-relaxed italic">
+              "Lanjutkan kebiasaan baikmu untuk menjaga kesehatan mental yang stabil."
             </p>
           </div>
 
-          <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm">
-            <h4 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2 tracking-tight">
-               <Award className="text-amber-500" size={22} /> Pencapaian
-            </h4>
-            <div className="grid grid-cols-2 gap-4">
-              {badges.length > 0 ? badges.map((badge, i) => (
-                <BadgeBox key={i} icon={badge.icon} label={badge.label} color={badge.color} />
-              )) : (
-                <div className="col-span-2 text-center py-4 text-slate-300 text-[10px] font-bold uppercase">Belum ada badge</div>
-              )}
+          {/* INFO CARD */}
+          <div className="bg-[#00adb5]/5 p-8 rounded-[40px] border border-[#00adb5]/10 shadow-sm">
+            <div className="flex items-center gap-2 text-[#00adb5] mb-3">
+              <Info size={18} />
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em]">Info Sistem</h4>
             </div>
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              Halaman ini menyajikan rangkuman dari interaksi harianmu dengan AI Mood Buddy dan hasil asesmen minat bakat.
+            </p>
           </div>
         </div>
+
       </div>
     </div>
   );
 }
 
-// UI Helpers
-function StatCard({ icon, label, value, desc, color }) {
-  return (
-    <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm transition-all hover:shadow-md group">
-      <div className={`w-14 h-14 ${color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-        {icon}
-      </div>
-      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-2">{label}</p>
-      <h3 className="text-3xl font-bold text-slate-800 mb-2">{value}</h3>
-      <p className="text-xs font-medium text-slate-400 leading-tight">{desc}</p>
-    </div>
-  );
-}
-
+// UI HELPER
 function SkillBar({ label, value, color }) {
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
         <span className="text-xs font-bold text-slate-700 tracking-wide">{label}</span>
-        <span className="text-xs font-bold text-slate-800">{value}%</span>
+        <span className="text-xs font-black text-slate-800">{value}%</span>
       </div>
-      <div className="w-full h-3 bg-slate-50 rounded-full overflow-hidden">
-        <div 
-          className={`h-full ${color} rounded-full transition-all duration-1000`}
-          style={{ width: `${value}%` }}
-        />
+      <div className="w-full h-2.5 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+        <div className={`h-full ${color} rounded-full transition-all duration-1000`} style={{ width: `${value}%` }} />
       </div>
-    </div>
-  );
-}
-
-function BadgeBox({ icon, label, color }) {
-  return (
-    <div className={`${color} p-4 rounded-[24px] flex flex-col items-center justify-center gap-2 border border-white transition-transform hover:scale-105`}>
-      <span className="text-2xl">{icon}</span>
-      <span className="text-[9px] font-bold text-slate-800 uppercase tracking-widest">{label}</span>
     </div>
   );
 }

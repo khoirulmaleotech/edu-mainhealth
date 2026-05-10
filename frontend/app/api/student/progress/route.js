@@ -18,53 +18,30 @@ export async function GET() {
     await client.connect();
     const db = client.db();
 
-    // 1. Ambil Ringkasan Statistik (Happiness, Career Readiness, Points)
+    // 1. Ambil Streak (Untuk Sidebar)
     const stats = await db.collection('student_stats').findOne({ student_id: userId });
 
-    // 2. Ambil Log Mood 7 Hari Terakhir
-    const moodLogs = await db.collection('mood_logs')
-      .find({ 
-        student_id: userId,
-        createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-      })
-      .sort({ createdAt: 1 })
+    // 2. Ambil Riwayat Mood (7 Terakhir)
+    const moodHistory = await db.collection('mood_logs')
+      .find({ student_id: userId })
+      .sort({ createdAt: -1 })
+      .limit(7)
       .toArray();
 
-    const days = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
-    const moodChart = moodLogs.map(log => ({
-      day: days[new Date(log.createdAt).getDay()],
-      value: log.mood_score || 0,
-      label: log.mood_label || "Normal"
-    }));
-
-    // --- PERBAIKAN DI SINI: MENGGUNAKAN KOLEKSI student_talents ---
+    // 3. Ambil Data Talent Mapping
     const talentData = await db.collection('student_talents').findOne({ student_id: userId });
-
-    // Jika data talent ada, gunakan field 'scores' yang kita simpan saat submit assessment
     const cognitive_skills = talentData ? talentData.scores.map(item => ({
-      label: item.subject, // Sesuai field 'subject' di API submit
+      label: item.subject, 
       value: item.value,
       color: item.color || "bg-[#00adb5]"
     })) : [];
 
-    // 4. Ambil Badge
-    const badges = await db.collection('achievements')
-      .find({ student_id: userId })
-      .limit(4)
-      .toArray();
-
     return NextResponse.json({
       success: true,
       data: {
-        summary: stats || {
-          happiness_index: 0,
-          career_readiness: 0,
-          behavior_points: 100,
-          streak_count: 0
-        },
-        mood_chart: moodChart,
-        cognitive_skills: cognitive_skills, // Sekarang berisi data asli dari minat bakat
-        badges: badges
+        streak_count: stats?.streak_count || 0,
+        mood_history: moodHistory,
+        cognitive_skills: cognitive_skills
       }
     });
 
