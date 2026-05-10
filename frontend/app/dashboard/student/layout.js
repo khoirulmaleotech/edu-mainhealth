@@ -12,7 +12,8 @@ import {
   Bell,
   Search,
   Settings,
-  LogOut
+  LogOut,
+  Stethoscope // Penambahan icon untuk psikolog
 } from 'lucide-react';
 
 export default function StudentLayout({ children }) {
@@ -42,6 +43,13 @@ export default function StudentLayout({ children }) {
             icon={<MessageCircle size={20} />} 
             label="Curhat Aman" 
             active={pathname === '/dashboard/student/chat'} 
+          />
+          {/* MENU BARU: KONSULTASI PSIKOLOG */}
+          <NavItem 
+            href="/dashboard/student/chat/psychologist" 
+            icon={<Stethoscope size={20} />} 
+            label="Konsultasi Psikolog" 
+            active={pathname.includes('/dashboard/student/chat/psychologist')} 
           />
           <NavItem 
             href="/dashboard/student/progress" 
