@@ -6,32 +6,40 @@ export default withAuth(
     const token = req.nextauth.token;
     const { pathname } = req.nextUrl;
 
-    // 1. Proteksi Halaman Admin
-    // Hanya role 'superadmin' yang bisa akses /admin/...
+    // 1. Proteksi Halaman Admin (Superadmin Only)
     if (pathname.startsWith("/admin") && token?.role !== "superadmin") {
       return NextResponse.redirect(new URL("/login", req.url));
     }
 
-    // 2. Proteksi Halaman Dashboard User Umum
-    // Role 'superadmin' jangan masuk ke dashboard user biasa agar tidak rancu
+    // 2. Redirect Superadmin dari halaman Dashboard User Umum
     if (pathname.startsWith("/dashboard") && token?.role === "superadmin") {
       return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     }
 
-    // 3. Proteksi Halaman Psikolog
+    // 3. Proteksi Dashboard Student (Student Only)
+    // Berdasarkan struktur folder: /dashboard/student
+    if (pathname.startsWith("/dashboard/student") && token?.role !== "student") {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+
+    // 4. Proteksi Dashboard Teacher (Teacher Only)
+    // Berdasarkan struktur folder: /dashboard/teacher
+    if (pathname.startsWith("/dashboard/teacher") && token?.role !== "teacher") {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+
+    // 5. Proteksi Halaman Psikolog
     if (pathname.startsWith("/expert") && token?.role !== "psychologist") {
       return NextResponse.redirect(new URL("/login", req.url));
     }
   },
   {
     callbacks: {
-      // Middleware hanya berjalan jika user sudah terautentikasi (punya token)
       authorized: ({ token }) => !!token,
     },
   }
 );
 
-// Tentukan halaman mana saja yang butuh login
 export const config = { 
   matcher: [
     "/admin/:path*", 
