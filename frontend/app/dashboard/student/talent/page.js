@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { Brain, ArrowRight, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
+import { useSession } from "next-auth/react"; // Tambahkan import session
 
 // Data pertanyaan lengkap dari Google Doc
 const originalQuestions = [
@@ -17,6 +18,7 @@ const originalQuestions = [
 ];
 
 export default function TalentAssessmentPage() {
+  const { data: session } = useSession(); // Ambil data session
   const [step, setStep] = useState(0); // 0: Start, 1: Quiz, 2: Finish
   const [currentQ, setCurrentQ] = useState(0);
   const [questions, setQuestions] = useState([]); // State untuk menampung pertanyaan yang diacak
@@ -44,6 +46,12 @@ export default function TalentAssessmentPage() {
   };
 
   const submitAssessment = async (finalAnswers) => {
+    // Tambahkan gate session sebelum submit
+    if (!session?.user?.id) {
+      alert("Sesi tidak ditemukan. Silakan login kembali.");
+      return;
+    }
+
     setLoading(true);
     try {
       await fetch('/api/student/assessment/submit', {

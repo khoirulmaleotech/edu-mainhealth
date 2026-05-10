@@ -4,8 +4,10 @@ import {
   Edit2, Trash2, Loader2, X, Save, Clock, MapPin, 
   Image as ImageIcon, Upload, Eye, ChevronLeft, ChevronRight, Calendar, AlertTriangle
 } from 'lucide-react';
+import { useSession } from "next-auth/react"; // Tambahkan import session
 
 export default function ReportListPage() {
+  const { data: session } = useSession(); // Ambil data session
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingReport, setEditingReport] = useState(null);
@@ -20,8 +22,11 @@ export default function ReportListPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    fetchReports();
-  }, []);
+    // Tambahkan gate session agar API hanya dipanggil jika session sudah ada
+    if (session?.user?.id) {
+      fetchReports();
+    }
+  }, [session?.user?.id]); // Dependensi ID agar stabil
 
   const fetchReports = async () => {
     try {

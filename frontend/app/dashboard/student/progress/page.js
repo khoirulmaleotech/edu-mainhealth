@@ -3,8 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   Calendar, Brain, Zap, Clock, Info, Loader2 
 } from 'lucide-react';
+import { useSession } from "next-auth/react"; // Tambahkan import session
 
 export default function StudentProgressPage() {
+  const { data: session } = useSession(); // Ambil data session
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -22,8 +24,12 @@ export default function StudentProgressPage() {
         setLoading(false);
       }
     };
-    fetchProgress();
-  }, []);
+
+    // Tambahkan gate session agar API hanya dipanggil jika session sudah ada
+    if (session?.user?.id) {
+      fetchProgress();
+    }
+  }, [session?.user?.id]); // Gunakan session user ID sebagai dependensi agar stabil
 
   if (loading) {
     return (

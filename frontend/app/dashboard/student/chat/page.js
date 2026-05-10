@@ -5,8 +5,10 @@ import {
   Mic, StopCircle, Trash2, Loader2 
 } from 'lucide-react';
 import Link from 'next/link';
+import { useSession } from "next-auth/react"; // Tambahkan import session
 
 export default function StudentChatPage() {
+  const { data: session } = useSession(); // Ambil data session
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Halo! Aku Al Mood Buddy. Aku di sini untuk mendengarkanmu. Jika lelah mengetik, kirim pesan suara juga boleh kok. ✨' }
   ]);
@@ -30,10 +32,12 @@ export default function StudentChatPage() {
     }
   };
 
-  // Pastikan scroll setiap kali array messages bertambah
+  // Pastikan scroll setiap kali array messages bertambah dan saat session siap
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]); // Juga scroll saat loading muncul
+    if (session?.user?.id) {
+      scrollToBottom();
+    }
+  }, [messages, isLoading, session?.user?.id]); // Tambahkan session id ke dependency
 
   // LOGIKA REKAM SUARA
   const startRecording = async () => {
@@ -70,7 +74,8 @@ export default function StudentChatPage() {
   // LOGIKA KIRIM PESAN
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
-    if (isLoading || (!input.trim() && !audioBlob)) return;
+    // Tambahkan pengecekan session sebelum mengirim
+    if (!session?.user?.id || isLoading || (!input.trim() && !audioBlob)) return;
 
     setIsLoading(true);
     const formData = new FormData();

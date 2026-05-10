@@ -44,8 +44,11 @@ export default function StudentPage() {
       }
     };
 
-    if (session?.user?.id) fetchLastMood();
-  }, [session]);
+    if (session?.user?.id) {
+      fetchLastMood();
+    }
+    
+  }, [session?.user?.id]); 
 
   const quickAccess = [
     { 

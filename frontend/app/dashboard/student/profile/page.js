@@ -12,8 +12,10 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
+import { useSession } from "next-auth/react"; // Tambahkan import session
 
 export default function StudentProfilePage() {
+  const { data: session } = useSession(); // Ambil data session
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -22,8 +24,11 @@ export default function StudentProfilePage() {
   const [preview, setPreview] = useState(null);
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    // Tambahkan kondisi if session agar API hanya dipanggil saat session tersedia
+    if (session?.user?.id) {
+      fetchProfile();
+    }
+  }, [session?.user?.id]); // Gunakan ID sebagai dependensi agar lebih stabil
 
   const fetchProfile = async () => {
     try {
@@ -84,6 +89,9 @@ export default function StudentProfilePage() {
       <Loader2 className="animate-spin text-[#00adb5]" size={40} />
     </div>
   );
+
+  // Pastikan user tidak null sebelum render konten
+  if (!user) return null;
 
   return (
     <div className="w-full max-w-5xl mx-auto animate-in fade-in duration-700">

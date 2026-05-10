@@ -21,7 +21,7 @@ export async function connectDB() {
     const opts = {
       bufferCommands: false,
       // Jika cluster Bapak mendukung, tambahkan maxPoolSize untuk performa
-      maxPoolSize: 10, 
+      maxPoolSize: 5, 
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {

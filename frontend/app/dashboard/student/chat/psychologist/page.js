@@ -11,8 +11,10 @@ import {
   Filter
 } from 'lucide-react';
 import Link from 'next/link';
+import { useSession } from "next-auth/react"; // Tambahkan import session
 
 export default function StudentPsychologistListPage() {
+  const { data: session } = useSession(); // Ambil data session
   const [psychologists, setPsychologists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,8 +31,13 @@ export default function StudentPsychologistListPage() {
         setLoading(false);
       }
     };
-    fetchPsychologists();
-  }, []);
+
+    // Pengecekan session sebelum fetch data
+    if (session?.user?.id) {
+      fetchPsychologists();
+    }
+    
+  }, [session?.user?.id]); // Dependensi ID agar stabil dan tidak loop
 
   const filteredData = psychologists.filter(p => 
     p.fullname.toLowerCase().includes(searchTerm.toLowerCase())
