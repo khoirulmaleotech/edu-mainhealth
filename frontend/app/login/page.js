@@ -107,7 +107,7 @@ export default function LoginPage() {
           )}
 
           {/* Role Selector */}
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 md:gap-3">
+          {/* <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 md:gap-3">
             {roles.map((r) => (
               <button
                 key={r.id}
@@ -123,7 +123,7 @@ export default function LoginPage() {
                 <span className="text-[10px] font-bold">{r.label}</span>
               </button>
             ))}
-          </div>
+          </div> */}
 
           <form onSubmit={handleLogin} className="space-y-5 md:space-y-6 w-full max-w-md mx-auto lg:mx-0">
             <div className="space-y-2">
