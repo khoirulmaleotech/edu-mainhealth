@@ -101,7 +101,7 @@ export default function ManageUsersPage() {
       <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tighter">Database Pengguna</h1>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1 tracking-widest">EduMind Master User Control</p>
+          <p className="text-slate-400 text-[10px] font-black uppercase mt-1 tracking-widest">EduMind Master User Control</p>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
