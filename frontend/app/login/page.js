@@ -21,6 +21,7 @@ export default function LoginPage() {
     { id: 'student', label: 'Siswa', emoji: '🎓' },
     { id: 'parent', label: 'Ortu', emoji: '🏠' },
     { id: 'teacher', label: 'Guru', emoji: '👨‍🏫' },
+    { id: 'school', label: 'Sekolah', emoji: '🏫' },
     { id: 'psychologist', label: 'Psikolog', emoji: '🏥' },
     { id: 'superadmin', label: 'Admin', emoji: '🔑' },
   ];
@@ -56,6 +57,8 @@ export default function LoginPage() {
           window.location.href = "/dashboard/psychologist";
         } else if (userRole === 'teacher') {
           window.location.href = "/dashboard/teacher";
+        } else if (userRole === 'school_admin') {
+          window.location.href = "/dashboard/school-admin";
         } else if (userRole === 'parent') {
           window.location.href = "/dashboard/parent";
         } else {
