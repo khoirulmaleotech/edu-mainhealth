@@ -10,6 +10,7 @@ import {
   ArrowRight,
   ShieldCheck,
 } from "lucide-react";
+import CustomSelect from "@/components/CustomSelect";
 
 export default function TeacherAlertsPage() {
   const [alerts, setAlerts] = useState([]);
@@ -76,21 +77,20 @@ export default function TeacherAlertsPage() {
         </div>
 
         {/* FILTER DROPDOWN */}
-        <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3 flex items-center gap-3 w-full sm:w-72 shadow-sm">
-          <Search size={18} className="text-slate-400 shrink-0" />
-          <select
+        <div className="bg-white border border-slate-200 rounded-2xl flex items-center gap-3">
+          <CustomSelect
             value={selectedStudentId}
-            onChange={(e) => setSelectedStudentId(e.target.value)}
-            className="bg-transparent outline-none text-sm text-slate-700 w-full font-medium"
-          >
-            <option value="">Semua Siswa Terhubung</option>
-            {students.map((student) => (
-              <option key={student._id} value={student._id}>
-                {student.fullname}{" "}
-                {student.class_name ? `(${student.class_name})` : ""}
-              </option>
-            ))}
-          </select>
+            onChange={(value) => setSelectedStudentId(value)}
+            options={students.map((student) => ({
+              value: student._id,
+              label: student.fullname,
+              description: student.class_name ? student.class_name : "",
+            }))}
+            searchable
+            placeholder="Pilih Siswa"
+            searchPlaceholder="Cari siswa..."
+            className="md:w-64"
+          />
         </div>
       </div>
 

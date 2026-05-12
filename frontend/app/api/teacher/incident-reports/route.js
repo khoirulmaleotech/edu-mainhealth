@@ -143,6 +143,7 @@ export async function GET(request) {
             location: 1,
             occurrence_time: 1,
             description: 1,
+            evidence_url: 1,
             status: 1,
             created_at: 1,
             updated_at: 1,

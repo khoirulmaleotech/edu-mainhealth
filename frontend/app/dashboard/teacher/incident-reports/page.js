@@ -15,6 +15,8 @@ import {
 
 import { fetchInstance } from "@/lib/fetchInstance";
 import { useDebounce } from "@/hooks/useDebounce";
+import { Image } from "antd";
+import CustomSelect from "@/components/CustomSelect";
 
 const pageSize = 10;
 
@@ -24,6 +26,14 @@ const statusLabel = {
   resolved: "Selesai",
   rejected: "Ditolak",
 };
+
+const statusOptions = [
+  { value: "all", label: "Semua Status" },
+  { value: "pending", label: "Menunggu" },
+  { value: "reviewing", label: "Ditinjau" },
+  { value: "resolved", label: "Selesai" },
+  { value: "rejected", label: "Ditolak" },
+];
 
 const statusClassName = {
   pending: "bg-amber-50 text-amber-600 border-amber-100",
@@ -110,6 +120,7 @@ export default function TeacherIncidentReportsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIncident, setSelectedIncident] = useState(null);
+  console.log(selectedIncident)
 
   const debouncedSearchKeyword = useDebounce(searchKeyword, 500);
 
@@ -275,19 +286,13 @@ export default function TeacherIncidentReportsPage() {
               />
             </div>
 
-            <select
+            <CustomSelect
               value={selectedStatus}
-              onChange={(event) =>
-                setSelectedStatus(event.target.value)
-              }
-              className="bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100 text-sm font-bold text-slate-600 outline-none"
-            >
-              <option value="all">Semua Status</option>
-              <option value="pending">Menunggu</option>
-              <option value="reviewing">Ditinjau</option>
-              <option value="resolved">Selesai</option>
-              <option value="rejected">Ditolak</option>
-            </select>
+              onChange={setSelectedStatus}
+              options={statusOptions}
+              placeholder="Pilih Status"
+              className="md:w-64"
+            />
           </div>
         </div>
 
@@ -479,7 +484,7 @@ export default function TeacherIncidentReportsPage() {
       </div>
 
       {selectedIncident && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/30 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 top-12 flex justify-end bg-slate-950/30 backdrop-blur-sm">
           <div className="w-full max-w-xl h-full bg-white shadow-2xl p-8 overflow-y-auto animate-in slide-in-from-right duration-300">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -549,6 +554,16 @@ export default function TeacherIncidentReportsPage() {
 
                 <p className="text-sm font-bold text-slate-800 mt-2">
                   {formatDate(selectedIncident.created_at)}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                  Bukti Gambar
+                </p>
+
+                <p className="text-sm font-bold text-slate-800 mt-2">
+                  <Image src={selectedIncident.evidence_url} width={100} height={100} />
                 </p>
               </div>
 
