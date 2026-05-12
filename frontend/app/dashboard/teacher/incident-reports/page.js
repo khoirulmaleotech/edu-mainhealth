@@ -484,7 +484,7 @@ export default function TeacherIncidentReportsPage() {
       </div>
 
       {selectedIncident && (
-        <div className="fixed inset-0 z-50 top-12 flex justify-end bg-slate-950/30 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 -top-8 flex justify-end bg-slate-950/30 backdrop-blur-sm">
           <div className="w-full max-w-xl h-full bg-white shadow-2xl p-8 overflow-y-auto animate-in slide-in-from-right duration-300">
             <div className="flex items-start justify-between gap-4">
               <div>
