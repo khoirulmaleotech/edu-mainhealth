@@ -6,12 +6,9 @@ import { usePathname } from "next/navigation";
 import {
   Users,
   AlertTriangle,
-  MessageSquare,
   Search,
   Bell,
   LayoutDashboard,
-  GraduationCap,
-  Settings,
   LogOut,
   HeartPulse,
 } from "lucide-react";
@@ -57,47 +54,39 @@ export default function TeacherLayout({ children }) {
             active={pathname === "/dashboard/teacher/students"}
           />
           <NavItem
-            href="/dashboard/teacher/alerts"
-            icon={<AlertTriangle size={20} />}
-            label="Alert Kasus"
-            count={5}
-            active={pathname === "/dashboard/teacher/alerts"}
-          />
-          <NavItem
             href="/dashboard/teacher/reports"
             icon={<AlertTriangle size={20} />}
-            label="Laporan Kasus"
-            count={5}
+            label="Alert Kasus"
             active={pathname === "/dashboard/teacher/reports"}
           />
           <NavItem
-            href="/dashboard/teacher/mood-logs"
+            href="/dashboard/teacher/incident-reports"
             icon={<HeartPulse size={20} />}
-            label="Mood Log"
-            active={pathname === "/dashboard/teacher/mood-logs"}
+            label="Incident Reports"
+            active={pathname === "/dashboard/teacher/incident-reports"}
           />
-          <NavItem
-            href="/dashboard/teacher/chat"
-            icon={<MessageSquare size={20} />}
-            label="Konseling Chat"
-            active={pathname === "/dashboard/teacher/chat"}
-          />
-          <NavItem
-            href="/dashboard/teacher/education"
-            icon={<GraduationCap size={20} />}
-            label="Edukasi Guru"
-            active={pathname === "/dashboard/teacher/education"}
-          />
+          {/* <NavItem */}
+          {/*   href="/dashboard/teacher/chat" */}
+          {/*   icon={<MessageSquare size={20} />} */}
+          {/*   label="Konseling Chat" */}
+          {/*   active={pathname === "/dashboard/teacher/chat"} */}
+          {/* /> */}
+          {/* <NavItem */}
+          {/*   href="/dashboard/teacher/education" */}
+          {/*   icon={<GraduationCap size={20} />} */}
+          {/*   label="Edukasi Guru" */}
+          {/*   active={pathname === "/dashboard/teacher/education"} */}
+          {/* /> */}
         </nav>
 
         {/* Bottom Actions */}
         <div className="p-6 border-t border-slate-800 space-y-1">
-          <NavItem
-            href="/dashboard/teacher/settings"
-            icon={<Settings size={20} />}
-            label="Pengaturan"
-            active={pathname === "/dashboard/teacher/settings"}
-          />
+          {/* <NavItem */}
+          {/*   href="/dashboard/teacher/settings" */}
+          {/*   icon={<Settings size={20} />} */}
+          {/*   label="Pengaturan" */}
+          {/*   active={pathname === "/dashboard/teacher/settings"} */}
+          {/* /> */}
           <NavItem
             href="/logout"
             icon={<LogOut size={20} />}
@@ -149,9 +138,6 @@ export default function TeacherLayout({ children }) {
   );
 }
 
-/**
- * NavItem Component dengan Link Next.js
- */
 function NavItem({
   href,
   icon,
