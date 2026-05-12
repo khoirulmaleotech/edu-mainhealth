@@ -103,6 +103,7 @@ export default function StudentLayout({ children }) {
           <NavItem href="/dashboard/student/progress" icon={<BarChart2 size={20} />} label="Progress Saya" active={pathname === '/dashboard/student/progress'} />
           <NavItem href="/dashboard/student/talent" icon={<Star size={20} />} label="Minat Bakat" active={pathname === '/dashboard/student/talent'} />
           <NavItem href="/dashboard/student/report" icon={<ShieldAlert size={20} />} label="Lapor Insiden" active={pathname.includes('/report')} />
+          <NavItem href="/dashboard/student/tilik-diri" icon={<Star size={20} />} label="Tilik Diri" active={pathname === '/dashboard/student/tilik-diri'} />
         </nav>
 
         <div className="p-4 border-t border-slate-100 space-y-2">
