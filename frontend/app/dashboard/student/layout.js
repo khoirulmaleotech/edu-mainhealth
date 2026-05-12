@@ -28,12 +28,38 @@ export default function StudentLayout({ children }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  // STATE BARU: Untuk menyimpan data user dari API
+  const [userData, setUserData] = useState(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
   // PROTEKSI KEAMANAN: Cek Session secara realtime
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     }
   }, [status, router]);
+
+  // FUNGSI BARU: Mengambil data profil dari API
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch("/api/student/profile");
+        const data = await res.json();
+        if (data.success) {
+          setUserData(data.user);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    // Hanya fetch jika user sudah terautentikasi
+    if (status === "authenticated") {
+      fetchProfile();
+    }
+  }, [status]);
 
   // Tutup dropdown jika klik di luar area
   useEffect(() => {
@@ -64,8 +90,9 @@ export default function StudentLayout({ children }) {
   // Jika tidak ada session, jangan render apapun untuk keamanan
   if (!session) return null;
 
-  const userImage = session?.user?.image || "/images/logo-edumind-transparan.png";
-  const userFullname = session?.user?.fullname || session?.user?.name || "Siswa EduMind";
+  // UPDATE: Prioritaskan data dari API (userData), jika kosong fallback ke session, lalu ke default image
+  const userImage = userData?.image || session?.user?.image || "/images/logo-edumind-transparan.png";
+  const userFullname = userData?.fullname || userData?.name || session?.user?.fullname || session?.user?.name || "Siswa EduMind";
 
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
@@ -134,15 +161,18 @@ export default function StudentLayout({ children }) {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               >
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-bold text-slate-800 leading-none">{userFullname}</p>
+                  <p className="text-sm font-bold text-slate-800 leading-none">
+                    {isLoadingProfile ? "Memuat..." : userFullname}
+                  </p>
                   <p className="text-[10px] font-semibold text-primary mt-1 uppercase">Siswa</p>
                 </div>
                 <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary flex items-center justify-center overflow-hidden shadow-sm relative">
-                   <Image 
+                   {/* Jika masih loading, bisa tampilkan icon loading kecil. Di sini kita langsung tembak userImage */}
+                     <img
                     src={userImage} 
                     alt="Avatar" 
-                    fill
-                    className="object-cover"
+                    sizes="40px"
+                    className="w-full h-full object-cover"
                    />
                 </div>
                 <ChevronDown size={16} className={`text-slate-400 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
