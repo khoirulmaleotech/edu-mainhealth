@@ -1,47 +1,51 @@
-import mongoose from "mongoose";
+import { MongoClient } from "mongodb";
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const uri = process.env.MONGODB_URI;
 
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI tidak ditemukan di .env");
+if (!uri) {
+  throw new Error("Please add MONGODB_URI");
 }
 
-/**
- * Global digunakan untuk menjaga koneksi tetap bertahan saat 'hot reload' di development mode.
- * Ini mencegah error "Too many connections" di MongoDB Atlas.
- */
-let cached = global.mongoose || { conn: null, promise: null };
+let cached = global.mongo;
+
+if (!cached) {
+  cached = global.mongo = {
+    client: null,
+    promise: null,
+  };
+}
 
 export async function connectDB() {
-  if (cached.conn) {
-    return cached.conn;
+  // Already connected
+  if (cached.client) {
+    return cached.client;
   }
 
+  // Create connection promise once
   if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-      // Jika cluster Bapak mendukung, tambahkan maxPoolSize untuk performa
-      maxPoolSize: 5, 
-    };
-
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log("✅ MongoDB Connected via Mongoose");
-      return mongoose;
+    const client = new MongoClient(uri, {
+      maxPoolSize: 10,
+      minPoolSize: 2,
+      maxIdleTimeMS: 30000,
     });
+
+    cached.promise = client.connect();
   }
 
   try {
-    cached.conn = await cached.promise;
-  } catch (e) {
+    cached.client = await cached.promise;
+
+    console.log("✅ MongoDB Connected");
+
+    return cached.client;
+  } catch (error) {
     cached.promise = null;
-    console.error("❌ MongoDB Connection Error:", e);
-    throw e;
+
+    console.error(
+      "❌ MongoDB Connection Error:",
+      error
+    );
+
+    throw error;
   }
-
-  return cached.conn;
-}
-
-// Simpan ke global agar tidak dibuat ulang saat reload
-if (!global.mongoose) {
-  global.mongoose = cached;
 }
