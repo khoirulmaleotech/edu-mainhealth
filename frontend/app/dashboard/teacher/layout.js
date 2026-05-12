@@ -76,28 +76,28 @@ export default function TeacherLayout({ children }) {
             label="Mood Log"
             active={pathname === "/dashboard/teacher/mood-logs"}
           />
-          <NavItem
-            href="/dashboard/teacher/chat"
-            icon={<MessageSquare size={20} />}
-            label="Konseling Chat"
-            active={pathname === "/dashboard/teacher/chat"}
-          />
-          <NavItem
-            href="/dashboard/teacher/education"
-            icon={<GraduationCap size={20} />}
-            label="Edukasi Guru"
-            active={pathname === "/dashboard/teacher/education"}
-          />
+          {/* <NavItem */}
+          {/*   href="/dashboard/teacher/chat" */}
+          {/*   icon={<MessageSquare size={20} />} */}
+          {/*   label="Konseling Chat" */}
+          {/*   active={pathname === "/dashboard/teacher/chat"} */}
+          {/* /> */}
+          {/* <NavItem */}
+          {/*   href="/dashboard/teacher/education" */}
+          {/*   icon={<GraduationCap size={20} />} */}
+          {/*   label="Edukasi Guru" */}
+          {/*   active={pathname === "/dashboard/teacher/education"} */}
+          {/* /> */}
         </nav>
 
         {/* Bottom Actions */}
         <div className="p-6 border-t border-slate-800 space-y-1">
-          <NavItem
-            href="/dashboard/teacher/settings"
-            icon={<Settings size={20} />}
-            label="Pengaturan"
-            active={pathname === "/dashboard/teacher/settings"}
-          />
+          {/* <NavItem */}
+          {/*   href="/dashboard/teacher/settings" */}
+          {/*   icon={<Settings size={20} />} */}
+          {/*   label="Pengaturan" */}
+          {/*   active={pathname === "/dashboard/teacher/settings"} */}
+          {/* /> */}
           <NavItem
             href="/logout"
             icon={<LogOut size={20} />}
