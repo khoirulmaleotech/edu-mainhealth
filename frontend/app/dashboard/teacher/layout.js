@@ -6,12 +6,9 @@ import { usePathname } from "next/navigation";
 import {
   Users,
   AlertTriangle,
-  MessageSquare,
   Search,
   Bell,
   LayoutDashboard,
-  GraduationCap,
-  Settings,
   LogOut,
   HeartPulse,
 } from "lucide-react";
@@ -57,24 +54,16 @@ export default function TeacherLayout({ children }) {
             active={pathname === "/dashboard/teacher/students"}
           />
           <NavItem
-            href="/dashboard/teacher/alerts"
-            icon={<AlertTriangle size={20} />}
-            label="Alert Kasus"
-            count={5}
-            active={pathname === "/dashboard/teacher/alerts"}
-          />
-          <NavItem
             href="/dashboard/teacher/reports"
             icon={<AlertTriangle size={20} />}
-            label="Laporan Kasus"
-            count={5}
+            label="Alert Kasus"
             active={pathname === "/dashboard/teacher/reports"}
           />
           <NavItem
-            href="/dashboard/teacher/mood-logs"
+            href="/dashboard/teacher/incident-reports"
             icon={<HeartPulse size={20} />}
-            label="Mood Log"
-            active={pathname === "/dashboard/teacher/mood-logs"}
+            label="Incident Reports"
+            active={pathname === "/dashboard/teacher/incident-reports"}
           />
           {/* <NavItem */}
           {/*   href="/dashboard/teacher/chat" */}
@@ -149,9 +138,6 @@ export default function TeacherLayout({ children }) {
   );
 }
 
-/**
- * NavItem Component dengan Link Next.js
- */
 function NavItem({
   href,
   icon,

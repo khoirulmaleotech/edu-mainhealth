@@ -116,7 +116,7 @@ export default function TeacherPage() {
     {
       label: "Alert Kasus",
       value: totalCriticalAlert,
-      redirect: "/dashboard/teacher/alerts",
+      redirect: "/dashboard/teacher/reports",
       icon: <AlertTriangle className="text-red-500" />,
       trend: "Perlu tindakan segera",
       isAlert: true,
