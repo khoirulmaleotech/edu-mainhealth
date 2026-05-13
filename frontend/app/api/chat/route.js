@@ -6,113 +6,314 @@ import { authOptions } from "../auth/[...nextauth]/authOptions";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
 
-const SYSTEM_PROMPT = `Anda adalah Al Mood Buddy, asisten pendukung kesehatan mental siswa.
-Gunakan bahasa yang sangat empati, hangat, dan tidak menghakimi. dukung bahasa lain juga.
+let client;
 
-=== BATASAN TOPIK (WAJIB DIPATUHI) ===
-Anda HANYA boleh merespons pesan yang berkaitan dengan:
-- Kesehatan mental (stres, kecemasan, depresi, kesepian, dll.)
-- Curhat, perasaan, atau emosi pribadi
-- Pengalaman hidup, trauma, atau kejadian yang memengaruhi psikologis
-- Hubungan sosial (pertemanan, keluarga, percintaan, bullying)
-- Kepribadian, motivasi, kepercayaan diri, identitas diri
-- Masalah akademik yang berdampak pada kondisi mental/emosional siswa
+if (!global._mongoClientPromise) {
+  client = new MongoClient(uri);
+  global._mongoClientPromise = client.connect();
+}
 
-Jika pesan pengguna TIDAK berkaitan dengan topik di atas (contoh: soal matematika,
-coding, resep masakan, berita, pertanyaan umum yang tidak ada hubungannya dengan
-psikologi/perasaan/pengalaman pribadi), Anda WAJIB:
-1. Tidak menjawab pertanyaan tersebut.
-2. Sampaikan dengan hangat bahwa Anda hanya bisa membantu seputar kesehatan mental
-   dan kesejahteraan emosional siswa, lalu ajak mereka untuk berbagi perasaan atau
-   hal yang sedang mereka alami.
+const clientPromise = global._mongoClientPromise;
 
-=== DETEKSI KASUS KRITIS ===
-Evaluasi apakah pesan pengguna mengandung:
-- Depresi berat atau keputusasaan total.
-- Trauma mendalam atau kekerasan (fisik/seksual/bullying parah).
-- Tanda-tanda bahaya diri (self-harm atau niatan mengakhiri hidup).
+const CHAT_SYSTEM_PROMPT = `
+Anda adalah Al Mood Buddy, asisten pendukung kesehatan mental siswa.
 
-Jika YA, Anda WAJIB menyisipkan kode [CRITICAL_CASE] di akhir jawaban Anda.
+Gunakan bahasa yang sama dengan pengguna.
+Jika pengguna memakai English, jawab English.
+Jika pengguna memakai Bahasa Indonesia, jawab Bahasa Indonesia.
+Jika pengguna memakai campuran/slang, ikuti secara natural.
 
-Catatan: kode [CRITICAL_CASE]) tidak akan ditampilkan
-ke pengguna dan hanya digunakan sistem secara internal.`;
+Gaya respons:
+- sangat empati
+- hangat
+- tidak menghakimi
+- tidak mendiagnosis
+- tidak menyebut bahwa pengguna "sakit mental"
+
+BATASAN TOPIK:
+Anda hanya boleh merespons topik terkait:
+- kesehatan mental
+- stres, cemas, sedih, depresi, kesepian
+- curhat, emosi, pengalaman pribadi
+- trauma, bullying, hubungan sosial
+- keluarga, pertemanan, percintaan
+- kepercayaan diri, motivasi, identitas diri
+- masalah sekolah yang berdampak ke emosi
+
+Jika pesan di luar topik, jawab hangat bahwa Anda hanya bisa membantu seputar wellbeing emosional siswa.
+`;
+
+const RISK_CLASSIFIER_PROMPT = `
+You are a multilingual student wellbeing risk classifier.
+
+Your job is NOT to reply to the student.
+Your job is to classify the latest user message and conversation context.
+
+You must understand:
+- Indonesian
+- English
+- mixed Indonesian-English slang
+- informal language
+- typo-heavy writing
+- indirect emotional expressions
+
+Return ONLY valid JSON.
+
+Risk levels:
+
+LOW:
+Normal sadness, stress, disappointment, mild anxiety, school pressure.
+
+MEDIUM:
+Persistent sadness, loneliness, emotional exhaustion, relationship distress,
+low self-worth, mild bullying, social exclusion, "I feel like I don't belong".
+
+HIGH:
+Strong emotional distress, hopelessness, severe isolation, repeated despair,
+toxic relationship trauma, bullying with strong emotional impact,
+phrases like:
+- "I'm tired of this"
+- "Aku capek semuanya"
+- "No one listens to me"
+- "I don't belong anywhere"
+- "Everything feels pointless"
+but WITHOUT explicit self-harm or suicide intent.
+
+CRITICAL:
+Immediate safety concern, including:
+- self-harm intent
+- suicidal ideation
+- wanting to die
+- wanting to disappear forever
+- plans or methods for suicide/self-harm
+- sexual abuse
+- physical abuse
+- severe violence threat
+- severe bullying with danger
+- user may be in immediate danger
+
+Classification rules:
+- If unsure between LOW and MEDIUM, choose MEDIUM.
+- If unsure between MEDIUM and HIGH, choose HIGH.
+- If there is any self-harm or suicide signal, choose CRITICAL.
+- Do not over-classify ordinary sadness as CRITICAL.
+- Use HIGH for serious distress needing teacher/counselor review.
+- Use CRITICAL only for urgent safety cases.
+
+Return JSON with this exact shape:
+
+{
+  "risk_level": "low" | "medium" | "high" | "critical",
+  "risk_types": string[],
+  "reason": string,
+  "should_store": boolean,
+  "should_notify_teacher": boolean,
+  "detected_language": "id" | "en" | "mixed"
+}
+`;
+
+function safeParseConversation(conversationRaw) {
+  if (!conversationRaw) return [];
+
+  try {
+    const parsed = JSON.parse(conversationRaw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter((item) => item?.role && item?.content)
+      .map((item) => ({
+        role: item.role === "assistant" ? "assistant" : "user",
+        content: String(item.content),
+        createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function safeParseRisk(raw) {
+  try {
+    const parsed = JSON.parse(raw);
+
+    const allowedLevels = ["low", "medium", "high", "critical"];
+    const allowedLanguages = ["id", "en", "mixed"];
+
+    return {
+      risk_level: allowedLevels.includes(parsed.risk_level)
+        ? parsed.risk_level
+        : "medium",
+
+      risk_types: Array.isArray(parsed.risk_types)
+        ? parsed.risk_types
+        : [],
+
+      reason: parsed.reason || "",
+
+      should_store: Boolean(parsed.should_store),
+
+      should_notify_teacher: Boolean(parsed.should_notify_teacher),
+
+      detected_language: allowedLanguages.includes(parsed.detected_language)
+        ? parsed.detected_language
+        : "id",
+    };
+  } catch {
+    return {
+      risk_level: "medium",
+      risk_types: ["unknown"],
+      reason: "Failed to parse risk classifier response.",
+      should_store: false,
+      should_notify_teacher: false,
+      detected_language: "id",
+    };
+  }
+}
 
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
+
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, message: "Sesi tidak valid" },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
     const formData = await request.formData();
+
     const userMessage = formData.get("message");
     const audioFile = formData.get("file");
+    const conversationRaw = formData.get("conversation");
+
+    const previousConversation = safeParseConversation(conversationRaw);
 
     let finalInput = userMessage;
 
-    // 1. Jika ada file audio, ubah jadi teks (Whisper)
     if (audioFile && audioFile.size > 0) {
       const buffer = Buffer.from(await audioFile.arrayBuffer());
+
       const transcription = await openai.audio.transcriptions.create({
         file: await OpenAI.toFile(buffer, "recording.ogg"),
         model: "whisper-1",
-        language: "id",
       });
+
       finalInput = transcription.text;
     }
 
     if (!finalInput) {
       return NextResponse.json(
         { success: false, message: "Pesan kosong" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: finalInput },
-      ],
-      temperature: 0.6,
-    });
+    const currentUserMessage = {
+      role: "user",
+      content: String(finalInput),
+      createdAt: new Date(),
+    };
 
-    const aiReply = response.choices[0].message.content;
+    const conversationForAI = [
+      { role: "system", content: CHAT_SYSTEM_PROMPT },
+      ...previousConversation.map((item) => ({
+        role: item.role,
+        content: item.content,
+      })),
+      {
+        role: "user",
+        content: String(finalInput),
+      },
+    ];
 
-    // 2. Deteksi flag dari model
-    const isCritical = aiReply.includes("[CRITICAL_CASE]");
+    const [chatResponse, riskResponse] = await Promise.all([
+      openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: conversationForAI,
+        temperature: 0.6,
+      }),
 
-    // 3. Bersihkan semua flag sebelum dikirim ke user
-    const cleanReply = aiReply.replace("[CRITICAL_CASE]", "").trim();
+      openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: RISK_CLASSIFIER_PROMPT },
+          {
+            role: "user",
+            content: JSON.stringify({
+              latest_message: String(finalInput),
+              conversation: previousConversation.slice(-20),
+            }),
+          },
+        ],
+        temperature: 0,
+        response_format: { type: "json_object" },
+      }),
+    ]);
 
-    // 4. Simpan log jika kasus kritis
-    if (isCritical) {
-      await client.connect();
-      const db = client.db();
+    const cleanReply = chatResponse.choices[0].message.content || "";
+
+    const riskRaw = riskResponse.choices[0].message.content || "{}";
+    const risk = safeParseRisk(riskRaw);
+
+    const isCritical = risk.risk_level === "critical";
+    const shouldStore =
+      risk.risk_level === "high" || risk.risk_level === "critical";
+
+    const assistantMessage = {
+      role: "assistant",
+      content: cleanReply,
+      createdAt: new Date(),
+    };
+
+    if (shouldStore) {
+      const dbClient = await clientPromise;
+      const db = dbClient.db();
+
+      const fullConversation = [
+        ...previousConversation,
+        currentUserMessage,
+        assistantMessage,
+      ];
 
       await db.collection("critical_chat_logs").insertOne({
         student_id: new ObjectId(session.user.id),
-        is_critical: true,
-        createdAt: new Date(),
+
+        conversation: fullConversation.slice(-30),
+        critical_message: String(finalInput),
+
+        is_critical: isCritical,
+        severity: risk.risk_level,
+        risk_types: risk.risk_types,
+        risk_reason: risk.reason,
+        detected_language: risk.detected_language,
+
         source: "student_chat",
         status: "pending_review",
+
+        reviewed_by: null,
+        reviewed_at: null,
+        teacher_note: null,
+
+        createdAt: new Date(),
       });
     }
 
     return NextResponse.json({
+      success: true,
       reply: cleanReply,
+
+      riskLevel: risk.risk_level,
+      detectedLanguage: risk.detected_language,
       isCritical,
+      shouldStore,
     });
   } catch (error) {
     console.error("CHAT_API_ERROR:", error);
+
     return NextResponse.json(
       { success: false, message: "Gagal memproses pesan" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
