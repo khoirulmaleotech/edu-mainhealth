@@ -301,19 +301,19 @@ export default function SchoolDashboardPage() {
             <div className="grid grid-cols-2 gap-4">
               <QuickActionButton
                 label="Lihat Laporan"
-                href="/dashboard/reports"
+                href="/dashboard/school-admin/reports"
                 icon={<FileExclamationPoint size={18} />}
                 color="bg-rose-50 text-rose-500"
               />
               <QuickActionButton
                 label="Assign Wali kelas"
-                href="/dashboard/homeroom"
+                href="/dashboard/school-admin/homeroom"
                 icon={<Users size={18} />}
                 color="bg-[#00adb5]/10 text-[#00adb5]"
               />
               <QuickActionButton
                 label="Update Profil Sekolah"
-                href="/dashboard/profile"
+                href="/dashboard/school-admin/profile"
                 icon={<School2Icon size={18} />}
                 color="bg-amber-50 text-amber-600"
               />
