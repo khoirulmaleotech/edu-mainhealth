@@ -20,6 +20,7 @@ import {
   School2Icon,
   FileExclamationPoint,
 } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 // ─────────────────────────────────────────────────────────────
 // HELPER: Buat ID anonim yang KONSISTEN dari reporterId.
@@ -38,26 +39,44 @@ function makeAnonymousId(reporterId = "") {
 export default function SchoolDashboardPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState(null);
+  
+  // State untuk Server-Side Pagination & Search
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
   const [search, setSearch] = useState("");
+  
+  // Menggunakan custom hook useDebounce
+  const debouncedSearch = useDebounce(search, 500);
 
+  // Kembalikan ke halaman 1 apabila carian bertukar
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
+
+  // Fetch Dashboard sentiasa dicetuskan apabila page atau carian (debounced) bertukar
   useEffect(() => {
     async function fetchDashboard() {
       try {
-        setLoading(true);
+        if (!data) setLoading(true); // Loading besar hanya kali pertama
+        setIsFetching(true); // Indikator loading kecil saat berpindah halaman
         setError(null);
-        const res = await fetch("/api/school-admin/dashboard");
+        
+        const res = await fetch(`/api/school-admin/dashboard?page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}`);
         const json = await res.json();
+        
         if (!json.success) throw new Error(json.message ?? "Gagal memuat data");
         setData(json);
       } catch (err) {
         setError(err.message);
       } finally {
         setLoading(false);
+        setIsFetching(false);
       }
     }
     fetchDashboard();
-  }, []);
+  }, [page, limit, debouncedSearch]);
 
   // ── Derived values ──────────────────────────────────────────
   const stats = data?.stats ?? {};
@@ -66,21 +85,13 @@ export default function SchoolDashboardPage() {
     medium: 0,
     high: 0,
   };
-
-  // Filter laporan berdasarkan search (nama / tipe / status)
-  const filteredReports = (data?.incidentReports ?? []).filter((r) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      r.name?.toLowerCase().includes(q) ||
-      r.type?.toLowerCase().includes(q) ||
-      r.status?.toLowerCase().includes(q) ||
-      r.class?.toLowerCase().includes(q)
-    );
-  });
+  
+  // Ambil reports langsung dari API (tanpa filter client-side)
+  const reports = data?.incidentReports ?? [];
+  const pagination = data?.pagination ?? { page: 1, totalPages: 1 };
 
   // ── Skeleton / Error states ─────────────────────────────────
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="min-h-screen bg-slate-50/50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-slate-400">
@@ -91,7 +102,7 @@ export default function SchoolDashboardPage() {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="min-h-screen bg-slate-50/50 flex items-center justify-center p-8">
         <div className="bg-white border border-rose-100 rounded-3xl p-10 max-w-md text-center shadow-lg">
@@ -124,14 +135,6 @@ export default function SchoolDashboardPage() {
             sekolah Anda.
           </p>
         </div>
-        {/* <div className="flex items-center gap-3 w-full md:w-auto">
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
-            <FileDown size={16} /> Laporan CSV
-          </button>
-          <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-[#00adb5] text-white rounded-2xl text-xs font-bold shadow-lg shadow-[#00adb5]/20 hover:scale-[1.02] active:scale-95 transition-all">
-            <Activity size={16} /> Analitik Penuh
-          </button>
-        </div> */}
       </div>
 
       {/* STATS OVERVIEW */}
@@ -148,7 +151,6 @@ export default function SchoolDashboardPage() {
           title="Guru Terhubung"
           value={stats.totalTeachers ?? "-"}
           icon={<Users className="text-blue-500" />}
-          // Guru = semua teacher di sekolah (wali kelas & BK, lihat route comment)
           trend="Wali Kelas & BK"
           trendColor="text-blue-500"
           trendBg="bg-blue-50"
@@ -157,7 +159,6 @@ export default function SchoolDashboardPage() {
           title="Laporan Insiden"
           value={stats.totalIncidents ?? "-"}
           icon={<FileText className="text-amber-500" />}
-          // pendingIncidents diambil dari route untuk label dinamis
           trend={
             stats.pendingIncidents != null
               ? `${stats.pendingIncidents} Menunggu respon`
@@ -179,14 +180,14 @@ export default function SchoolDashboardPage() {
       {/* MAIN CONTENT GRID */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* LEFT: INCIDENT TABLE */}
-        <div className="lg:col-span-2 bg-white rounded-[35px] border border-slate-100 shadow-sm overflow-hidden">
+        <div className="lg:col-span-2 bg-white rounded-[35px] border border-slate-100 shadow-sm overflow-hidden flex flex-col">
           <div className="p-6 md:p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500">
                 <ShieldAlert size={20} />
               </div>
               <h3 className="font-black text-slate-800 text-lg">
-                Laporan Masuk Terbaru
+                Laporan Masuk Terbaru {isFetching && <Loader2 size={16} className="inline animate-spin text-slate-400 ml-2" />}
               </h3>
             </div>
             <div className="relative w-full md:w-64">
@@ -204,7 +205,7 @@ export default function SchoolDashboardPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className={`overflow-x-auto transition-opacity duration-200 flex-1 ${isFetching ? "opacity-50" : "opacity-100"}`}>
             <table className="w-full text-left">
               <thead className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 <tr>
@@ -214,7 +215,7 @@ export default function SchoolDashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filteredReports.length === 0 ? (
+                {reports.length === 0 ? (
                   <tr>
                     <td
                       colSpan={4}
@@ -226,12 +227,7 @@ export default function SchoolDashboardPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredReports.map((report) => {
-                    // ── Anonimisasi di frontend sesuai komentar route ──
-                    // Skema tidak punya is_anonymous; frontend yang bertanggung
-                    // jawab menampilkan nama anonim berdasarkan kebijakan privasi.
-                    // Saat ini: SEMUA pelapor ditampilkan dengan nama asli jika ada,
-                    // atau "Siswa Tidak Dikenal" dari route → tampilkan sebagai anonim.
+                  reports.map((report) => {
                     const isUnknown = report.name === "Siswa Tidak Dikenal";
                     const displayName = isUnknown
                       ? `Anonim (#ID-${makeAnonymousId(report.reporterId)})`
@@ -253,6 +249,27 @@ export default function SchoolDashboardPage() {
               </tbody>
             </table>
           </div>
+
+          {/* SERVER-SIDE PAGINATION CONTROLS */}
+          <div className="bg-slate-50/30 px-8 py-4 border-t border-slate-50 flex items-center justify-between">
+             <button
+                disabled={pagination.page <= 1}
+                onClick={() => setPage(p => p - 1)}
+                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                Sebelumnya
+              </button>
+              <span className="text-xs font-bold text-slate-400">
+                Halaman <span className="text-slate-700">{pagination.page}</span> dari {pagination.totalPages}
+              </span>
+              <button
+                disabled={pagination.page >= pagination.totalPages}
+                onClick={() => setPage(p => p + 1)}
+                className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                Selanjutnya
+              </button>
+          </div>
         </div>
 
         {/* RIGHT: SCHOOL WELLBEING & ACTIONS */}
@@ -266,7 +283,6 @@ export default function SchoolDashboardPage() {
                 <HeartPulse className="text-[#00adb5] animate-pulse" />
               </div>
               <div className="space-y-5">
-                {/* Persentase dari riskDistribution API */}
                 <RiskItem
                   label="Risiko Rendah (Aman)"
                   percentage={`${riskDistribution.low}%`}
@@ -283,13 +299,6 @@ export default function SchoolDashboardPage() {
                   color="bg-rose-500"
                 />
               </div>
-
-              {/*
-               * CATATAN: Tren Kesejahteraan ("Membaik" / "Memburuk") DIHAPUS
-               * karena skema tidak menyimpan snapshot historis agregat per sekolah.
-               * Implementasi yang benar butuh scheduled job (wellbeing_snapshots).
-               * Lihat komentar IMPOSSIBLE di route handler.
-               */}
             </div>
           </div>
 
@@ -365,12 +374,8 @@ function IncidentRow({ id, name, classInfo, type, status, risk }) {
     return "border-blue-200 text-blue-600";
   };
 
- 
-
   return (
-    <tr
-      className="hover:bg-slate-50/80 transition-all cursor-pointer group"
-    >
+    <tr className="hover:bg-slate-50/80 transition-all cursor-pointer group">
       <td className="px-8 py-5">
         <p className="font-bold text-slate-800 text-sm">{name}</p>
         <p className="text-[10px] text-slate-400 font-medium italic">
@@ -394,7 +399,6 @@ function IncidentRow({ id, name, classInfo, type, status, risk }) {
           Risiko {risk}
         </span>
       </td>
-      
     </tr>
   );
 }

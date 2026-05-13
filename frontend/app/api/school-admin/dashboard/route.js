@@ -28,7 +28,8 @@ function statusToLabel(status) {
   return "Diproses"; // in_progress, dll.
 }
 
-export async function GET() {
+// Tambahkan parameter request untuk mengambil query params (search, page, limit)
+export async function GET(request) {
   const client = new MongoClient(uri);
   try {
     const session = await getServerSession(authOptions);
@@ -40,6 +41,15 @@ export async function GET() {
         { status: 403 },
       );
     }
+
+    // ─────────────────────────────────────────────────────────────
+    // BACA PARAMETER PAGINATION & SEARCH DARI URL
+    // ─────────────────────────────────────────────────────────────
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    const search = (searchParams.get("search") || "").toLowerCase().trim();
+    const skip = (page - 1) * limit;
 
     await client.connect();
     const db = client.db();
@@ -94,9 +104,6 @@ export async function GET() {
     const studentMap = new Map(students.map((s) => [s._id.toString(), s]));
 
     // Total Laporan Insiden untuk sekolah ini
-    // incident_reports tidak punya school_id langsung → filter via reporter_id ∈ studentIds
-    // CATATAN: Asumsi reporter adalah siswa sekolah ini. Laporan dari guru/anonim luar
-    // tidak akan tertangkap — ini limitasi skema saat ini.
     const totalIncidents = studentIds.length
       ? await db
           .collection("incident_reports")
@@ -122,19 +129,59 @@ export async function GET() {
       : 0;
 
     // ─────────────────────────────────────────────────────────────
-    // 2. TABEL LAPORAN MASUK TERBARU
+    // 2. TABEL LAPORAN MASUK TERBARU (DENGAN SEARCH & PAGINATION)
     // ─────────────────────────────────────────────────────────────
+    const pipeline = [
+      { $match: { reporter_id: { $in: studentIds } } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "reporter_id",
+          foreignField: "_id",
+          as: "studentInfo"
+        }
+      },
+      { $unwind: { path: "$studentInfo", preserveNullAndEmptyArrays: true } }
+    ];
+
+    // Logika Search Server-Side
+    if (search) {
+      const statusRegexMap = [];
+      if ("menunggu".includes(search)) statusRegexMap.push("pending");
+      if ("selesai".includes(search)) statusRegexMap.push("resolved", "closed");
+      if ("diproses".includes(search)) statusRegexMap.push("in_progress");
+
+      const matchOr = [
+        { "studentInfo.fullname": { $regex: search, $options: "i" } },
+        { "studentInfo.class_name": { $regex: search, $options: "i" } },
+        { incident_type: { $regex: search, $options: "i" } }
+      ];
+
+      if (statusRegexMap.length > 0) {
+        matchOr.push({ status: { $in: statusRegexMap } });
+      } else {
+        matchOr.push({ status: { $regex: search, $options: "i" } });
+      }
+
+      pipeline.push({ $match: { $or: matchOr } });
+    }
+
+    // Hitung total data yang difilter untuk pagination
+    const countPipeline = [...pipeline, { $count: "total" }];
+    const countResult = studentIds.length ? await db.collection("incident_reports").aggregate(countPipeline).toArray() : [];
+    const totalFiltered = countResult[0]?.total || 0;
+    const totalPages = Math.ceil(totalFiltered / limit);
+
+    // Terapkan sorting dan pagination ($skip & $limit)
+    pipeline.push({ $sort: { created_at: -1 } });
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: limit });
 
     const rawIncidents = studentIds.length
-      ? await db
-          .collection("incident_reports")
-          .find({ reporter_id: { $in: studentIds } })
-          .sort({ created_at: -1 })
-          .limit(10)
-          .toArray()
+      ? await db.collection("incident_reports").aggregate(pipeline).toArray()
       : [];
 
-    // Ambil risk level tiap reporter dari counselor_alerts (unresolved, severity terburuk)
+    // Ambil risk level tiap reporter dari counselor_alerts HANYA untuk hasil page ini
     const reporterIds = rawIncidents.map((r) => r.reporter_id);
     const alertsForReporters = reporterIds.length
       ? await db
@@ -156,13 +203,9 @@ export async function GET() {
 
     const incidentRows = rawIncidents.map((report) => {
       const reporterId = report.reporter_id?.toString();
-      const student = studentMap.get(reporterId);
+      const student = report.studentInfo || studentMap.get(reporterId); 
       const severity = reporterAlertMap.get(reporterId);
 
-      // CATATAN: Skema incident_reports tidak memiliki field is_anonymous.
-      // Logika "Anonim (#ID-XXX)" sepenuhnya dihandle di frontend berdasarkan
-      // kebijakan privasi; API mengembalikan reporterId agar frontend bisa
-      // membuat ID anonim yang konsisten (misal: hash/ID acak per session).
       return {
         id: report._id.toString(),
         reporterId,
@@ -174,19 +217,12 @@ export async function GET() {
         location: report.location,
         occurrenceTime: report.occurrence_time,
         createdAt: new Date(report.created_at).toISOString(),
-
-        // IMPOSSIBLE: evidence_url tidak dikembalikan di list view.
-        // File media harus diakses via endpoint terpisah dengan auth check
-        // untuk menghindari eksposur langsung URL storage bucket sekolah.
-        // evidence_url: report.evidence_url,
       };
     });
 
     // ─────────────────────────────────────────────────────────────
     // 3. DISTRIBUSI RISIKO SISWA (untuk progress bar di sidebar)
     // ─────────────────────────────────────────────────────────────
-
-    // Ambil semua counselor_alerts aktif (unresolved) untuk siswa sekolah ini
     const allActiveAlerts = studentIds.length
       ? await db
           .collection("counselor_alerts")
@@ -195,7 +231,6 @@ export async function GET() {
           .toArray()
       : [];
 
-    // Deduplikasi: tiap siswa hanya dihitung sekali (severity terburuk)
     const studentWorstRisk = new Map();
     for (const alert of allActiveAlerts) {
       const key = alert.student_id.toString();
@@ -205,16 +240,12 @@ export async function GET() {
       }
     }
 
-    let highCount = 0;
-    let mediumCount = 0;
-    let lowCount = 0;
-
+    let highCount = 0, mediumCount = 0, lowCount = 0;
     for (const [, sev] of studentWorstRisk) {
       if (sev === "high" || sev === "critical") highCount++;
       else if (sev === "medium" || sev === "moderate") mediumCount++;
       else lowCount++;
     }
-    // Siswa tanpa alert aktif → aman (low risk)
     lowCount += totalStudents - studentWorstRisk.size;
 
     const riskDistribution =
@@ -233,8 +264,6 @@ export async function GET() {
     // Implementasi yang benar butuh scheduled job yang menyimpan snapshot
     // riskDistribution ke koleksi terpisah (misal: wellbeing_snapshots) dan
     // membandingkan periode ini vs periode sebelumnya.
-    //
-    // const wellbeingTrend = await computeWellbeingTrend(db, schoolId, studentIds);
     // ─────────────────────────────────────────────────────────────
 
     return NextResponse.json({
@@ -247,8 +276,13 @@ export async function GET() {
         highRiskStudents,
       },
       incidentReports: incidentRows,
+      pagination: {
+        page,
+        limit,
+        total: totalFiltered,
+        totalPages: totalPages === 0 ? 1 : totalPages,
+      },
       riskDistribution,
-      // wellbeingTrend: null, // IMPOSSIBLE: lihat komentar di atas
     });
   } catch (error) {
     console.error("SCHOOL_DASHBOARD_ERROR:", error);
