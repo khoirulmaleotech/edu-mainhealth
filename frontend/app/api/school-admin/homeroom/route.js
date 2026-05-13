@@ -29,8 +29,7 @@ async function getSchoolAdminSession(db) {
   };
 }
 
-// GET — Ambil semua kelas + guru + jumlah siswa milik sekolah ini
-export async function GET() {
+export async function GET(request) {
   const client = new MongoClient(uri);
   try {
     await client.connect();
@@ -39,26 +38,154 @@ export async function GET() {
     const { error, status, schoolId, schoolName } = await getSchoolAdminSession(db);
     if (error) return NextResponse.json({ success: false, message: error }, { status });
 
-    const [classes, teachers, students] = await Promise.all([
-      db.collection("classes")
-        .find({ school_id: schoolId })
-        .sort({ name: 1 })
-        .toArray(),
-      db.collection("users")
-        .find({ role: "teacher", $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }] })
-        .project({ fullname: 1 })
-        .toArray(),
-      db.collection("users")
-        .find({ role: "student", $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }] })
-        .project({ fullname: 1, class_id: 1, class_name: 1, homeroom_teacher_id: 1 })
-        .toArray(),
-    ]);
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get("action");
 
+    // ─────────────────────────────────────────────────────────────
+    // SUB-ROUTE: Ambil Siswa secara Pagination per Kelas
+    // ─────────────────────────────────────────────────────────────
+    if (action === "get_students") {
+      const classId = searchParams.get("classId");
+      const studentPage = parseInt(searchParams.get("studentPage") || "1", 10);
+      const studentLimit = parseInt(searchParams.get("studentLimit") || "6", 10);
+      const skip = (studentPage - 1) * studentLimit;
+
+      const studentQuery = {
+        role: "student",
+        $or: [
+          { class_id: new ObjectId(classId) },
+          { class_id: classId }
+        ]
+      };
+
+      const totalStudents = await db.collection("users").countDocuments(studentQuery);
+      const totalPages = Math.ceil(totalStudents / studentLimit);
+
+      const students = await db.collection("users")
+        .find(studentQuery)
+        .project({ fullname: 1 })
+        .sort({ fullname: 1 })
+        .skip(skip)
+        .limit(studentLimit)
+        .toArray();
+
+      return NextResponse.json({
+        success: true,
+        students: students.map(s => ({ _id: s._id.toString(), fullname: s.fullname })),
+        pagination: {
+          page: studentPage,
+          limit: studentLimit,
+          total: totalStudents,
+          totalPages: totalPages === 0 ? 1 : totalPages
+        }
+      });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ROUTE UTAMA: Ambil Kelas secara Pagination + Global Search
+    // ─────────────────────────────────────────────────────────────
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    const search = (searchParams.get("search") || "").toLowerCase().trim();
+    const skip = (page - 1) * limit;
+
+    const classQuery = { school_id: schoolId };
+
+    // Logika Pencarian: Kelas, Guru, atau Murid
+    if (search) {
+      // 1. Cari Guru yang cocok
+      const matchingTeachers = await db.collection("users").find({
+        role: "teacher",
+        $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }],
+        fullname: { $regex: search, $options: "i" }
+      }).project({ _id: 1 }).toArray();
+
+      const teacherIds = matchingTeachers.map((t) => t._id);
+      const teacherIdsString = matchingTeachers.map((t) => t._id.toString());
+
+      // 2. Cari Murid yang cocok
+      const matchingStudents = await db.collection("users").find({
+        role: "student",
+        $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }],
+        fullname: { $regex: search, $options: "i" },
+        class_id: { $nin: [null, ""] }
+      }).project({ class_id: 1 }).toArray();
+
+      const validStudentClassIds = [];
+      matchingStudents.forEach((s) => {
+        try {
+          if (typeof s.class_id === 'string' && ObjectId.isValid(s.class_id)) {
+            validStudentClassIds.push(new ObjectId(s.class_id));
+          } else if (s.class_id instanceof ObjectId) {
+            validStudentClassIds.push(s.class_id);
+          }
+        } catch(e) {}
+      });
+
+      // Gabungkan kriteria pencarian dengan $or
+      const orConditions = [{ name: { $regex: search, $options: "i" } }];
+      if (teacherIds.length > 0 || teacherIdsString.length > 0) {
+        orConditions.push({ homeroom_teacher_id: { $in: [...teacherIds, ...teacherIdsString] } });
+      }
+      if (validStudentClassIds.length > 0) {
+        orConditions.push({ _id: { $in: validStudentClassIds } });
+      }
+
+      classQuery.$or = orConditions;
+    }
+
+    const totalFilteredClasses = await db.collection("classes").countDocuments(classQuery);
+    const totalPages = Math.ceil(totalFilteredClasses / limit);
+
+    // Ambil Kelas
+    const classes = await db.collection("classes")
+      .find(classQuery)
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+
+    // Fetch Semua Guru untuk dropdown form
+    const teachers = await db.collection("users")
+      .find({ role: "teacher", $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }] })
+      .project({ fullname: 1 })
+      .toArray();
     const teacherMap = new Map(teachers.map((t) => [t._id.toString(), t]));
-    const studentCountMap = {};
-    students.forEach((s) => {
-      const key = s.class_id?.toString();
-      if (key) studentCountMap[key] = (studentCountMap[key] || 0) + 1;
+
+    // Fetch Murid Belum Masuk Kelas (Unassigned)
+    const unassignedCursor = await db.collection("users").find({
+      role: "student",
+      $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }],
+      class_id: { $in: [null, ""] }
+    }).project({ fullname: 1 }).toArray();
+
+    // Hitung total siswa per kelas menggunakan Aggregation
+    const classIdsObj = classes.map(c => new ObjectId(c._id));
+    const classIdsString = classes.map(c => c._id.toString());
+    
+    let studentCountMap = {};
+    if (classes.length > 0) {
+      const studentCounts = await db.collection("users").aggregate([
+        { 
+          $match: { 
+            role: "student", 
+            $or: [{ class_id: { $in: classIdsObj } }, { class_id: { $in: classIdsString } }] 
+          } 
+        },
+        { $group: { _id: "$class_id", count: { $sum: 1 } } }
+      ]).toArray();
+
+      studentCounts.forEach(sc => {
+        studentCountMap[sc._id.toString()] = sc.count;
+      });
+    }
+
+    // Statistik Global
+    const totalClassesCount = await db.collection("classes").countDocuments({ school_id: schoolId });
+    const totalAssignedStudents = await db.collection("users").countDocuments({
+      role: "student",
+      $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }],
+      class_id: { $nin: [null, ""] }
     });
 
     const enrichedClasses = classes.map((cls) => ({
@@ -72,31 +199,24 @@ export async function GET() {
       student_count: studentCountMap[cls._id.toString()] || 0,
     }));
 
-    const unassignedStudents = students
-      .filter((s) => !s.class_id)
-      .map((s) => ({ _id: s._id.toString(), fullname: s.fullname }));
-
-    const studentsByClass = {};
-    students.forEach((s) => {
-      if (!s.class_id) return;
-      const key = s.class_id.toString();
-      if (!studentsByClass[key]) studentsByClass[key] = [];
-      studentsByClass[key].push({ _id: s._id.toString(), fullname: s.fullname });
-    });
-
     return NextResponse.json({
       success: true,
       schoolName,
       classes: enrichedClasses,
       teachers: teachers.map((t) => ({ _id: t._id.toString(), fullname: t.fullname })),
-      unassignedStudents,
-      studentsByClass,
+      unassignedStudents: unassignedCursor.map((s) => ({ _id: s._id.toString(), fullname: s.fullname })),
       summary: {
-        totalClasses: classes.length,
+        totalClasses: totalClassesCount,
         totalTeachers: teachers.length,
-        assignedStudents: students.filter((s) => s.class_id).length,
-        unassignedStudents: unassignedStudents.length,
+        assignedStudents: totalAssignedStudents,
+        unassignedStudents: unassignedCursor.length,
       },
+      pagination: {
+        page,
+        limit,
+        total: totalFilteredClasses,
+        totalPages: totalPages === 0 ? 1 : totalPages,
+      }
     });
   } catch (error) {
     console.error("HOMEROOM_GET_ERROR:", error);
