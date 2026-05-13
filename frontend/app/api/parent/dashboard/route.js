@@ -39,9 +39,6 @@ export async function GET(request) {
     const startDate = url.searchParams.get("startDate");
     const endDate = url.searchParams.get("endDate");
 
-    // =====================================
-    // FAMILY LINK
-    // =====================================
     const link = await db.collection("family_links").findOne({
       parent_email: session.user.email,
       status: "active",
@@ -55,9 +52,6 @@ export async function GET(request) {
       });
     }
 
-    // =====================================
-    // STUDENT
-    // =====================================
     const student = await db.collection("users").findOne({
       _id: new ObjectId(link.student_id),
     });
@@ -72,9 +66,6 @@ export async function GET(request) {
       );
     }
 
-    // =====================================
-    // SCHOOL
-    // =====================================
     let school = null;
 
     if (student.school_id) {
@@ -83,16 +74,28 @@ export async function GET(request) {
       });
     }
 
-    // =====================================
-    // FILTER
-    // =====================================
+    const talentData = await db
+      .collection("student_talents")
+      .findOne({
+        student_id: new ObjectId(student._id),
+      });
+
+    let dominantTalent = "-";
+    let talentScore = 0;
+
+    if (talentData && Array.isArray(talentData.scores)) {
+      const top = talentData.scores.reduce((prev, curr) =>
+        curr.value > prev.value ? curr : prev
+      );
+
+      dominantTalent = top.subject;
+      talentScore = top.value;
+    }
+
     const filter = {
       student_id: student._id,
     };
 
-    // =====================================
-    // DATE FILTER
-    // =====================================
     if (startDate || endDate) {
       filter.createdAt = {};
 
@@ -124,19 +127,12 @@ export async function GET(request) {
       }
     }
 
-
-    // =====================================
-    // MOOD LOGS
-    // =====================================
     const moodLogs = await db
       .collection("mood_logs")
       .find(filter)
       .sort({ createdAt: 1 })
       .toArray();
 
-    // =====================================
-    // MOOD MAP
-    // =====================================
     const moodMap = {
       "😢": 20,
       "😕": 40,
@@ -145,9 +141,6 @@ export async function GET(request) {
       "🤩": 100,
     };
 
-    // =====================================
-    // FORMAT TREND
-    // =====================================
     const moodTrend = moodLogs.map((item) => ({
       day: new Date(item.createdAt).toLocaleDateString("id-ID", {
         day: "2-digit",
@@ -160,15 +153,87 @@ export async function GET(request) {
       createdAt: item.createdAt,
     }));
 
+    const values = moodTrend.map((m) => Number(m.value || 0));
+
+    let totalDiff = 0;
+
+    for (let i = 1; i < values.length; i++) {
+      totalDiff += Math.abs(values[i] - values[i - 1]);
+    }
+
+    const avgDiff =
+      values.length > 1
+        ? totalDiff / (values.length - 1)
+        : 0;
+
+    const emotionalStability = Math.max(
+      0,
+      Math.round(100 - avgDiff)
+    );
+
+
+    let emotionalTrend = "Stabil";
+
+    if (emotionalStability >= 85) {
+      emotionalTrend = "Sangat Stabil";
+    } else if (emotionalStability >= 70) {
+      emotionalTrend = "Meningkat";
+    } else if (emotionalStability >= 50) {
+      emotionalTrend = "Cukup Stabil";
+    } else {
+      emotionalTrend = "Tidak Stabil";
+    }
+
+    const uniqueDays = new Set(
+      moodLogs.map((item) =>
+        new Date(item.createdAt).toDateString()
+      )
+    );
+
+    const totalDays = 7;
+
+    const consistencyScore = Math.min(
+      100,
+      Math.round((uniqueDays.size / totalDays) * 100)
+    );
+
+    let consistencyTrend = "Kurang Aktif";
+
+    if (consistencyScore >= 85) {
+      consistencyTrend = "Sangat Konsisten";
+    } else if (consistencyScore >= 60) {
+      consistencyTrend = "Konsisten";
+    } else if (consistencyScore >= 40) {
+      consistencyTrend = "Cukup";
+    }
+
+    
     return NextResponse.json({
       success: true,
 
       student: {
         id: student._id,
         fullname: student.fullname || "Student",
-        class_name: student.class_name || "12A",
+        class_name: student.class_name || "0",
         school_name: school?.name || "Sekolah",
         avatar: student.avatar || null,
+      },
+
+      stats: {
+        emotional_stability: {
+          value: emotionalStability,
+          trend: emotionalTrend,
+        },
+
+        checkin_consistency: {
+          value: consistencyScore,
+          trend: consistencyTrend,
+        },
+
+        dominant_talent: {
+          value: dominantTalent,
+          trend: `${talentScore}% Potensi`,
+        },
       },
 
       moodTrend,

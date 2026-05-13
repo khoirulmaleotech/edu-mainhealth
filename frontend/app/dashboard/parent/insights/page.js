@@ -113,7 +113,7 @@ export default function ParentInsightsPage() {
                   <Link
                     href={`/dashboard/parent/insights/${res._id}`}
                     key={i}
-                    className="group bg-white rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col active:scale-[0.98]"
+                    className="group bg-white rounded-[40px] border border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden flex flex-col active:scale-[0.98]"
                   >
 
                     {/* IMAGE AREA */}

@@ -20,6 +20,7 @@ export default function ParentDashboard() {
   const [dashboard, setDashboard] = useState({
     student: null,
     moodTrend: [],
+    stats: {},
   });
 
   const fetchDashboard = async () => {
@@ -52,6 +53,7 @@ export default function ParentDashboard() {
         setDashboard({
           student: data.student,
           moodTrend: data.moodTrend || [],
+          stats: data.stats || {},
         });
       }
     } catch (error) {
@@ -80,20 +82,22 @@ export default function ParentDashboard() {
   const childStats = [
     {
       label: "Stabilitas Emosi",
-      value: "85%",
-      trend: "Meningkat",
+      value: `${dashboard.stats?.emotional_stability?.value || 0}%`,
+      trend: dashboard.stats?.emotional_stability?.trend || "-",
       color: "text-primary",
     },
+
     {
-      label: "Interaksi Sosial",
-      value: "Baik",
-      trend: "Stabil",
+      label: "Konsistensi Check-in",
+      value: `${dashboard.stats?.checkin_consistency?.value || 0}%`,
+      trend: dashboard.stats?.checkin_consistency?.trend || "-",
       color: "text-secondary",
     },
+
     {
-      label: "Kepatuhan Misi",
-      value: "92%",
-      trend: "Sangat Baik",
+      label: "Bakat Utama",
+      value: dashboard.stats?.dominant_talent?.value || "-",
+      trend: dashboard.stats?.dominant_talent?.trend || "-",
       color: "text-green-500",
     },
   ];
