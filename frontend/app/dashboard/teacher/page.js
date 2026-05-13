@@ -16,12 +16,10 @@ export default function TeacherPage() {
   const [totalStudent, setTotalStudent] = useState(0);
   const [studentHeatMap, setStudentHeatMap] = useState([]);
   const [totalCriticalAlert, setTotalCriticalAlert] = useState(0);
-  const [latestCriticalAlert, setLatestCriticalAlert] = useState(null);
 
   const [isTotalStudentLoading, setIsTotalStudentLoading] = useState(true);
   const [isStudentHeatMapLoading, setIsStudentHeatMapLoading] = useState(true);
   const [isCriticalAlertLoading, setIsCriticalAlertLoading] = useState(true);
-  const [isLatestCriticalAlertLoading, setIsLatestCriticalAlertLoading] = useState(true);
 
   const fetchTotalStudent = async () => {
     try {
@@ -71,38 +69,10 @@ export default function TeacherPage() {
     }
   };
 
-  const fetchLatestCriticalAlert =
-    async () => {
-      try {
-        setIsLatestCriticalAlertLoading(
-          true
-        );
-
-        const response =
-          await fetchInstance(
-            "/api/teacher/overview/latest_critical_alert"
-          );
-
-        setLatestCriticalAlert(
-          response?.data || null
-        );
-      } catch (error) {
-        console.error(
-          "Failed to fetch latest critical alert",
-          error
-        );
-      } finally {
-        setIsLatestCriticalAlertLoading(
-          false
-        );
-      }
-    };
-
   useEffect(() => {
     fetchTotalStudent();
     fetchStudentHeatMap();
     fetchCriticalAlert();
-    fetchLatestCriticalAlert();
   }, []);
 
   const statisticsCard = [
@@ -210,9 +180,9 @@ export default function TeacherPage() {
         ))}
       </section>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2 bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden">
-          <div className="p-8 border-b border-slate-50 flex justify-between items-center bg-white">
+      <div className="grid gap-8">
+        <div className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden">
+          <div className="p-8 border-b border-slate-50 flex items-center bg-white">
             <div>
               <h4 className="text-xl font-bold text-slate-800 tracking-tight">
                 Heatmap Kesejahteraan Kelas
@@ -363,64 +333,6 @@ export default function TeacherPage() {
               )}
             </div>
           </section>
-        </div>
-
-        <div className="space-y-8">
-          <div className="bg-primary p-9 rounded-[40px] text-white shadow-2xl shadow-primary/30 relative overflow-hidden">
-            {isLatestCriticalAlertLoading ? (
-              <div className="animate-pulse space-y-4">
-                <div className="h-3 w-32 bg-white/20 rounded-full"></div>
-
-                <div className="space-y-2">
-                  <div className="h-4 w-full bg-white/10 rounded-full"></div>
-                  <div className="h-4 w-4/5 bg-white/10 rounded-full"></div>
-                </div>
-              </div>
-            ) : latestCriticalAlert ? (
-              <div className="relative z-10">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-                    <BarChart3
-                      size={20}
-                      className="text-secondary"
-                    />
-                  </div>
-
-                  <h4 className="font-bold text-xl">
-                    AI Alert Center
-                  </h4>
-                </div>
-
-                <div className="space-y-5">
-                  <div className="bg-white/10 backdrop-blur-md p-5 rounded-[24px] border border-white/20">
-                    <p className="text-[10px] font-black text-secondary tracking-widest uppercase mb-2">
-                      Deteksi Perundungan
-                    </p>
-
-                    <p className="text-sm leading-relaxed font-medium">
-                      Sistem mendeteksi anomali pada pola interaksi siswa{" "}
-                      <b className="text-secondary">
-                        {
-                          latestCriticalAlert.student_fullname
-                        }
-                      </b>{" "}
-                      melalui input laporan anonim.
-                    </p>
-                  </div>
-
-                  <button className="w-full py-4 bg-secondary text-slate-900 rounded-[20px] font-black text-sm hover:scale-[1.02] transition-transform shadow-lg shadow-yellow-500/20 uppercase tracking-wider">
-                    Mulai Intervensi
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-center text-white/70 text-sm font-medium">
-                Tidak ada alert kritis terbaru
-              </div>
-            )}
-
-            <div className="absolute -right-10 -bottom-10 w-44 h-44 bg-white opacity-10 rounded-full blur-3xl"></div>
-          </div>
         </div>
       </div>
     </div>
