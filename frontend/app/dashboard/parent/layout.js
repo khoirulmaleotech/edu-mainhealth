@@ -87,12 +87,12 @@ export default function ParentLayout({ children }) {
             active={pathname === '/dashboard/parent'}
           />
 
-          <ParentNavItem
+          {/* <ParentNavItem
             href="/dashboard/parent/wellbeing"
             icon={<Heart size={20} />}
             label="Kesehatan Anak"
             active={pathname === '/dashboard/parent/wellbeing'}
-          />
+          /> */}
 
           <ParentNavItem
             href="/dashboard/parent/talent"
@@ -114,7 +114,7 @@ export default function ParentLayout({ children }) {
           <ParentNavItem
             href="/dashboard/parent/settings"
             icon={<Settings size={20} />}
-            label="Profil Ayah/Bunda"
+            label="Profil"
             active={pathname === '/dashboard/parent/settings'}
           />
 

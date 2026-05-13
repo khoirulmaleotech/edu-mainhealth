@@ -3,6 +3,8 @@ import { ObjectId } from "mongodb";
 import { connectDB } from "@/lib/mongodb";
 import { requireRole } from "@/lib/requiredRole";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const session = await requireRole(["teacher"]);

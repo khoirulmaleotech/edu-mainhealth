@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { MongoClient, ObjectId } from 'mongodb';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "../../../../auth/[...nextauth]/authOptions";
 
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);

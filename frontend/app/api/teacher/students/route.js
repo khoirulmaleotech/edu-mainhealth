@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-
 import { connectDB } from "@/lib/mongodb";
 import { requireRole } from "@/lib/requiredRole";
+
+export const dynamic = 'force-dynamic';
 
 const talentCategoryMapping = {
   "Logika & Riset": "Analytical",

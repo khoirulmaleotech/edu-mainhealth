@@ -3,6 +3,8 @@ import { MongoClient, ObjectId } from 'mongodb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from '../../auth/[...nextauth]/authOptions';
 
+export const dynamic = 'force-dynamic';
+
 const uri = process.env.MONGODB_URI;
 const client = new MongoClient(uri);
 

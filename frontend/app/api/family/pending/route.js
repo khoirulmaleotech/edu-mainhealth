@@ -1,11 +1,10 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// FILE 1: /api/family/pending/route.js
-// GET — Ambil semua permintaan koneksi orang tua yang PENDING untuk siswa login
-// ─────────────────────────────────────────────────────────────────────────────
+
 import { NextResponse } from "next/server";
 import { MongoClient, ObjectId } from "mongodb";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/authOptions";
+
+export const dynamic = 'force-dynamic';
 
 const client = new MongoClient(process.env.MONGODB_URI);
 
