@@ -3,6 +3,8 @@ import { MongoClient, ObjectId } from "mongodb";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/authOptions";
 
+export const dynamic = 'force-dynamic';
+
 const uri = process.env.MONGODB_URI;
 const allowedAdminRoles = ["admin", "superadmin", "school_admin"];
 const statusAlias = {
@@ -13,6 +15,7 @@ const statusAlias = {
 };
 
 export async function GET(request) {
+export async function GET(request) {
   const client = new MongoClient(uri);
   try {
     const session = await getServerSession(authOptions);
@@ -22,6 +25,9 @@ export async function GET(request) {
         { status: 403 },
       );
     }
+
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get("action");
 
     await client.connect();
     const db = client.db();
@@ -144,7 +150,7 @@ export async function GET(request) {
       },
     });
   } catch (error) {
-    console.error("ADMIN_REPORTS_ERROR:", error);
+    console.error("ADMIN_REPORTS_GET_ERROR:", error);
     return NextResponse.json(
       { success: false, message: error.message },
       { status: 500 },
@@ -159,36 +165,25 @@ export async function PATCH(request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || !allowedAdminRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, message: "Akses ditolak" },
-        { status: 403 },
-      );
+      return NextResponse.json({ success: false, message: "Akses ditolak" }, { status: 403 });
     }
 
     const { id, status } = await request.json();
     if (!id || !status) {
-      return NextResponse.json(
-        { success: false, message: "ID dan status diperlukan" },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, message: "ID dan status diperlukan" }, { status: 400 });
     }
 
     await client.connect();
     const db = client.db();
-    await db
-      .collection("incident_reports")
-      .updateOne(
+    await db.collection("incident_reports").updateOne(
         { _id: new ObjectId(id) },
         { $set: { status, updated_at: new Date() } },
-      );
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("ADMIN_REPORT_UPDATE_ERROR:", error);
-    return NextResponse.json(
-      { success: false, message: error.message },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   } finally {
     await client.close();
   }
@@ -199,34 +194,23 @@ export async function DELETE(request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || !allowedAdminRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, message: "Akses ditolak" },
-        { status: 403 },
-      );
+      return NextResponse.json({ success: false, message: "Akses ditolak" }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     if (!id) {
-      return NextResponse.json(
-        { success: false, message: "ID diperlukan" },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, message: "ID diperlukan" }, { status: 400 });
     }
 
     await client.connect();
     const db = client.db();
-    await db
-      .collection("incident_reports")
-      .deleteOne({ _id: new ObjectId(id) });
+    await db.collection("incident_reports").deleteOne({ _id: new ObjectId(id) });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("ADMIN_REPORT_DELETE_ERROR:", error);
-    return NextResponse.json(
-      { success: false, message: error.message },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   } finally {
     await client.close();
   }

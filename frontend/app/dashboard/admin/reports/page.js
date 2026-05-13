@@ -542,8 +542,174 @@ export default function AdminReportsPage() {
               </div>
             </div>
           </div>
+
+          {/* SERVER-SIDE PAGINATION CONTROLS */}
+          {reports.length > 0 && (
+             <div className="bg-slate-50/50 px-8 py-5 border-t border-slate-100 flex items-center justify-between">
+                <button
+                  disabled={pagination.page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="px-5 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  Sebelumnya
+                </button>
+                <span className="text-sm font-bold text-slate-400">
+                  Halaman <span className="text-slate-700">{pagination.page}</span> dari {pagination.totalPages}
+                </span>
+                <button
+                  disabled={pagination.page >= pagination.totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="px-5 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+                >
+                  Selanjutnya
+                </button>
+             </div>
+          )}
         </div>
       )}
+
+      {/* MODAL: DETAIL LAPORAN */}
+      {viewingReport && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-white rounded-[35px] w-full max-w-3xl shadow-2xl animate-in zoom-in-95 duration-200 my-8">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-100">
+              <div>
+                <h3 className="text-2xl font-black text-slate-800">Detail Insiden</h3>
+                <p className="text-sm font-medium text-slate-400 mt-1">
+                  ID Laporan: {viewingReport._id}
+                </p>
+              </div>
+              <button 
+                onClick={() => setViewingReport(null)}
+                className="p-3 bg-slate-50 hover:bg-rose-50 hover:text-rose-500 rounded-2xl text-slate-400 transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 sm:p-8 space-y-8 min-h-[300px]">
+              {isDetailLoading ? (
+                 <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-400 mt-10">
+                    <Loader2 size={40} className="animate-spin text-[#00adb5]" />
+                    <p className="text-sm font-semibold tracking-wider uppercase">Mengambil Data Penuh...</p>
+                 </div>
+              ) : (
+                <>
+                  {/* Info Utama & Pelapor */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Jenis Insiden</p>
+                        <p className="text-lg font-bold text-slate-800">{viewingReport.incident_type}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Status</p>
+                        <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          viewingReport.status === "Resolved" || viewingReport.status === "Selesai"
+                            ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+                            : viewingReport.status === "In Progress" || viewingReport.status === "Diproses"
+                            ? "bg-amber-50 text-amber-600 border border-amber-100"
+                            : "bg-rose-50 text-rose-600 border border-rose-100"
+                        }`}>
+                          {viewingReport.status || "Pending"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Informasi Pelapor</p>
+                      <div className="space-y-2">
+                        <p className="text-sm font-bold text-slate-800">
+                          {viewingReport.reporter?.fullname || "Pelapor Anonim"}
+                        </p>
+                        {viewingReport.reporter?.email && (
+                          <p className="text-xs font-medium text-slate-500">{viewingReport.reporter.email}</p>
+                        )}
+                        <span className="inline-block px-2 py-0.5 bg-sky-100 text-sky-600 text-[10px] font-bold rounded uppercase">
+                          {viewingReport.reporter?.role || "Tidak diketahui"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Waktu & Lokasi */}
+                  <div className="flex flex-wrap gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <div className="flex items-center gap-3 mr-6">
+                      <div className="p-2 bg-white rounded-xl shadow-sm"><Calendar size={16} className="text-[#00adb5]" /></div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-slate-400">Dilaporkan Pada</p>
+                        <p className="text-sm font-bold text-slate-700">{new Date(viewingReport.created_at).toLocaleString("id-ID")}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 mr-6">
+                      <div className="p-2 bg-white rounded-xl shadow-sm"><Clock size={16} className="text-amber-500" /></div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-slate-400">Waktu Kejadian</p>
+                        <p className="text-sm font-bold text-slate-700">{viewingReport.occurrence_time || "-"}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-white rounded-xl shadow-sm"><MapPin size={16} className="text-rose-500" /></div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase text-slate-400">Lokasi</p>
+                        <p className="text-sm font-bold text-slate-700">{viewingReport.location || "-"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Deskripsi */}
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Deskripsi Kejadian</p>
+                    <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-medium text-slate-700 leading-relaxed whitespace-pre-wrap">
+                      {viewingReport.description || "Tidak ada deskripsi yang diberikan."}
+                    </div>
+                  </div>
+
+                  {/* Bukti (Evidence) */}
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Bukti Lampiran</p>
+                    {viewingReport.evidence_url ? (
+                      <div className="relative group rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 inline-block">
+                        {/* Render Gambar Langsung */}
+                        <img 
+                          src={viewingReport.evidence_url} 
+                          alt="Bukti Insiden" 
+                          className="max-h-80 w-auto object-contain rounded-2xl"
+                          onError={(e) => {
+                             // Fallback jika URL bukan gambar langsung (misal: PDF/Doc)
+                             e.target.style.display = 'none';
+                             e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                        {/* Fallback & Overlay Link */}
+                        <a 
+                          href={viewingReport.evidence_url} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ display: 'none' }} // Akan di-override 'flex' oleh onError jika error gambar
+                        >
+                          <span className="flex items-center gap-2 px-4 py-2 bg-white text-slate-800 rounded-xl text-sm font-bold shadow-lg">
+                            Buka Resolusi Penuh/File <ExternalLink size={16} />
+                          </span>
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="p-5 bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-sm font-medium text-slate-400 text-center">
+                        Tidak ada bukti gambar/dokumen yang dilampirkan.
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
