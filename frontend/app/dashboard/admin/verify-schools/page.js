@@ -1,10 +1,12 @@
 "use client";
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building2, CheckCircle, XCircle, Search, 
   Loader2, Mail, MapPin, Eye, Globe, User, X,
   Check, AlertTriangle, ChevronLeft, ChevronRight, Filter
 } from 'lucide-react';
+import { fetchInstance } from "@/lib/fetchInstance";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function VerifySchoolsPage() {
   const [schools, setSchools] = useState([]);
@@ -17,16 +19,24 @@ export default function VerifySchoolsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+  const [pagination, setPagination] = useState(null);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   // State Modal Konfirmasi
   const [confirmAction, setConfirmAction] = useState({ show: false, id: null, name: '', type: '' });
 
-  const fetchSchools = async () => {
+  const fetchSchools = async ({ page = 1, search = "", status = "all" } = {}) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/verify-school'); 
-      const json = await res.json();
-      if (json.success) setSchools(json.data);
+      const queryParams = new URLSearchParams({
+        page: String(page),
+        pageSize: String(itemsPerPage),
+        search,
+        status,
+      });
+      const json = await fetchInstance(`/api/admin/verify-school?${queryParams.toString()}`);
+      setSchools(json.data || []);
+      setPagination(json.pagination || null);
     } catch (err) {
       console.error("Gagal load data", err);
     } finally {
@@ -34,30 +44,13 @@ export default function VerifySchoolsPage() {
     }
   };
 
-  useEffect(() => { fetchSchools(); }, []);
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchSchools({ page: 1, search: debouncedSearchTerm, status: statusFilter });
+  }, [debouncedSearchTerm, statusFilter]);
 
-  // Logika Filtering & Searching
-  const filteredSchools = useMemo(() => {
-    return schools.filter(school => {
-      const matchesSearch = 
-        school.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        school.admin_email?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesStatus = 
-        statusFilter === "all" ? true : 
-        statusFilter === "verified" ? school.is_verified === true : 
-        school.is_verified === false;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [schools, searchTerm, statusFilter]);
-
-  // Pagination Data
-  const totalPages = Math.ceil(filteredSchools.length / itemsPerPage);
-  const currentData = filteredSchools.slice(
-    (currentPage - 1) * itemsPerPage, 
-    currentPage * itemsPerPage
-  );
+  const totalPages = pagination?.totalPages || 1;
+  const currentData = schools;
 
   // FUNGSI AKSI (FIXED BUG)
   const executeAction = async () => {
@@ -81,7 +74,7 @@ export default function VerifySchoolsPage() {
       if (res.ok) {
         setConfirmAction({ show: false, id: null, name: '', type: '' });
         setSelectedSchool(null);
-        await fetchSchools(); // Refresh data tabel
+        await fetchSchools({ page: currentPage, search: debouncedSearchTerm, status: statusFilter });
       } else {
         alert(result.message || "Gagal memproses perubahan");
       }
@@ -165,7 +158,7 @@ export default function VerifySchoolsPage() {
       <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tighter">Verifikasi Sekolah</h1>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Total {filteredSchools.length} Sekolah Terdaftar</p>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Total {pagination?.totalData || 0} Sekolah Terdaftar</p>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
@@ -247,17 +240,17 @@ export default function VerifySchoolsPage() {
           <div className="p-6 bg-slate-50/50 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {currentPage} of {totalPages}</p>
             <div className="flex items-center gap-2">
-              <button onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all">
+              <button onClick={() => { const page = Math.max(currentPage - 1, 1); setCurrentPage(page); fetchSchools({ page, search: debouncedSearchTerm, status: statusFilter }); }} disabled={currentPage === 1} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all">
                 <ChevronLeft size={18} />
               </button>
               <div className="flex gap-1">
                 {[...Array(totalPages)].map((_, i) => (
-                  <button key={i} onClick={() => setCurrentPage(i + 1)} className={`w-10 h-10 rounded-xl text-xs font-black transition-all border ${currentPage === i + 1 ? 'bg-[#00adb5] text-white border-[#00adb5] shadow-lg shadow-[#00adb5]/20' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}>
+                  <button key={i} onClick={() => { setCurrentPage(i + 1); fetchSchools({ page: i + 1, search: debouncedSearchTerm, status: statusFilter }); }} className={`w-10 h-10 rounded-xl text-xs font-black transition-all border ${currentPage === i + 1 ? 'bg-[#00adb5] text-white border-[#00adb5] shadow-lg shadow-[#00adb5]/20' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}>
                     {i + 1}
                   </button>
                 ))}
               </div>
-              <button onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all">
+              <button onClick={() => { const page = Math.min(currentPage + 1, totalPages); setCurrentPage(page); fetchSchools({ page, search: debouncedSearchTerm, status: statusFilter }); }} disabled={currentPage === totalPages} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all">
                 <ChevronRight size={18} />
               </button>
             </div>

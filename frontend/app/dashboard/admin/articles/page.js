@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -17,7 +17,11 @@ import {
   LayoutDashboard,
   TrendingUp,
   Loader2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { fetchInstance } from "@/lib/fetchInstance";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function ParentArticleManagement() {
   const router = useRouter();
@@ -27,24 +31,27 @@ export default function ParentArticleManagement() {
 
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const debouncedSearch = useDebounce(search, 500);
+  const pageSize = 10;
 
-  const fetchArticles = async () => {
+  const fetchArticles = async ({ page = 1, searchKeyword = "", status = "Semua" } = {}) => {
     try {
       setLoading(true);
 
-      const res = await fetch("/api/admin/articles", {
-        cache: "no-store",
+      const queryParams = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+        search: searchKeyword,
+        status,
       });
 
-      if (!res.ok) {
-        throw new Error("Gagal mengambil artikel");
-      }
-
-      const data = await res.json();
-
-      if (data.success) {
-        setArticles(data.data);
-      }
+      const data = await fetchInstance(`/api/admin/articles?${queryParams.toString()}`);
+      setArticles(data.data || []);
+      setSummary(data.summary || []);
+      setPagination(data.pagination || null);
     } catch (error) {
       console.error(error);
     } finally {
@@ -53,32 +60,20 @@ export default function ParentArticleManagement() {
   };
 
   useEffect(() => {
-    fetchArticles();
-  }, []);
+    setCurrentPage(1);
+    fetchArticles({ page: 1, searchKeyword: debouncedSearch, status: statusFilter });
+  }, [debouncedSearch, statusFilter]);
 
-  const filteredArticles = useMemo(() => {
-    return articles.filter((article) => {
-      const matchSearch = article.title
-        ?.toLowerCase()
-        .includes(search.toLowerCase());
-
-      const matchStatus =
-        statusFilter === "Semua"
-          ? true
-          : article.status === statusFilter;
-
-      return matchSearch && matchStatus;
-    });
-  }, [articles, search, statusFilter]);
+  const handlePageChange = (page) => {
+    if (page < 1 || page > (pagination?.totalPages || 1) || page === currentPage) return;
+    setCurrentPage(page);
+    fetchArticles({ page, searchKeyword: debouncedSearch, status: statusFilter });
+  };
 
   const stats = {
-    total: articles.length,
-    published: articles.filter(
-      (a) => a.status === "Published"
-    ).length,
-    drafts: articles.filter(
-      (a) => a.status === "Draft"
-    ).length,
+    total: summary.reduce((total, item) => total + item.count, 0),
+    published: summary.find((item) => item._id === "Published")?.count || 0,
+    drafts: summary.find((item) => item._id === "Draft")?.count || 0,
   };
 
   const handleDelete = async (id) => {
@@ -99,7 +94,7 @@ export default function ParentArticleManagement() {
       const data = await res.json();
 
       if (data.success) {
-        fetchArticles();
+        fetchArticles({ page: currentPage, searchKeyword: debouncedSearch, status: statusFilter });
       }
     } catch (error) {
       console.error(error);
@@ -130,7 +125,7 @@ export default function ParentArticleManagement() {
       const data = await res.json();
 
       if (data.success) {
-        fetchArticles();
+        fetchArticles({ page: currentPage, searchKeyword: debouncedSearch, status: statusFilter });
       }
     } catch (error) {
       console.error(error);
@@ -387,7 +382,7 @@ export default function ParentArticleManagement() {
 
               <tbody>
 
-                {filteredArticles.map((article) => (
+                {articles.map((article) => (
                   <tr
                     key={article._id}
                     className="border-b border-slate-50 hover:bg-slate-50/70 transition-all"
@@ -523,7 +518,7 @@ export default function ParentArticleManagement() {
                 ))}
 
                 {/* EMPTY */}
-                {filteredArticles.length === 0 && (
+                {articles.length === 0 && (
                   <tr>
                     <td
                       colSpan={7}
@@ -539,6 +534,15 @@ export default function ParentArticleManagement() {
             </table>
 
           </div>
+          {pagination && pagination.totalPages > 1 && (
+            <div className="p-6 bg-slate-50/50 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {currentPage} of {pagination.totalPages}</p>
+              <div className="flex items-center gap-2">
+                <button onClick={() => handlePageChange(currentPage - 1)} disabled={!pagination.hasPreviousPage} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-primary hover:text-white transition-all"><ChevronLeft size={18} /></button>
+                <button onClick={() => handlePageChange(currentPage + 1)} disabled={!pagination.hasNextPage} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-primary hover:text-white transition-all"><ChevronRight size={18} /></button>
+              </div>
+            </div>
+          )}
 
         </div>
 

@@ -7,25 +7,92 @@ if (!uri) {
   throw new Error("MONGODB_URI belum tersedia di environment");
 }
 
-export async function GET() {
+export async function GET(request) {
   let client;
 
   try {
+    const { searchParams } = new URL(request.url);
+    const currentPage = Number(searchParams.get("page")) || 1;
+    const pageSize = Number(searchParams.get("pageSize")) || 10;
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") || "Semua";
+    const skipData = (currentPage - 1) * pageSize;
+
     client = new MongoClient(uri);
 
     await client.connect();
 
     const db = client.db();
+    const matchFilter = {
+      ...(status && status !== "Semua" ? { status } : {}),
+      ...(search
+        ? {
+            title: {
+              $regex: search,
+              $options: "i",
+            },
+          }
+        : {}),
+    };
 
-    const articles = await db
+    const result = await db
       .collection("articles")
-      .find({})
-      .sort({ createdAt: -1 })
+      .aggregate([
+        {
+          $facet: {
+            data: [
+              { $match: matchFilter },
+              { $sort: { createdAt: -1 } },
+              { $skip: skipData },
+              { $limit: pageSize },
+            ],
+            totalData: [
+              { $match: matchFilter },
+              { $count: "count" },
+            ],
+            summary: [
+              {
+                $group: {
+                  _id: "$status",
+                  count: { $sum: 1 },
+                },
+              },
+            ],
+          },
+        },
+        {
+          $project: {
+            data: 1,
+            summary: 1,
+            totalData: { $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] },
+            totalPages: {
+              $ceil: {
+                $divide: [{ $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] }, pageSize],
+              },
+            },
+            hasNextPage: {
+              $gt: [{ $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] }, currentPage * pageSize],
+            },
+            hasPreviousPage: { $gt: [currentPage, 1] },
+          },
+        },
+      ])
       .toArray();
+
+    const payload = result[0] || { data: [], totalData: 0, summary: [] };
 
     return NextResponse.json({
       success: true,
-      data: articles,
+      data: payload.data,
+      summary: payload.summary,
+      pagination: {
+        currentPage,
+        pageSize,
+        totalData: payload.totalData,
+        totalPages: payload.totalPages,
+        hasNextPage: payload.hasNextPage,
+        hasPreviousPage: payload.hasPreviousPage,
+      },
     });
   } catch (error) {
     console.error("GET ARTICLES ERROR:", error);

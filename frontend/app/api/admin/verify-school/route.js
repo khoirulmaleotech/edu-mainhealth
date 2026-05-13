@@ -11,9 +11,33 @@ export async function GET(request) {
   try {
     await client.connect();
     const db = client.db();
+    const { searchParams } = new URL(request.url);
+    const currentPage = Number(searchParams.get("page")) || 1;
+    const pageSize = Number(searchParams.get("pageSize")) || 20;
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") || "all";
+    const skipData = (currentPage - 1) * pageSize;
+
+    const statusMatch =
+      status === "verified"
+        ? { is_verified: true }
+        : status === "pending"
+          ? { is_verified: { $ne: true } }
+          : {};
     
-    // Hilangkan filter is_verified agar SEMUA sekolah muncul [cite: 87, 100]
-    const schools = await db.collection('schools').aggregate([
+    const searchMatch = search
+      ? {
+          $or: [
+            { name: { $regex: search, $options: "i" } },
+            { address: { $regex: search, $options: "i" } },
+            { "admin_info.email": { $regex: search, $options: "i" } },
+            { "admin_info.fullname": { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
+    const result = await db.collection('schools').aggregate([
+      { $match: statusMatch },
       {
         $lookup: {
           from: "users",
@@ -28,22 +52,60 @@ export async function GET(request) {
           preserveNullAndEmptyArrays: true 
         }
       },
+      { $match: searchMatch },
       {
-        $project: {
-          name: 1,
-          address: 1,
-          phone: 1,
-          website: 1,
-          is_verified: 1, // Penting untuk indikator di tabel [cite: 171]
-          createdAt: 1,
-          admin_name: "$admin_info.fullname",
-          admin_email: "$admin_info.email"
+        $facet: {
+          data: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skipData },
+            { $limit: pageSize },
+            {
+              $project: {
+                name: 1,
+                address: 1,
+                phone: 1,
+                website: 1,
+                is_verified: 1,
+                createdAt: 1,
+                admin_name: "$admin_info.fullname",
+                admin_email: "$admin_info.email"
+              }
+            },
+          ],
+          totalData: [{ $count: "count" }]
         }
       },
-      { $sort: { createdAt: -1 } }
+      {
+        $project: {
+          data: 1,
+          totalData: { $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] },
+          totalPages: {
+            $ceil: {
+              $divide: [{ $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] }, pageSize],
+            },
+          },
+          hasNextPage: {
+            $gt: [{ $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] }, currentPage * pageSize],
+          },
+          hasPreviousPage: { $gt: [currentPage, 1] },
+        }
+      }
     ]).toArray();
 
-    return NextResponse.json({ success: true, data: schools });
+    const payload = result[0] || { data: [], totalData: 0 };
+
+    return NextResponse.json({
+      success: true,
+      data: payload.data,
+      pagination: {
+        currentPage,
+        pageSize,
+        totalData: payload.totalData,
+        totalPages: payload.totalPages,
+        hasNextPage: payload.hasNextPage,
+        hasPreviousPage: payload.hasPreviousPage,
+      },
+    });
   } catch (error) {
     return NextResponse.json({ message: "Gagal mengambil data" }, { status: 500 });
   }

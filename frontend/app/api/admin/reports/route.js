@@ -5,8 +5,14 @@ import { authOptions } from "../../auth/[...nextauth]/authOptions";
 
 const uri = process.env.MONGODB_URI;
 const allowedAdminRoles = ["admin", "superadmin", "school_admin"];
+const statusAlias = {
+  pending: ["pending", "Pending"],
+  reviewing: ["reviewing", "In Progress"],
+  resolved: ["resolved", "Resolved"],
+  rejected: ["rejected"],
+};
 
-export async function GET() {
+export async function GET(request) {
   const client = new MongoClient(uri);
   try {
     const session = await getServerSession(authOptions);
@@ -19,11 +25,36 @@ export async function GET() {
 
     await client.connect();
     const db = client.db();
+    const { searchParams } = new URL(request.url);
+    const currentPage = Number(searchParams.get("page")) || 1;
+    const pageSize = Number(searchParams.get("pageSize")) || 10;
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") || "all";
+    const skipData = (currentPage - 1) * pageSize;
 
-    const reports = await db
+    const statusMatch =
+      status && status !== "all"
+        ? {
+            status: {
+              $in: statusAlias[status] || [status],
+            },
+          }
+        : {};
+
+    const searchMatch = search
+      ? {
+          $or: [
+            { incident_type: { $regex: search, $options: "i" } },
+            { description: { $regex: search, $options: "i" } },
+            { location: { $regex: search, $options: "i" } },
+            { "reporter.fullname": { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
+    const result = await db
       .collection("incident_reports")
       .aggregate([
-        { $sort: { created_at: -1 } },
         {
           $lookup: {
             from: "users",
@@ -34,25 +65,84 @@ export async function GET() {
         },
         { $unwind: { path: "$reporter", preserveNullAndEmptyArrays: true } },
         {
+          $facet: {
+            data: [
+              { $match: { ...statusMatch, ...searchMatch } },
+              { $sort: { created_at: -1 } },
+              { $skip: skipData },
+              { $limit: pageSize },
+              {
+                $project: {
+                  incident_type: 1,
+                  location: 1,
+                  occurrence_time: 1,
+                  description: 1,
+                  evidence_url: 1,
+                  created_at: 1,
+                  reporter: {
+                    fullname: "$reporter.fullname",
+                    role: "$reporter.role",
+                    email: "$reporter.email",
+                  },
+                  reporter_fullname: "$reporter.fullname",
+                  reporter_email: "$reporter.email",
+                  status: 1,
+                },
+              },
+            ],
+            totalData: [
+              { $match: { ...statusMatch, ...searchMatch } },
+              { $count: "count" },
+            ],
+            statusSummary: [
+              {
+                $group: {
+                  _id: "$status",
+                  count: {
+                    $sum: 1,
+                  },
+                },
+              },
+            ],
+          }
+        },
+        {
           $project: {
-            incident_type: 1,
-            location: 1,
-            occurrence_time: 1,
-            description: 1,
-            evidence_url: 1,
-            created_at: 1,
-            reporter: {
-              fullname: "$reporter.fullname",
-              role: "$reporter.role",
-              email: "$reporter.email",
+            data: 1,
+            statusSummary: 1,
+            totalData: { $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] },
+            totalPages: {
+              $ceil: {
+                $divide: [{ $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] }, pageSize],
+              },
             },
-            status: 1,
-          },
+            hasNextPage: {
+              $gt: [{ $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] }, currentPage * pageSize],
+            },
+            hasPreviousPage: { $gt: [currentPage, 1] },
+          }
         },
       ])
       .toArray();
 
-    return NextResponse.json({ success: true, reports });
+    const payload = result[0] || { data: [], totalData: 0 };
+
+    return NextResponse.json({
+      success: true,
+      data: payload.data,
+      reports: payload.data,
+      summary: {
+        status: payload.statusSummary || [],
+      },
+      pagination: {
+        currentPage,
+        pageSize,
+        totalData: payload.totalData,
+        totalPages: payload.totalPages,
+        hasNextPage: payload.hasNextPage,
+        hasPreviousPage: payload.hasPreviousPage,
+      },
+    });
   } catch (error) {
     console.error("ADMIN_REPORTS_ERROR:", error);
     return NextResponse.json(

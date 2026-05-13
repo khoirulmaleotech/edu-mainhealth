@@ -1,10 +1,13 @@
 "use client";
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, Search, Loader2, Mail, Trash2, X,
   UserCheck, UserX, Filter, Eye, Calendar, 
-  Building2, GraduationCap, School, HeartPulse, Home, ShieldCheck
+  Building2, GraduationCap, School, HeartPulse, Home, ShieldCheck,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
+import { fetchInstance } from "@/lib/fetchInstance";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function ManageUsersPage() {
   const [users, setUsers] = useState([]);
@@ -12,28 +15,37 @@ export default function ManageUsersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [selectedUser, setSelectedUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const pageSize = 20;
 
-  const fetchData = async () => {
+  const fetchData = async ({ page = 1, search = "", role = "all" } = {}) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/users');
-      const json = await res.json();
-      if (json.success) setUsers(json.data);
+      const queryParams = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+        search,
+        role,
+      });
+      const json = await fetchInstance(`/api/admin/users?${queryParams.toString()}`);
+      setUsers(json.data || []);
+      setPagination(json.pagination || null);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchData({ page: 1, search: debouncedSearchTerm, role: roleFilter });
+  }, [debouncedSearchTerm, roleFilter]);
 
-  const filteredUsers = useMemo(() => {
-    return users.filter(u => {
-      const name = u.fullname?.toLowerCase() || "";
-      const email = u.email?.toLowerCase() || "";
-      const matchesSearch = name.includes(searchTerm.toLowerCase()) || email.includes(searchTerm.toLowerCase());
-      const matchesRole = roleFilter === "all" ? true : u.role === roleFilter;
-      return matchesSearch && matchesRole;
-    });
-  }, [users, searchTerm, roleFilter]);
+  const handlePageChange = (page) => {
+    if (page < 1 || page > (pagination?.totalPages || 1) || page === currentPage) return;
+    setCurrentPage(page);
+    fetchData({ page, search: debouncedSearchTerm, role: roleFilter });
+  };
 
   const getRoleBadge = (role) => {
     const styles = {
@@ -148,9 +160,11 @@ export default function ManageUsersPage() {
             <tbody className="divide-y divide-slate-200">
               {loading ? (
                 <tr><td colSpan="5" className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-[#00adb5]" size={40} /></td></tr>
-              ) : filteredUsers.map((user, index) => (
+              ) : users.length === 0 ? (
+                <tr><td colSpan="5" className="p-20 text-center text-slate-400 font-bold italic text-sm">Data tidak ditemukan</td></tr>
+              ) : users.map((user, index) => (
                 <tr key={user._id} className="hover:bg-slate-50/50 transition-all">
-                  <td className="px-6 py-6 border border-slate-200 text-center text-xs font-black text-slate-300">{index + 1}</td>
+                  <td className="px-6 py-6 border border-slate-200 text-center text-xs font-black text-slate-300">{((pagination?.currentPage || currentPage) - 1) * pageSize + index + 1}</td>
                   <td className="px-6 py-6 border border-slate-200 font-black text-slate-800 text-sm">{user.fullname}</td>
                   <td className="px-6 py-6 border border-slate-200">
                     <div className="flex justify-center">{getRoleBadge(user.role)}</div>
@@ -174,6 +188,15 @@ export default function ManageUsersPage() {
             </tbody>
           </table>
         </div>
+        {!loading && pagination && pagination.totalPages > 1 && (
+          <div className="p-6 bg-slate-50/50 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {currentPage} of {pagination.totalPages}</p>
+            <div className="flex items-center gap-2">
+              <button onClick={() => handlePageChange(currentPage - 1)} disabled={!pagination.hasPreviousPage} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all"><ChevronLeft size={18} /></button>
+              <button onClick={() => handlePageChange(currentPage + 1)} disabled={!pagination.hasNextPage} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all"><ChevronRight size={18} /></button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

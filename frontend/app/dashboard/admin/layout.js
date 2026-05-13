@@ -16,6 +16,7 @@ export default function AdminLayout({ children }) {
 
   const menuItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard/admin' },
+    { name: 'Antrean Verifikasi', icon: <ShieldCheck size={20} />, path: '/dashboard/admin/verification-queue' },
     { name: 'Verifikasi Sekolah', icon: <Building2 size={20} />, path: '/dashboard/admin/verify-schools' },
     { name: 'Verifikasi Psikolog', icon: <ShieldCheck size={20} />, path: '/dashboard/admin/verify-psychologist' },
     { name: 'Manajemen User', icon: <Users size={20} />, path: '/dashboard/admin/users' },

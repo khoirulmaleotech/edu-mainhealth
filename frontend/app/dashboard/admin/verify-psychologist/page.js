@@ -1,10 +1,12 @@
 "use client";
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, CheckCircle, XCircle, Search, 
   Loader2, Mail, User, Eye, X, Check, AlertTriangle, 
   ChevronLeft, ChevronRight, Filter, Calendar
 } from 'lucide-react';
+import { fetchInstance } from "@/lib/fetchInstance";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export default function VerifyPsychologistPage() {
   const [data, setData] = useState([]);
@@ -14,35 +16,41 @@ export default function VerifyPsychologistPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
   const itemsPerPage = 20;
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const [confirmAction, setConfirmAction] = useState({ show: false, id: null, name: '', type: '' });
 
-  const fetchData = async () => {
+  const fetchData = async ({ page = 1, search = "", status = "all" } = {}) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/verify-psychologist');
-      const json = await res.json();
-      if (json.success) setData(json.data);
+      const queryParams = new URLSearchParams({
+        page: String(page),
+        pageSize: String(itemsPerPage),
+        search,
+        status,
+      });
+      const json = await fetchInstance(`/api/admin/verify-psychologist?${queryParams.toString()}`);
+      setData(json.data || []);
+      setPagination(json.pagination || null);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchData({ page: 1, search: debouncedSearchTerm, status: statusFilter });
+  }, [debouncedSearchTerm, statusFilter]);
 
-  const filteredData = useMemo(() => {
-    return data.filter(item => {
-      const matchesSearch = item.fullname.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                            item.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === "all" ? true : 
-                            statusFilter === "verified" ? item.is_verified === true : 
-                            item.is_verified === false;
-      return matchesSearch && matchesStatus;
-    });
-  }, [data, searchTerm, statusFilter]);
+  const totalPages = pagination?.totalPages || 1;
+  const currentData = data;
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const currentData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages || page === currentPage) return;
+    setCurrentPage(page);
+    fetchData({ page, search: debouncedSearchTerm, status: statusFilter });
+  };
 
   const executeAction = async () => {
     const { id, type } = confirmAction;
@@ -56,7 +64,7 @@ export default function VerifyPsychologistPage() {
       if (res.ok) {
         setConfirmAction({ show: false, id: null, name: '', type: '' });
         setSelectedItem(null);
-        fetchData();
+        fetchData({ page: currentPage, search: debouncedSearchTerm, status: statusFilter });
       }
     } catch (err) { alert("Kesalahan server"); }
     finally { setActionLoading(null); }
@@ -122,6 +130,8 @@ export default function VerifyPsychologistPage() {
             <tbody className="divide-y divide-slate-200">
               {loading ? (
                 <tr><td colSpan="5" className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-[#00adb5]" size={40} /></td></tr>
+              ) : currentData.length === 0 ? (
+                <tr><td colSpan="5" className="p-20 text-center text-slate-400 font-bold italic text-sm">Data tidak ditemukan</td></tr>
               ) : currentData.map((item, index) => (
                 <tr key={item._id} className="hover:bg-slate-50/50 transition-all">
                   <td className="px-6 py-6 border border-slate-200 text-center text-xs font-black text-slate-400">{(currentPage - 1) * itemsPerPage + index + 1}</td>
@@ -145,6 +155,15 @@ export default function VerifyPsychologistPage() {
             </tbody>
           </table>
         </div>
+        {!loading && pagination && pagination.totalPages > 1 && (
+          <div className="p-6 bg-slate-50/50 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {currentPage} of {pagination.totalPages}</p>
+            <div className="flex items-center gap-2">
+              <button onClick={() => handlePageChange(currentPage - 1)} disabled={!pagination.hasPreviousPage} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all"><ChevronLeft size={18} /></button>
+              <button onClick={() => handlePageChange(currentPage + 1)} disabled={!pagination.hasNextPage} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all"><ChevronRight size={18} /></button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
