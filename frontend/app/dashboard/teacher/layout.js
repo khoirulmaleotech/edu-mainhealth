@@ -134,10 +134,10 @@ function SidebarContent({ pathname, onNavigate }) {
         />
 
         <NavItem
-          href="/dashboard/teacher/reports"
+          href="/dashboard/teacher/emotional-reports"
           icon={<AlertTriangle size={20} />}
           label="Alert Kasus"
-          active={pathname === "/dashboard/teacher/reports"}
+          active={pathname === "/dashboard/teacher/emotional-reports"}
           onNavigate={onNavigate}
         />
 

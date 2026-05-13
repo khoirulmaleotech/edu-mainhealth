@@ -3,10 +3,12 @@ import { MongoClient, ObjectId } from "mongodb";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/authOptions";
 
+export const dynamic = 'force-dynamic';
+
 const uri = process.env.MONGODB_URI;
 const allowedAdminRoles = ["admin", "superadmin", "school_admin"];
 
-export async function GET() {
+export async function GET(request) {
   const client = new MongoClient(uri);
   try {
     const session = await getServerSession(authOptions);
@@ -17,13 +19,23 @@ export async function GET() {
       );
     }
 
+    const { searchParams } = new URL(request.url);
+    const action = searchParams.get("action");
+
     await client.connect();
     const db = client.db();
 
-    const reports = await db
-      .collection("incident_reports")
-      .aggregate([
-        { $sort: { created_at: -1 } },
+    // ─────────────────────────────────────────────────────────────
+    // SUB-ROUTE: Ambil SATU Detail Laporan Lengkap
+    // ─────────────────────────────────────────────────────────────
+    if (action === "detail") {
+      const id = searchParams.get("id");
+      if (!id || !ObjectId.isValid(id)) {
+        return NextResponse.json({ success: false, message: "ID tidak valid" }, { status: 400 });
+      }
+
+      const detailPipeline = [
+        { $match: { _id: new ObjectId(id) } },
         {
           $lookup: {
             from: "users",
@@ -41,20 +53,96 @@ export async function GET() {
             description: 1,
             evidence_url: 1,
             created_at: 1,
+            status: 1,
             reporter: {
               fullname: "$reporter.fullname",
               role: "$reporter.role",
               email: "$reporter.email",
             },
-            status: 1,
           },
         },
-      ])
-      .toArray();
+      ];
 
-    return NextResponse.json({ success: true, reports });
+      const reportDetail = await db.collection("incident_reports").aggregate(detailPipeline).toArray();
+      
+      if (!reportDetail.length) {
+        return NextResponse.json({ success: false, message: "Laporan tidak ditemukan" }, { status: 404 });
+      }
+
+      return NextResponse.json({ success: true, report: reportDetail[0] });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ROUTE UTAMA: Ambil Daftar Laporan (Pagination & Search)
+    // ─────────────────────────────────────────────────────────────
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    const search = (searchParams.get("search") || "").toLowerCase().trim();
+    const skip = (page - 1) * limit;
+
+    const pipeline = [];
+
+    // 1. Lookup ke users untuk mendapatkan nama pelapor
+    pipeline.push({
+      $lookup: {
+        from: "users",
+        localField: "reporter_id",
+        foreignField: "_id",
+        as: "reporter",
+      },
+    });
+    pipeline.push({ $unwind: { path: "$reporter", preserveNullAndEmptyArrays: true } });
+
+    // 2. Logika Pencarian Server-Side
+    if (search) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { incident_type: { $regex: search, $options: "i" } },
+            { location: { $regex: search, $options: "i" } },
+            { status: { $regex: search, $options: "i" } },
+            { "reporter.fullname": { $regex: search, $options: "i" } }
+          ]
+        }
+      });
+    }
+
+    // 3. Hitung total dokumen untuk Pagination
+    const countPipeline = [...pipeline, { $count: "total" }];
+    const countResult = await db.collection("incident_reports").aggregate(countPipeline).toArray();
+    const totalFiltered = countResult[0]?.total || 0;
+    const totalPages = Math.ceil(totalFiltered / limit);
+
+    // 4. Sorting, Skip, dan Limit
+    pipeline.push({ $sort: { created_at: -1 } });
+    pipeline.push({ $skip: skip });
+    pipeline.push({ $limit: limit });
+
+    // 5. Project field HANYA untuk tampilan tabel (lebih ringan)
+    pipeline.push({
+      $project: {
+        incident_type: 1,
+        location: 1,
+        created_at: 1,
+        status: 1,
+        reporter: { fullname: "$reporter.fullname" },
+      },
+    });
+
+    const reports = await db.collection("incident_reports").aggregate(pipeline).toArray();
+
+    return NextResponse.json({ 
+      success: true, 
+      reports,
+      pagination: {
+        page,
+        limit,
+        total: totalFiltered,
+        totalPages: totalPages === 0 ? 1 : totalPages
+      }
+    });
   } catch (error) {
-    console.error("ADMIN_REPORTS_ERROR:", error);
+    console.error("ADMIN_REPORTS_GET_ERROR:", error);
     return NextResponse.json(
       { success: false, message: error.message },
       { status: 500 },
@@ -69,36 +157,25 @@ export async function PATCH(request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || !allowedAdminRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, message: "Akses ditolak" },
-        { status: 403 },
-      );
+      return NextResponse.json({ success: false, message: "Akses ditolak" }, { status: 403 });
     }
 
     const { id, status } = await request.json();
     if (!id || !status) {
-      return NextResponse.json(
-        { success: false, message: "ID dan status diperlukan" },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, message: "ID dan status diperlukan" }, { status: 400 });
     }
 
     await client.connect();
     const db = client.db();
-    await db
-      .collection("incident_reports")
-      .updateOne(
+    await db.collection("incident_reports").updateOne(
         { _id: new ObjectId(id) },
         { $set: { status, updated_at: new Date() } },
-      );
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("ADMIN_REPORT_UPDATE_ERROR:", error);
-    return NextResponse.json(
-      { success: false, message: error.message },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   } finally {
     await client.close();
   }
@@ -109,34 +186,23 @@ export async function DELETE(request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || !allowedAdminRoles.includes(session.user.role)) {
-      return NextResponse.json(
-        { success: false, message: "Akses ditolak" },
-        { status: 403 },
-      );
+      return NextResponse.json({ success: false, message: "Akses ditolak" }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
     if (!id) {
-      return NextResponse.json(
-        { success: false, message: "ID diperlukan" },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, message: "ID diperlukan" }, { status: 400 });
     }
 
     await client.connect();
     const db = client.db();
-    await db
-      .collection("incident_reports")
-      .deleteOne({ _id: new ObjectId(id) });
+    await db.collection("incident_reports").deleteOne({ _id: new ObjectId(id) });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("ADMIN_REPORT_DELETE_ERROR:", error);
-    return NextResponse.json(
-      { success: false, message: error.message },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   } finally {
     await client.close();
   }
