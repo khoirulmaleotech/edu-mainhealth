@@ -5,6 +5,8 @@ import { requireRole } from "@/lib/requiredRole";
 
 export const dynamic = "force-dynamic";
 
+const registeredStatuses = ["pending_review", "reviewed", "resolved"];
+
 export async function GET(request) {
   try {
     const session = await requireRole(["teacher"]);
@@ -190,6 +192,152 @@ export async function GET(request) {
     });
   } catch (error) {
     console.error("TEACHER_CRITICAL_CHAT_LOGS_ERROR:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message: error.message,
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+}
+
+export async function PATCH(request) {
+  try {
+    const session = await requireRole(["teacher"]);
+
+    const { id, status } = await request.json();
+
+    if (!id || !ObjectId.isValid(id)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "ID alert tidak valid",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    if (!registeredStatuses.includes(status)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Status tidak terdaftar",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
+    const client = await connectDB();
+    const database = client.db();
+
+    const teacherId = new ObjectId(session.user.id);
+    const alertId = new ObjectId(id);
+
+    const alert = await database.collection("critical_chat_logs").findOne({
+      _id: alertId,
+    });
+
+    if (!alert) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Alert tidak ditemukan",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+    const student = await database.collection("users").findOne({
+      _id:
+        alert.student_id instanceof ObjectId
+          ? alert.student_id
+          : new ObjectId(alert.student_id),
+      role: "student",
+      homeroom_teacher_id: teacherId,
+    });
+
+    if (!student) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Alert tidak ditemukan atau akses ditolak",
+        },
+        {
+          status: 404,
+        }
+      );
+    }
+
+    const now = new Date();
+    const updatePayload = {
+      status,
+      updatedAt: now,
+    };
+
+    if (status === "pending_review") {
+      updatePayload.reviewed_by = null;
+      updatePayload.reviewed_at = null;
+    } else {
+      updatePayload.reviewed_by = teacherId;
+      updatePayload.reviewed_at = now;
+    }
+
+    await database.collection("critical_chat_logs").updateOne(
+      {
+        _id: alertId,
+      },
+      {
+        $set: updatePayload,
+      }
+    );
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...alert,
+        ...updatePayload,
+        student_fullname: student.fullname,
+        student_email: student.email,
+        class_id: student.class_id,
+        class_name: student.class_name,
+      },
+    });
+  } catch (error) {
+    console.error("TEACHER_CRITICAL_CHAT_LOGS_UPDATE_ERROR:", error);
+
+    if (error.message === "UNAUTHORIZED") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Login diperlukan",
+        },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    if (error.message === "FORBIDDEN") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Akses ditolak",
+        },
+        {
+          status: 403,
+        }
+      );
+    }
 
     return NextResponse.json(
       {

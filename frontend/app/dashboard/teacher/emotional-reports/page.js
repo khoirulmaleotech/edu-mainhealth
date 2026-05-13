@@ -36,10 +36,12 @@ const statusOption = [
   { value: "resolved", label: "Resolved" }
 ]
 
+const reviewStatusOptions = statusOption.filter((option) => option.value !== "all");
+
 const severityOption = [
-  { value: "all", label: "Semua Status" },
-  { value: "high", label: "Pending Review" },
-  { value: "critical", label: "Reviewed" },
+  { value: "all", label: "Semua Severity" },
+  { value: "high", label: "High" },
+  { value: "critical", label: "Critical" },
 ]
 
 function formatDate(date) {
@@ -96,6 +98,8 @@ export default function TeacherWellbeingAlertsPage() {
   const [severityFilter, setSeverityFilter] = useState("all");
 
   const [selectedAlert, setSelectedAlert] = useState(null);
+  const [isStatusUpdating, setIsStatusUpdating] = useState(false);
+  const [statusUpdateError, setStatusUpdateError] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
   const [isAlertListLoading, setIsAlertListLoading] = useState(true);
@@ -172,6 +176,51 @@ export default function TeacherWellbeingAlertsPage() {
       status: statusFilter,
       severity: severityFilter,
     });
+  };
+
+  const handleStatusChange = async (status) => {
+    if (!selectedAlert || selectedAlert.status === status) {
+      return;
+    }
+
+    try {
+      setIsStatusUpdating(true);
+      setStatusUpdateError("");
+
+      const response = await fetchInstance(
+        "/api/teacher/students/wellbeing-alerts",
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            id: selectedAlert._id,
+            status,
+          }),
+        }
+      );
+
+      const updatedAlert = response?.data || {
+        ...selectedAlert,
+        status,
+      };
+
+      setSelectedAlert(updatedAlert);
+      setAlertList((previousAlertList) =>
+        previousAlertList.map((alert) =>
+          alert._id === selectedAlert._id ? updatedAlert : alert
+        )
+      );
+
+      fetchWellbeingAlerts({
+        page: currentPage,
+        search: debouncedSearchKeyword,
+        status: statusFilter,
+        severity: severityFilter,
+      });
+    } catch (error) {
+      setStatusUpdateError(error.message || "Gagal mengubah status alert");
+    } finally {
+      setIsStatusUpdating(false);
+    }
   };
 
   const visiblePaginationPages = useMemo(() => {
@@ -578,9 +627,21 @@ export default function TeacherWellbeingAlertsPage() {
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                     Status
                   </p>
-                  <p className="font-black text-slate-800 mt-2 uppercase">
-                    {selectedAlert.status?.replaceAll("_", " ")}
-                  </p>
+                  <div className="mt-2">
+                    <CustomSelect
+                      value={selectedAlert.status}
+                      onChange={handleStatusChange}
+                      options={reviewStatusOptions}
+                      placeholder="Pilih Status"
+                      disabled={isStatusUpdating}
+                      triggerClassName="bg-white"
+                    />
+                  </div>
+                  {statusUpdateError && (
+                    <p className="text-[11px] font-bold text-rose-500 mt-2">
+                      {statusUpdateError}
+                    </p>
+                  )}
                 </div>
 
                 <div className="bg-slate-50 rounded-[24px] p-5 border border-slate-100">
