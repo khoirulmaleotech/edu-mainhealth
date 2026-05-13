@@ -209,12 +209,6 @@ export async function POST(request) {
       );
     }
 
-    const currentUserMessage = {
-      role: "user",
-      content: String(finalInput),
-      createdAt: new Date(),
-    };
-
     const conversationForAI = [
       { role: "system", content: CHAT_SYSTEM_PROMPT },
       ...previousConversation.map((item) => ({
@@ -272,7 +266,6 @@ export async function POST(request) {
 
       const fullConversation = [
         ...previousConversation,
-        currentUserMessage,
         assistantMessage,
       ];
 
