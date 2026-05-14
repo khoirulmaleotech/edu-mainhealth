@@ -1,20 +1,27 @@
-import { NextResponse } from 'next/server';
-import { MongoClient, ObjectId } from 'mongodb';
+import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+import { connectDB } from "@/lib/mongodb";
 
-// ==========================================
-// 1. GET: Ambil Antrean Sekolah (Aggregated)
-// ==========================================
+function getPositiveInteger(value, fallback, max) {
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed < 1) return fallback;
+
+  return Math.min(parsed, max);
+}
+
+function getEscapedRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export async function GET(request) {
   try {
-    await client.connect();
-    const db = client.db();
+    const db = (await connectDB()).db();
     const { searchParams } = new URL(request.url);
-    const currentPage = Number(searchParams.get("page")) || 1;
-    const pageSize = Number(searchParams.get("pageSize")) || 20;
-    const search = searchParams.get("search") || "";
+    const currentPage = getPositiveInteger(searchParams.get("page"), 1, 100000);
+    const pageSize = getPositiveInteger(searchParams.get("pageSize"), 20, 100);
+    const search = (searchParams.get("search") || "").trim();
     const status = searchParams.get("status") || "all";
     const skipData = (currentPage - 1) * pageSize;
 
@@ -24,143 +31,150 @@ export async function GET(request) {
         : status === "pending"
           ? { is_verified: { $ne: true } }
           : {};
-    
-    const searchMatch = search
-      ? {
-          $or: [
-            { name: { $regex: search, $options: "i" } },
-            { address: { $regex: search, $options: "i" } },
-            { "admin_info.email": { $regex: search, $options: "i" } },
-            { "admin_info.fullname": { $regex: search, $options: "i" } },
-          ],
-        }
-      : {};
 
-    const result = await db.collection('schools').aggregate([
-      { $match: statusMatch },
-      {
-        $lookup: {
-          from: "users",
-          localField: "admin_id",
-          foreignField: "_id",
-          as: "admin_info"
-        }
-      },
-      {
-        $unwind: {
-          path: "$admin_info",
-          preserveNullAndEmptyArrays: true 
-        }
-      },
-      { $match: searchMatch },
-      {
-        $facet: {
-          data: [
-            { $sort: { createdAt: -1 } },
-            { $skip: skipData },
-            { $limit: pageSize },
-            {
-              $project: {
-                name: 1,
-                address: 1,
-                phone: 1,
-                website: 1,
-                is_verified: 1,
-                createdAt: 1,
-                admin_name: "$admin_info.fullname",
-                admin_email: "$admin_info.email"
-              }
-            },
-          ],
-          totalData: [{ $count: "count" }]
-        }
-      },
-      {
-        $project: {
-          data: 1,
-          totalData: { $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] },
-          totalPages: {
-            $ceil: {
-              $divide: [{ $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] }, pageSize],
+    const pipeline = [{ $match: statusMatch }];
+
+    if (search) {
+      const searchRegex = getEscapedRegex(search);
+      pipeline.push(
+        {
+          $lookup: {
+            from: "users",
+            localField: "admin_id",
+            foreignField: "_id",
+            pipeline: [{ $project: { _id: 0, email: 1, fullname: 1 } }],
+            as: "admin_info",
+          },
+        },
+        {
+          $set: {
+            admin_email: { $arrayElemAt: ["$admin_info.email", 0] },
+            admin_name: { $arrayElemAt: ["$admin_info.fullname", 0] },
+          },
+        },
+        {
+          $match: {
+            $or: [
+              { name: { $regex: searchRegex, $options: "i" } },
+              { address: { $regex: searchRegex, $options: "i" } },
+              { admin_email: { $regex: searchRegex, $options: "i" } },
+              { admin_name: { $regex: searchRegex, $options: "i" } },
+            ],
+          },
+        },
+      );
+    }
+
+    pipeline.push({
+      $facet: {
+        data: [
+          { $sort: { createdAt: -1, _id: -1 } },
+          { $skip: skipData },
+          { $limit: pageSize },
+          {
+            $lookup: {
+              from: "users",
+              localField: "admin_id",
+              foreignField: "_id",
+              pipeline: [{ $project: { _id: 0, email: 1 } }],
+              as: "admin_info",
             },
           },
-          hasNextPage: {
-            $gt: [{ $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] }, currentPage * pageSize],
+          {
+            $project: {
+              _id: 1,
+              name: 1,
+              address_preview: { $substrCP: [{ $ifNull: ["$address", ""] }, 0, 45] },
+              is_verified: 1,
+              admin_email: { $arrayElemAt: ["$admin_info.email", 0] },
+            },
           },
-          hasPreviousPage: { $gt: [currentPage, 1] },
-        }
-      }
-    ]).toArray();
+        ],
+        totalData: [{ $count: "count" }],
+      },
+    });
 
-    const payload = result[0] || { data: [], totalData: 0 };
+    const [payload = { data: [], totalData: [] }] = await db
+      .collection("schools")
+      .aggregate(pipeline, { allowDiskUse: false })
+      .toArray();
+
+    const totalData = payload.totalData?.[0]?.count || 0;
 
     return NextResponse.json({
       success: true,
-      data: payload.data,
+      data: payload.data || [],
       pagination: {
         currentPage,
         pageSize,
-        totalData: payload.totalData,
-        totalPages: payload.totalPages,
-        hasNextPage: payload.hasNextPage,
-        hasPreviousPage: payload.hasPreviousPage,
+        totalData,
+        totalPages: Math.ceil(totalData / pageSize),
+        hasNextPage: totalData > currentPage * pageSize,
+        hasPreviousPage: currentPage > 1,
       },
     });
   } catch (error) {
+    console.error("ADMIN_SCHOOLS_ERROR:", error);
     return NextResponse.json({ message: "Gagal mengambil data" }, { status: 500 });
   }
 }
 
-// ==========================================
-// 2. PATCH: Proses Approve atau Reject
-// ==========================================
 export async function PATCH(request) {
   try {
     const { id, action } = await request.json();
+    const schoolId = ObjectId.isValid(id) ? new ObjectId(id) : null;
 
-    if (!id || !action) {
+    if (!schoolId || !action) {
       return NextResponse.json({ message: "ID dan Action wajib diisi" }, { status: 400 });
     }
 
-    await client.connect();
-    const db = client.db();
+    const db = (await connectDB()).db();
 
-    if (action === 'approve') {
-      // Step A: Update status sekolah
-      await db.collection('schools').updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { is_verified: true, updatedAt: new Date() } }
+    if (action === "approve") {
+      await db.collection("schools").updateOne(
+        { _id: schoolId },
+        { $set: { is_verified: true, updatedAt: new Date() } },
       );
 
-      // Step B: Ambil admin_id dari sekolah tersebut
-      const school = await db.collection('schools').findOne({ _id: new ObjectId(id) });
+      const school = await db.collection("schools").findOne(
+        { _id: schoolId },
+        { projection: { admin_id: 1 } },
+      );
 
-      // Step C: Aktifkan user terkait agar bisa login
-      if (school && school.admin_id) {
-        await db.collection('users').updateOne(
-          { _id: new ObjectId(school.admin_id) },
-          { $set: { is_verified: true } }
+      if (school?.admin_id) {
+        const adminId = ObjectId.isValid(school.admin_id)
+          ? new ObjectId(school.admin_id)
+          : school.admin_id;
+
+        await db.collection("users").updateOne(
+          { _id: adminId },
+          { $set: { is_verified: true } },
         );
       }
 
       return NextResponse.json({ success: true, message: "Sekolah & Admin berhasil diaktifkan" });
+    }
 
-    } else if (action === 'reject') {
-      // Ambil data sekolah dulu untuk hapus user terkait
-      const school = await db.collection('schools').findOne({ _id: new ObjectId(id) });
-      
-      if (school && school.admin_id) {
-        await db.collection('users').deleteOne({ _id: new ObjectId(school.admin_id) });
+    if (action === "reject") {
+      const school = await db.collection("schools").findOne(
+        { _id: schoolId },
+        { projection: { admin_id: 1 } },
+      );
+
+      if (school?.admin_id) {
+        const adminId = ObjectId.isValid(school.admin_id)
+          ? new ObjectId(school.admin_id)
+          : school.admin_id;
+
+        await db.collection("users").deleteOne({ _id: adminId });
       }
-      
-      // Hapus data sekolah
-      await db.collection('schools').deleteOne({ _id: new ObjectId(id) });
+
+      await db.collection("schools").deleteOne({ _id: schoolId });
 
       return NextResponse.json({ success: true, message: "Pendaftaran dihapus permanen" });
     }
 
     return NextResponse.json({ message: "Action tidak valid" }, { status: 400 });
-
   } catch (error) {
     console.error("PATCH_SCHOOL_ERR:", error);
     return NextResponse.json({ message: "Terjadi kesalahan server" }, { status: 500 });
