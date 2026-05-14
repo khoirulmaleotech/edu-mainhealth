@@ -1,146 +1,150 @@
 import { NextResponse } from "next/server";
-import { MongoClient, ObjectId } from "mongodb";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth/[...nextauth]/authOptions";
 
-const uri = process.env.MONGODB_URI;
-const allowedAdminRoles = ["admin", "superadmin", "school_admin"];
-const statusAlias = {
-  pending: ["pending", "Pending"],
-  reviewing: ["reviewing", "In Progress"],
-  resolved: ["resolved", "Resolved"],
-  rejected: ["rejected"],
+import { connectDB } from "@/lib/mongodb";
+
+import {
+  getEscapedRegex,
+  getStatusMatch,
+  reporterLookupStage,
+  reporterNameStage,
+  requireAdminSession,
+  toObjectId,
+} from "./_utils";
+
+const pageProjection = {
+  _id: 1,
+  reporter_id: 1,
+  incident_type: 1,
+  location: 1,
+  created_at: 1,
+  status: 1,
 };
 
+function getPositiveInteger(value, fallback, max) {
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed < 1) return fallback;
+
+  return Math.min(parsed, max);
+}
+
+function buildListPipeline({ currentPage, pageSize, search, status }) {
+  const skipData = (currentPage - 1) * pageSize;
+  const statusMatch = getStatusMatch(status);
+  const normalizedSearch = search.trim();
+
+  if (!normalizedSearch) {
+    return [
+      { $match: statusMatch },
+      {
+        $facet: {
+          data: [
+            { $sort: { created_at: -1, _id: -1 } },
+            { $skip: skipData },
+            { $limit: pageSize },
+            { $project: pageProjection },
+            reporterLookupStage,
+            reporterNameStage,
+            {
+              $project: {
+                _id: 1,
+                incident_type: 1,
+                location: 1,
+                created_at: 1,
+                status: 1,
+                reporter_fullname: 1,
+              },
+            },
+          ],
+          totalData: [{ $count: "count" }],
+        },
+      },
+    ];
+  }
+
+  const searchRegex = getEscapedRegex(normalizedSearch);
+
+  return [
+    { $match: statusMatch },
+    {
+      $project: {
+        ...pageProjection,
+        description: 1,
+      },
+    },
+    reporterLookupStage,
+    reporterNameStage,
+    {
+      $match: {
+        $or: [
+          { incident_type: { $regex: searchRegex, $options: "i" } },
+          { description: { $regex: searchRegex, $options: "i" } },
+          { location: { $regex: searchRegex, $options: "i" } },
+          { reporter_fullname: { $regex: searchRegex, $options: "i" } },
+        ],
+      },
+    },
+    {
+      $facet: {
+        data: [
+          { $sort: { created_at: -1, _id: -1 } },
+          { $skip: skipData },
+          { $limit: pageSize },
+          {
+            $project: {
+              _id: 1,
+              incident_type: 1,
+              location: 1,
+              created_at: 1,
+              status: 1,
+              reporter_fullname: 1,
+            },
+          },
+        ],
+        totalData: [{ $count: "count" }],
+      },
+    },
+  ];
+}
+
 export async function GET(request) {
-  const client = new MongoClient(uri);
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !allowedAdminRoles.includes(session.user.role)) {
+    const session = await requireAdminSession();
+    if (!session) {
       return NextResponse.json(
         { success: false, message: "Akses ditolak" },
         { status: 403 },
       );
     }
 
-    await client.connect();
-    const db = client.db();
+    const db = (await connectDB()).db();
     const { searchParams } = new URL(request.url);
-    const currentPage = Number(searchParams.get("page")) || 1;
-    const pageSize = Number(searchParams.get("pageSize")) || 10;
+    const currentPage = getPositiveInteger(searchParams.get("page"), 1, 100000);
+    const requestedPageSize = searchParams.get("pageSize") || searchParams.get("limit");
+    const pageSize = getPositiveInteger(requestedPageSize, 10, 100);
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "all";
-    const skipData = (currentPage - 1) * pageSize;
 
-    const statusMatch =
-      status && status !== "all"
-        ? {
-          status: {
-            $in: statusAlias[status] || [status],
-          },
-        }
-        : {};
-
-    const searchMatch = search
-      ? {
-        $or: [
-          { incident_type: { $regex: search, $options: "i" } },
-          { description: { $regex: search, $options: "i" } },
-          { location: { $regex: search, $options: "i" } },
-          { "reporter.fullname": { $regex: search, $options: "i" } },
-        ],
-      }
-      : {};
-
-    const result = await db
+    const [payload = { data: [], totalData: [] }] = await db
       .collection("incident_reports")
-      .aggregate([
-        {
-          $lookup: {
-            from: "users",
-            localField: "reporter_id",
-            foreignField: "_id",
-            as: "reporter",
-          },
-        },
-        { $unwind: { path: "$reporter", preserveNullAndEmptyArrays: true } },
-        {
-          $facet: {
-            data: [
-              { $match: { ...statusMatch, ...searchMatch } },
-              { $sort: { created_at: -1 } },
-              { $skip: skipData },
-              { $limit: pageSize },
-              {
-                $project: {
-                  incident_type: 1,
-                  location: 1,
-                  occurrence_time: 1,
-                  description: 1,
-                  evidence_url: 1,
-                  created_at: 1,
-                  reporter: {
-                    fullname: "$reporter.fullname",
-                    role: "$reporter.role",
-                    email: "$reporter.email",
-                  },
-                  reporter_fullname: "$reporter.fullname",
-                  reporter_email: "$reporter.email",
-                  status: 1,
-                },
-              },
-            ],
-            totalData: [
-              { $match: { ...statusMatch, ...searchMatch } },
-              { $count: "count" },
-            ],
-            statusSummary: [
-              {
-                $group: {
-                  _id: "$status",
-                  count: {
-                    $sum: 1,
-                  },
-                },
-              },
-            ],
-          }
-        },
-        {
-          $project: {
-            data: 1,
-            statusSummary: 1,
-            totalData: { $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] },
-            totalPages: {
-              $ceil: {
-                $divide: [{ $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] }, pageSize],
-              },
-            },
-            hasNextPage: {
-              $gt: [{ $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] }, currentPage * pageSize],
-            },
-            hasPreviousPage: { $gt: [currentPage, 1] },
-          }
-        },
-      ])
+      .aggregate(buildListPipeline({ currentPage, pageSize, search, status }), {
+        allowDiskUse: false,
+      })
       .toArray();
 
-    const payload = result[0] || { data: [], totalData: 0 };
+    const totalData = payload.totalData?.[0]?.count || 0;
+    const totalPages = Math.ceil(totalData / pageSize);
 
     return NextResponse.json({
       success: true,
-      data: payload.data,
-      reports: payload.data,
-      summary: {
-        status: payload.statusSummary || [],
-      },
+      data: payload.data || [],
       pagination: {
         currentPage,
         pageSize,
-        totalData: payload.totalData,
-        totalPages: payload.totalPages,
-        hasNextPage: payload.hasNextPage,
-        hasPreviousPage: payload.hasPreviousPage,
+        totalData,
+        totalPages,
+        hasNextPage: totalData > currentPage * pageSize,
+        hasPreviousPage: currentPage > 1,
       },
     });
   } catch (error) {
@@ -149,16 +153,13 @@ export async function GET(request) {
       { success: false, message: error.message },
       { status: 500 },
     );
-  } finally {
-    await client.close();
   }
 }
 
 export async function PATCH(request) {
-  const client = new MongoClient(uri);
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !allowedAdminRoles.includes(session.user.role)) {
+    const session = await requireAdminSession();
+    if (!session) {
       return NextResponse.json(
         { success: false, message: "Akses ditolak" },
         { status: 403 },
@@ -166,19 +167,20 @@ export async function PATCH(request) {
     }
 
     const { id, status } = await request.json();
-    if (!id || !status) {
+    const reportId = toObjectId(id);
+
+    if (!reportId || !status) {
       return NextResponse.json(
         { success: false, message: "ID dan status diperlukan" },
         { status: 400 },
       );
     }
 
-    await client.connect();
-    const db = client.db();
+    const db = (await connectDB()).db();
     await db
       .collection("incident_reports")
       .updateOne(
-        { _id: new ObjectId(id) },
+        { _id: reportId },
         { $set: { status, updated_at: new Date() } },
       );
 
@@ -189,16 +191,13 @@ export async function PATCH(request) {
       { success: false, message: error.message },
       { status: 500 },
     );
-  } finally {
-    await client.close();
   }
 }
 
 export async function DELETE(request) {
-  const client = new MongoClient(uri);
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !allowedAdminRoles.includes(session.user.role)) {
+    const session = await requireAdminSession();
+    if (!session) {
       return NextResponse.json(
         { success: false, message: "Akses ditolak" },
         { status: 403 },
@@ -206,19 +205,19 @@ export async function DELETE(request) {
     }
 
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-    if (!id) {
+    const reportId = toObjectId(searchParams.get("id"));
+
+    if (!reportId) {
       return NextResponse.json(
         { success: false, message: "ID diperlukan" },
         { status: 400 },
       );
     }
 
-    await client.connect();
-    const db = client.db();
+    const db = (await connectDB()).db();
     await db
       .collection("incident_reports")
-      .deleteOne({ _id: new ObjectId(id) });
+      .deleteOne({ _id: reportId });
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -227,7 +226,5 @@ export async function DELETE(request) {
       { success: false, message: error.message },
       { status: 500 },
     );
-  } finally {
-    await client.close();
   }
 }

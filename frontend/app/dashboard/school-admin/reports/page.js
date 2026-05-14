@@ -31,7 +31,7 @@ export default function AdminReportsPage() {
     setIsFetching(true);
     setError(null);
     try {
-      const url = `/api/admin/reports?page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}`;
+      const url = `/api/admin/reports?page=${page}&pageSize=${limit}&search=${encodeURIComponent(debouncedSearch)}`;
       const res = await fetch(url);
       const json = await res.json();
       
@@ -60,7 +60,7 @@ export default function AdminReportsPage() {
     setIsDetailLoading(true);
     
     try {
-      const res = await fetch(`/api/admin/reports?action=detail&id=${id}`);
+      const res = await fetch(`/api/admin/reports/detail/${id}`);
       const json = await res.json();
       
       if (json.success) {
@@ -78,8 +78,13 @@ export default function AdminReportsPage() {
     }
   };
 
-  const reports = data?.reports || [];
-  const pagination = data?.pagination || { page: 1, totalPages: 1, total: 0 };
+  const reports = data?.data || data?.reports || [];
+  const pagination = {
+    page: data?.pagination?.currentPage || data?.pagination?.page || 1,
+    limit: data?.pagination?.pageSize || data?.pagination?.limit || limit,
+    total: data?.pagination?.totalData || data?.pagination?.total || 0,
+    totalPages: data?.pagination?.totalPages || 1,
+  };
 
   if (error && !data) {
     return (
@@ -179,7 +184,7 @@ export default function AdminReportsPage() {
                           {report.incident_type}
                         </td>
                         <td className="px-6 py-5 text-sm font-medium text-slate-600">
-                          {report.reporter?.fullname || "Anonim"}
+                          {report.reporter_fullname || report.reporter?.fullname || "Anonim"}
                         </td>
                         <td className="px-6 py-5 text-sm text-slate-600">
                           {report.location || "-"}
@@ -297,13 +302,15 @@ export default function AdminReportsPage() {
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3">Informasi Pelapor</p>
                       <div className="space-y-2">
                         <p className="text-sm font-bold text-slate-800">
-                          {viewingReport.reporter?.fullname || "Pelapor Anonim"}
+                          {viewingReport.reporter_fullname || viewingReport.reporter?.fullname || "Pelapor Anonim"}
                         </p>
-                        {viewingReport.reporter?.email && (
-                          <p className="text-xs font-medium text-slate-500">{viewingReport.reporter.email}</p>
+                        {(viewingReport.reporter_email || viewingReport.reporter?.email) && (
+                          <p className="text-xs font-medium text-slate-500">
+                            {viewingReport.reporter_email || viewingReport.reporter?.email}
+                          </p>
                         )}
                         <span className="inline-block px-2 py-0.5 bg-sky-100 text-sky-600 text-[10px] font-bold rounded uppercase">
-                          {viewingReport.reporter?.role || "Tidak diketahui"}
+                          {viewingReport.reporter_role || viewingReport.reporter?.role || "Tidak diketahui"}
                         </span>
                       </div>
                     </div>
