@@ -176,7 +176,6 @@ export default function AdminDashboardPage() {
       value: pendingVerifications,
       icon: <ShieldAlert className="text-amber-500" />,
       trend: `${formatNumber(pendingSchools)} sekolah pending`,
-      redirect: "/dashboard/admin/verify-schools",
       isLoading: isPendingVerificationsLoading,
     },
   ];
@@ -203,7 +202,7 @@ export default function AdminDashboardPage() {
             icon={statistic.icon}
             trend={statistic.trend}
             isLoading={statistic.isLoading}
-            onClick={() => router.push(statistic.redirect)}
+            onClick={() => router.push(statistic.redirect ? statistic.redirect : "")}
           />
         ))}
       </div>
