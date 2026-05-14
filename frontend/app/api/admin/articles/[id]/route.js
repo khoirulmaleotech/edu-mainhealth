@@ -1,15 +1,9 @@
 import { NextResponse } from "next/server";
-import { MongoClient, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 
-const uri = process.env.MONGODB_URI;
-
-if (!uri) {
-  throw new Error("MONGODB_URI belum tersedia di environment");
-}
+import { connectDB } from "@/lib/mongodb";
 
 export async function GET(request, context) {
-  let client;
-
   try {
     const { id } = context.params;
 
@@ -23,15 +17,26 @@ export async function GET(request, context) {
       );
     }
 
-    client = new MongoClient(uri);
+    const db = (await connectDB()).db();
 
-    await client.connect();
-
-    const db = client.db();
-
-    const article = await db.collection("articles").findOne({
-      _id: new ObjectId(id),
-    });
+    const article = await db.collection("articles").findOne(
+      { _id: new ObjectId(id) },
+      {
+        projection: {
+          title: 1,
+          description: 1,
+          content: 1,
+          category: 1,
+          type: 1,
+          thumbnail: 1,
+          status: 1,
+          author: 1,
+          views: 1,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      },
+    );
 
     if (!article) {
       return NextResponse.json(
@@ -57,17 +62,11 @@ export async function GET(request, context) {
       },
       { status: 500 }
     );
-  } finally {
-    if (client) {
-      await client.close();
-    }
   }
 }
 
 
 export async function PATCH(request, context) {
-  let client;
-
   try {
     const { id } = context.params;
 
@@ -82,6 +81,20 @@ export async function PATCH(request, context) {
     }
 
     const body = await request.json();
+
+    const db = (await connectDB()).db();
+
+    if (Object.keys(body).length === 1 && body.status) {
+      await db.collection("articles").updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { status: body.status, updatedAt: new Date() } },
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: "Status artikel berhasil diperbarui",
+      });
+    }
 
     const {
       title,
@@ -103,12 +116,6 @@ export async function PATCH(request, context) {
         { status: 400 }
       );
     }
-
-    client = new MongoClient(uri);
-
-    await client.connect();
-
-    const db = client.db();
 
     const article = await db.collection("articles").findOne({
       _id: new ObjectId(id),
@@ -158,16 +165,10 @@ export async function PATCH(request, context) {
       },
       { status: 500 }
     );
-  } finally {
-    if (client) {
-      await client.close();
-    }
   }
 }
 
 export async function DELETE(request, context) {
-  let client;
-
   try {
     const { id } = context.params;
 
@@ -181,11 +182,7 @@ export async function DELETE(request, context) {
       );
     }
 
-    client = new MongoClient(uri);
-
-    await client.connect();
-
-    const db = client.db();
+    const db = (await connectDB()).db();
 
     const article = await db.collection("articles").findOne({
       _id: new ObjectId(id),
@@ -218,9 +215,5 @@ export async function DELETE(request, context) {
       },
       { status: 500 }
     );
-  } finally {
-    if (client) {
-      await client.close();
-    }
   }
 }

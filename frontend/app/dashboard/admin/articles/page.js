@@ -11,17 +11,21 @@ import {
   BookOpen,
   Video,
   FileText,
-  Sparkles,
   Clock3,
-  ChevronDown,
   LayoutDashboard,
   TrendingUp,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
+import AdminPagination from "@/components/AdminPagination";
+import CustomSelect from "@/components/CustomSelect";
 import { fetchInstance } from "@/lib/fetchInstance";
 import { useDebounce } from "@/hooks/useDebounce";
+
+const statusOptions = [
+  { value: "Semua", label: "Semua" },
+  { value: "Published", label: "Published" },
+  { value: "Draft", label: "Draft" },
+];
 
 export default function ParentArticleManagement() {
   const router = useRouter();
@@ -31,7 +35,7 @@ export default function ParentArticleManagement() {
 
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [summary, setSummary] = useState([]);
+  const [summary, setSummary] = useState(null);
   const [pagination, setPagination] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const debouncedSearch = useDebounce(search, 500);
@@ -50,7 +54,6 @@ export default function ParentArticleManagement() {
 
       const data = await fetchInstance(`/api/admin/articles?${queryParams.toString()}`);
       setArticles(data.data || []);
-      setSummary(data.summary || []);
       setPagination(data.pagination || null);
     } catch (error) {
       console.error(error);
@@ -58,6 +61,19 @@ export default function ParentArticleManagement() {
       setLoading(false);
     }
   };
+
+  const fetchSummary = async () => {
+    try {
+      const data = await fetchInstance("/api/admin/articles/summary");
+      setSummary(data.summary || null);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchSummary();
+  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -71,9 +87,9 @@ export default function ParentArticleManagement() {
   };
 
   const stats = {
-    total: summary.reduce((total, item) => total + item.count, 0),
-    published: summary.find((item) => item._id === "Published")?.count || 0,
-    drafts: summary.find((item) => item._id === "Draft")?.count || 0,
+    total: summary?.total || 0,
+    published: summary?.published || 0,
+    drafts: summary?.drafts || 0,
   };
 
   const handleDelete = async (id) => {
@@ -95,6 +111,7 @@ export default function ParentArticleManagement() {
 
       if (data.success) {
         fetchArticles({ page: currentPage, searchKeyword: debouncedSearch, status: statusFilter });
+        fetchSummary();
       }
     } catch (error) {
       console.error(error);
@@ -116,7 +133,6 @@ export default function ParentArticleManagement() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            ...article,
             status: newStatus,
           }),
         }
@@ -126,6 +142,7 @@ export default function ParentArticleManagement() {
 
       if (data.success) {
         fetchArticles({ page: currentPage, searchKeyword: debouncedSearch, status: statusFilter });
+        fetchSummary();
       }
     } catch (error) {
       console.error(error);
@@ -309,35 +326,14 @@ export default function ParentArticleManagement() {
 
             </div>
 
-            {/* FILTER STATUS */}
-            <div className="relative">
-
-              <select
-                value={statusFilter}
-                onChange={(e) =>
-                  setStatusFilter(e.target.value)
-                }
-                className="appearance-none h-14 px-5 rounded-2xl border border-slate-100 bg-slate-50 text-sm font-bold text-slate-700 min-w-[180px] outline-none"
-              >
-                <option value="Semua">
-                  Semua
-                </option>
-
-                <option value="Published">
-                  Published
-                </option>
-
-                <option value="Draft">
-                  Draft
-                </option>
-              </select>
-
-              <ChevronDown
-                size={16}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
-
-            </div>
+            <CustomSelect
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={statusOptions}
+              placeholder="Pilih Status"
+              className="md:w-56"
+              triggerClassName="h-14"
+            />
 
           </div>
 
@@ -346,7 +342,7 @@ export default function ParentArticleManagement() {
         {/* TABLE */}
         <div className="bg-white border border-slate-100 rounded-[40px] overflow-hidden shadow-sm">
 
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
 
             <table className="w-full min-w-[1000px]">
 
@@ -445,11 +441,10 @@ export default function ParentArticleManagement() {
                         onClick={() =>
                           handleToggleStatus(article)
                         }
-                        className={`inline-flex items-center px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                          article.status === "Published"
+                        className={`inline-flex items-center px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${article.status === "Published"
                             ? "bg-emerald-100 text-emerald-700"
                             : "bg-amber-100 text-amber-700"
-                        }`}
+                          }`}
                       >
                         {article.status}
                       </button>
@@ -463,8 +458,8 @@ export default function ParentArticleManagement() {
 
                         {article.createdAt
                           ? new Date(
-                              article.createdAt
-                            ).toLocaleDateString("id-ID")
+                            article.createdAt
+                          ).toLocaleDateString("id-ID")
                           : "-"}
 
                       </span>
@@ -534,15 +529,81 @@ export default function ParentArticleManagement() {
             </table>
 
           </div>
-          {pagination && pagination.totalPages > 1 && (
-            <div className="p-6 bg-slate-50/50 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {currentPage} of {pagination.totalPages}</p>
-              <div className="flex items-center gap-2">
-                <button onClick={() => handlePageChange(currentPage - 1)} disabled={!pagination.hasPreviousPage} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-primary hover:text-white transition-all"><ChevronLeft size={18} /></button>
-                <button onClick={() => handlePageChange(currentPage + 1)} disabled={!pagination.hasNextPage} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-primary hover:text-white transition-all"><ChevronRight size={18} /></button>
+
+          <div className="md:hidden p-4 space-y-4 max-h-[650px] overflow-y-auto">
+            {articles.length > 0 ? (
+              articles.map((article) => (
+                <div
+                  key={article._id}
+                  className="bg-slate-50 rounded-[28px] p-5 border border-slate-100"
+                >
+                  <div className="flex justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-black text-slate-800 text-sm line-clamp-2 break-words">
+                        {article.title || "-"}
+                      </h4>
+                      <p className="text-xs text-slate-400 font-semibold mt-1 truncate">
+                        {article.createdAt
+                          ? new Date(article.createdAt).toLocaleDateString("id-ID")
+                          : "-"}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => handleToggleStatus(article)}
+                      className={`h-fit shrink-0 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wide ${article.status === "Published"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-amber-100 text-amber-700"
+                        }`}
+                    >
+                      {article.status}
+                    </button>
+                  </div>
+
+                  <div className="mt-5 space-y-2">
+                    <p className="text-sm font-bold text-slate-700">
+                      {article.category || "-"}
+                    </p>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-100 text-slate-600 text-xs font-bold">
+                      {getTypeIcon(article.type)}
+                      {article.type || "-"}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() => router.push(`/dashboard/admin/articles/${article._id}`)}
+                      className="py-3 rounded-2xl bg-white border border-slate-100 text-xs font-black uppercase tracking-widest text-primary"
+                    >
+                      Lihat
+                    </button>
+                    <button
+                      onClick={() => router.push(`/dashboard/admin/articles/${article._id}/edit`)}
+                      className="py-3 rounded-2xl bg-white border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(article._id)}
+                      className="py-3 rounded-2xl bg-red-50 border border-red-100 text-xs font-black uppercase tracking-widest text-red-500"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-16 text-slate-400 font-semibold">
+                Tidak ada artikel ditemukan
               </div>
-            </div>
-          )}
+            )}
+          </div>
+
+          <AdminPagination
+            currentPage={currentPage}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+          />
 
         </div>
 
