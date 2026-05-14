@@ -1,116 +1,118 @@
-import { NextResponse } from 'next/server';
-import { MongoClient, ObjectId } from 'mongodb';
+import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+import { connectDB } from "@/lib/mongodb";
 
-// GET: Ambil daftar psikolog yang belum diverifikasi
+function getPositiveInteger(value, fallback, max) {
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed < 1) return fallback;
+
+  return Math.min(parsed, max);
+}
+
+function getEscapedRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export async function GET(request) {
   try {
-    await client.connect();
-    const db = client.db();
+    const db = (await connectDB()).db();
     const { searchParams } = new URL(request.url);
-    const currentPage = Number(searchParams.get("page")) || 1;
-    const pageSize = Number(searchParams.get("pageSize")) || 20;
-    const search = searchParams.get("search") || "";
+    const currentPage = getPositiveInteger(searchParams.get("page"), 1, 100000);
+    const pageSize = getPositiveInteger(searchParams.get("pageSize"), 20, 100);
+    const search = (searchParams.get("search") || "").trim();
     const status = searchParams.get("status") || "all";
     const skipData = (currentPage - 1) * pageSize;
 
-    const statusMatch =
-      status === "verified"
+    const matchFilter = {
+      role: "psychologist",
+      ...(status === "verified"
         ? { is_verified: true }
         : status === "pending"
           ? { is_verified: { $ne: true } }
-          : {};
+          : {}),
+    };
 
-    const searchMatch = search
-      ? {
-          $or: [
-            { fullname: { $regex: search, $options: "i" } },
-            { email: { $regex: search, $options: "i" } },
-            { institution_name: { $regex: search, $options: "i" } },
-          ],
-        }
-      : {};
-    
-    const result = await db.collection('users').aggregate([
-      { $match: { role: 'psychologist', ...statusMatch, ...searchMatch } },
-      {
-        $facet: {
-          data: [
-            { $sort: { is_verified: 1, createdAt: -1 } },
-            { $skip: skipData },
-            { $limit: pageSize },
-            {
-              $project: {
-                fullname: 1,
-                email: 1,
-                institution_name: 1,
-                is_verified: 1,
-                createdAt: 1,
+    if (search) {
+      const searchRegex = getEscapedRegex(search);
+      matchFilter.$or = [
+        { fullname: { $regex: searchRegex, $options: "i" } },
+        { email: { $regex: searchRegex, $options: "i" } },
+        { institution_name: { $regex: searchRegex, $options: "i" } },
+      ];
+    }
+
+    const [payload = { data: [], totalData: [] }] = await db
+      .collection("users")
+      .aggregate([
+        { $match: matchFilter },
+        {
+          $facet: {
+            data: [
+              { $sort: { is_verified: 1, createdAt: -1, _id: -1 } },
+              { $skip: skipData },
+              { $limit: pageSize },
+              {
+                $project: {
+                  _id: 1,
+                  fullname: 1,
+                  email: 1,
+                  is_verified: 1,
+                },
               },
-            },
-          ],
-          totalData: [{ $count: "count" }],
-        },
-      },
-      {
-        $project: {
-          data: 1,
-          totalData: { $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] },
-          totalPages: {
-            $ceil: {
-              $divide: [{ $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] }, pageSize],
-            },
+            ],
+            totalData: [{ $count: "count" }],
           },
-          hasNextPage: {
-            $gt: [{ $ifNull: [{ $arrayElemAt: ["$totalData.count", 0] }, 0] }, currentPage * pageSize],
-          },
-          hasPreviousPage: { $gt: [currentPage, 1] },
         },
-      },
-    ]).toArray();
+      ], { allowDiskUse: false })
+      .toArray();
 
-    const payload = result[0] || { data: [], totalData: 0 };
+    const totalData = payload.totalData?.[0]?.count || 0;
 
     return NextResponse.json({
       success: true,
-      data: payload.data,
+      data: payload.data || [],
       pagination: {
         currentPage,
         pageSize,
-        totalData: payload.totalData,
-        totalPages: payload.totalPages,
-        hasNextPage: payload.hasNextPage,
-        hasPreviousPage: payload.hasPreviousPage,
+        totalData,
+        totalPages: Math.ceil(totalData / pageSize),
+        hasNextPage: totalData > currentPage * pageSize,
+        hasPreviousPage: currentPage > 1,
       },
     });
   } catch (error) {
+    console.error("ADMIN_VERIFY_PSYCHOLOGIST_ERROR:", error);
     return NextResponse.json({ message: "Gagal mengambil data psikolog" }, { status: 500 });
   }
 }
 
-// PATCH: Approve atau Reject akun psikolog
 export async function PATCH(request) {
   try {
     const { id, action } = await request.json();
+    const psychologistId = ObjectId.isValid(id) ? new ObjectId(id) : null;
 
-    await client.connect();
-    const db = client.db();
+    if (!psychologistId || !action) {
+      return NextResponse.json({ message: "ID dan action diperlukan" }, { status: 400 });
+    }
 
-    if (action === 'approve') {
-      await db.collection('users').updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { is_verified: true, updatedAt: new Date() } }
+    const db = (await connectDB()).db();
+
+    if (action === "approve") {
+      await db.collection("users").updateOne(
+        { _id: psychologistId, role: "psychologist" },
+        { $set: { is_verified: true, updatedAt: new Date() } },
       );
       return NextResponse.json({ success: true, message: "Akun Psikolog diaktifkan!" });
-    } 
-    
-    if (action === 'reject') {
-      await db.collection('users').deleteOne({ _id: new ObjectId(id) });
+    }
+
+    if (action === "reject") {
+      await db.collection("users").deleteOne({ _id: psychologistId, role: "psychologist" });
       return NextResponse.json({ success: true, message: "Pendaftaran Psikolog dihapus" });
     }
 
+    return NextResponse.json({ message: "Action tidak valid" }, { status: 400 });
   } catch (error) {
     return NextResponse.json({ message: "Gagal memproses verifikasi" }, { status: 500 });
   }

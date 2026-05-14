@@ -1,12 +1,20 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { 
-  ShieldCheck, CheckCircle, XCircle, Search, 
-  Loader2, Mail, User, Eye, X, Check, AlertTriangle, 
-  ChevronLeft, ChevronRight, Filter, Calendar
+import {
+  ShieldCheck, CheckCircle, XCircle, Search,
+  Loader2, Mail, User, Eye, X, Check, AlertTriangle,
+  Calendar
 } from 'lucide-react';
+import AdminPagination from "@/components/AdminPagination";
+import CustomSelect from "@/components/CustomSelect";
 import { fetchInstance } from "@/lib/fetchInstance";
 import { useDebounce } from "@/hooks/useDebounce";
+
+const statusOptions = [
+  { value: "all", label: "Semua Status" },
+  { value: "verified", label: "Verified" },
+  { value: "pending", label: "Pending" },
+];
 
 export default function VerifyPsychologistPage() {
   const [data, setData] = useState([]);
@@ -17,7 +25,7 @@ export default function VerifyPsychologistPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
-  const itemsPerPage = 20;
+  const itemsPerPage = 10;
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
   const [confirmAction, setConfirmAction] = useState({ show: false, id: null, name: '', type: '' });
@@ -72,7 +80,7 @@ export default function VerifyPsychologistPage() {
 
   return (
     <div className="p-4 md:p-8 space-y-8 relative text-slate-700">
-      
+
       {/* MODAL KONFIRMASI */}
       {confirmAction.show && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
@@ -103,20 +111,19 @@ export default function VerifyPsychologistPage() {
             <Search size={18} className="text-slate-300" />
             <input type="text" placeholder="Cari nama/email..." className="bg-transparent outline-none text-xs font-bold w-full md:w-60" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
           </div>
-          <div className="bg-white px-4 py-2.5 rounded-2xl border border-slate-200 flex items-center gap-3 shadow-sm">
-            <Filter size={18} className="text-slate-300" />
-            <select className="bg-transparent outline-none text-xs font-bold text-slate-600 cursor-pointer" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="all">Semua Status</option>
-              <option value="verified">Verified</option>
-              <option value="pending">Pending</option>
-            </select>
-          </div>
+          <CustomSelect
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={statusOptions}
+            placeholder="Pilih Status"
+            className="md:w-56"
+          />
         </div>
       </div>
 
       {/* TABLE */}
       <div className="bg-white rounded-[35px] border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-widest">
               <tr>
@@ -139,7 +146,7 @@ export default function VerifyPsychologistPage() {
                   <td className="px-6 py-6 border border-slate-200 text-xs font-bold text-slate-600">{item.email}</td>
                   <td className="px-6 py-6 border border-slate-200 text-center">
                     <span className={`px-3 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-tighter inline-flex items-center gap-1.5 ${item.is_verified ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-500 border-red-100'}`}>
-                      {item.is_verified ? <CheckCircle size={12}/> : <XCircle size={12}/>} {item.is_verified ? 'Verified' : 'Pending'}
+                      {item.is_verified ? <CheckCircle size={12} /> : <XCircle size={12} />} {item.is_verified ? 'Verified' : 'Pending'}
                     </span>
                   </td>
                   <td className="px-6 py-6 border border-slate-200 text-right">
@@ -155,14 +162,72 @@ export default function VerifyPsychologistPage() {
             </tbody>
           </table>
         </div>
-        {!loading && pagination && pagination.totalPages > 1 && (
-          <div className="p-6 bg-slate-50/50 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {currentPage} of {pagination.totalPages}</p>
-            <div className="flex items-center gap-2">
-              <button onClick={() => handlePageChange(currentPage - 1)} disabled={!pagination.hasPreviousPage} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all"><ChevronLeft size={18} /></button>
-              <button onClick={() => handlePageChange(currentPage + 1)} disabled={!pagination.hasNextPage} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all"><ChevronRight size={18} /></button>
+
+        <div className="md:hidden p-4 space-y-4 max-h-[650px] overflow-y-auto">
+          {loading ? (
+            [...Array(5)].map((_, index) => (
+              <div
+                key={index}
+                className="animate-pulse bg-slate-50 rounded-[28px] p-5 border border-slate-100"
+              >
+                <div className="h-4 w-36 bg-slate-200 rounded-full" />
+                <div className="h-3 w-32 bg-slate-100 rounded-full mt-2" />
+                <div className="h-8 w-28 bg-slate-200 rounded-full mt-5" />
+              </div>
+            ))
+          ) : currentData.length > 0 ? (
+            currentData.map((item) => (
+              <div
+                key={item._id}
+                className="bg-slate-50 rounded-[28px] p-5 border border-slate-100"
+              >
+                <div className="flex justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-black text-slate-800 text-sm truncate">
+                      {item.fullname || "-"}
+                    </h4>
+                    <p className="text-xs text-slate-400 font-semibold mt-1 truncate">
+                      {item.email || "-"}
+                    </p>
+                  </div>
+
+                  <span className={`h-fit shrink-0 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-wide ${item.is_verified ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-500 border-red-100'}`}>
+                    {item.is_verified ? 'Verified' : 'Pending'}
+                  </span>
+                </div>
+
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  {!item.is_verified && (
+                    <button
+                      onClick={() => setConfirmAction({ show: true, id: item._id, name: item.fullname, type: 'approve' })}
+                      className="py-3 rounded-2xl bg-emerald-50 border border-emerald-100 text-xs font-black uppercase tracking-widest text-emerald-600"
+                    >
+                      Approve
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setConfirmAction({ show: true, id: item._id, name: item.fullname, type: 'reject' })}
+                    className="py-3 rounded-2xl bg-red-50 border border-red-100 text-xs font-black uppercase tracking-widest text-red-500"
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-16 text-slate-400 font-semibold">
+              Data tidak ditemukan
             </div>
-          </div>
+          )}
+        </div>
+
+        {!loading && (
+          <AdminPagination
+            currentPage={currentPage}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            accentClassName="bg-[#00adb5] border-[#00adb5] text-white shadow-sm shadow-[#00adb5]/20"
+          />
         )}
       </div>
     </div>

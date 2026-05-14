@@ -4,8 +4,6 @@ import React, { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Building2,
-  ChevronLeft,
-  ChevronRight,
   ExternalLink,
   HeartPulse,
   Loader2,
@@ -13,6 +11,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import AdminPagination from "@/components/AdminPagination";
 import { fetchInstance } from "@/lib/fetchInstance";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -34,7 +33,7 @@ export default function VerificationQueuePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const debouncedSearchKeyword = useDebounce(searchKeyword, 500);
-  const pageSize = 20;
+  const pageSize = 10;
 
   const fetchVerificationQueue = async ({ page = 1, search = "" } = {}) => {
     try {
@@ -97,22 +96,8 @@ export default function VerificationQueuePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-[28px] border border-slate-100 p-6 shadow-sm">
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mb-4">
-            <AlertTriangle size={24} />
-          </div>
-          <p className="text-xs font-black text-slate-400 uppercase tracking-widest">
-            Total Antrean
-          </p>
-          <h3 className="text-3xl font-black text-slate-800 mt-2">
-            {pagination?.totalData || 0}
-          </h3>
-        </div>
-      </div>
-
       <div className="bg-white rounded-[35px] border border-slate-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-widest">
               <tr>
@@ -147,11 +132,10 @@ export default function VerificationQueuePage() {
                       {item.name}
                     </td>
                     <td className="px-6 py-6 border border-slate-200">
-                      <span className={`px-3 py-1 rounded-full border flex items-center gap-1.5 w-fit text-[9px] font-black uppercase tracking-tighter ${
-                        item.type === "Sekolah"
-                          ? "bg-blue-50 text-blue-600 border-blue-100"
-                          : "bg-emerald-50 text-emerald-600 border-emerald-100"
-                      }`}>
+                      <span className={`px-3 py-1 rounded-full border flex items-center gap-1.5 w-fit text-[9px] font-black uppercase tracking-tighter ${item.type === "Sekolah"
+                        ? "bg-blue-50 text-blue-600 border-blue-100"
+                        : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                        }`}>
                         {item.type === "Sekolah" ? <Building2 size={12} /> : <HeartPulse size={12} />}
                         {item.type}
                       </span>
@@ -177,20 +161,68 @@ export default function VerificationQueuePage() {
           </table>
         </div>
 
-        {!isLoading && pagination && pagination.totalPages > 1 && (
-          <div className="p-6 bg-slate-50/50 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              Page {currentPage} of {pagination.totalPages}
-            </p>
-            <div className="flex items-center gap-2">
-              <button onClick={() => handlePageChange(currentPage - 1)} disabled={!pagination.hasPreviousPage} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all">
-                <ChevronLeft size={18} />
-              </button>
-              <button onClick={() => handlePageChange(currentPage + 1)} disabled={!pagination.hasNextPage} className="p-2.5 bg-white border border-slate-200 rounded-xl disabled:opacity-30 hover:bg-[#00adb5] hover:text-white transition-all">
-                <ChevronRight size={18} />
-              </button>
+        <div className="md:hidden p-4 space-y-4 max-h-[650px] overflow-y-auto">
+          {isLoading ? (
+            [...Array(5)].map((_, index) => (
+              <div
+                key={index}
+                className="animate-pulse bg-slate-50 rounded-[28px] p-5 border border-slate-100"
+              >
+                <div className="h-4 w-40 bg-slate-200 rounded-full" />
+                <div className="h-3 w-28 bg-slate-100 rounded-full mt-2" />
+                <div className="h-8 w-28 bg-slate-200 rounded-full mt-5" />
+              </div>
+            ))
+          ) : queue.length > 0 ? (
+            queue.map((item) => (
+              <div
+                key={`${item.type}-${item._id}`}
+                className="bg-slate-50 rounded-[28px] p-5 border border-slate-100"
+              >
+                <div className="flex justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-black text-slate-800 text-sm truncate">
+                      {item.name || "-"}
+                    </h4>
+                    <p className="text-xs text-slate-400 font-semibold mt-1 truncate">
+                      {formatDate(item.createdAt)}
+                    </p>
+                  </div>
+
+                  <span className={`h-fit shrink-0 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-wide ${item.type === "Sekolah"
+                    ? "bg-blue-50 text-blue-600 border-blue-100"
+                    : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                    }`}>
+                    {item.type}
+                  </span>
+                </div>
+
+                <p className="mt-5 text-xs font-semibold text-slate-400">
+                  {item.sub || "-"}
+                </p>
+
+                <button
+                  onClick={() => router.push(item.href)}
+                  className="mt-5 w-full py-3 rounded-2xl bg-white border border-slate-100 text-xs font-black uppercase tracking-widest text-[#00adb5]"
+                >
+                  Buka Verifikasi
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-16 text-slate-400 font-semibold">
+              Tidak ada antrean verifikasi
             </div>
-          </div>
+          )}
+        </div>
+
+        {!isLoading && (
+          <AdminPagination
+            currentPage={currentPage}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            accentClassName="bg-[#00adb5] border-[#00adb5] text-white shadow-sm shadow-[#00adb5]/20"
+          />
         )}
       </div>
     </div>
