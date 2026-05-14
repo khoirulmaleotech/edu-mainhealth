@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
   Clock,
   Eye,
+  Loader2,
   Search,
   ShieldAlert,
   X,
 } from "lucide-react";
 
+import AdminPagination from "@/components/AdminPagination";
 import CustomSelect from "@/components/CustomSelect";
 import { fetchInstance } from "@/lib/fetchInstance";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -108,16 +108,6 @@ function ReportTableSkeleton() {
   );
 }
 
-function getStatusCount(statusSummary, statusKeys) {
-  return statusSummary.reduce((total, item) => {
-    if (statusKeys.includes(item?._id)) {
-      return total + item.count;
-    }
-
-    return total;
-  }, 0);
-}
-
 export default function AdminReportsPage() {
   const [reportList, setReportList] = useState([]);
   const [summary, setSummary] = useState(null);
@@ -129,8 +119,19 @@ export default function AdminReportsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
 
   const debouncedSearchKeyword = useDebounce(searchKeyword, 500);
+
+  const fetchSummary = async () => {
+    try {
+      const response = await fetchInstance("/api/admin/reports/summary");
+
+      setSummary(response?.summary || null);
+    } catch (error) {
+      console.error("Failed to fetch admin report summary", error);
+    }
+  };
 
   const fetchReports = async ({
     page = 1,
@@ -151,8 +152,7 @@ export default function AdminReportsPage() {
         `/api/admin/reports?${queryParams.toString()}`
       );
 
-      setReportList(response?.data || response?.reports || []);
-      setSummary(response?.summary || null);
+      setReportList(response?.data || []);
       setPaginationInformation(response?.pagination || null);
     } catch (error) {
       console.error("Failed to fetch admin reports", error);
@@ -160,6 +160,31 @@ export default function AdminReportsPage() {
       setIsLoading(false);
     }
   };
+
+  const openReportDetail = async (id) => {
+    try {
+      setSelectedReport({ _id: id });
+      setIsDetailLoading(true);
+
+      const response = await fetchInstance(`/api/admin/reports/detail/${id}`);
+
+      setSelectedReport(response?.report || null);
+    } catch (error) {
+      console.error("Failed to fetch admin report detail", error);
+      setSelectedReport(null);
+    } finally {
+      setIsDetailLoading(false);
+    }
+  };
+
+  const closeReportDetail = () => {
+    setSelectedReport(null);
+    setIsDetailLoading(false);
+  };
+
+  useEffect(() => {
+    fetchSummary();
+  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -185,32 +210,10 @@ export default function AdminReportsPage() {
     });
   };
 
-  const visiblePaginationPages = useMemo(() => {
-    const totalPages = paginationInformation?.totalPages || 1;
-    const maxVisiblePages = 5;
-
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    const pages = [];
-
-    for (let page = startPage; page <= endPage; page += 1) {
-      pages.push(page);
-    }
-
-    return pages;
-  }, [currentPage, paginationInformation?.totalPages]);
-
-  const statusSummary = summary?.status || [];
-  const totalReports = statusSummary.reduce((total, item) => total + item.count, 0);
-  const pendingReports = getStatusCount(statusSummary, ["pending", "Pending"]);
-  const reviewingReports = getStatusCount(statusSummary, ["reviewing", "In Progress"]);
-  const resolvedReports = getStatusCount(statusSummary, ["resolved", "Resolved"]);
-  const totalPages = paginationInformation?.totalPages || 1;
+  const totalReports = summary?.total || 0;
+  const pendingReports = summary?.pending || 0;
+  const reviewingReports = summary?.reviewing || 0;
+  const resolvedReports = summary?.resolved || 0;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -344,7 +347,7 @@ export default function AdminReportsPage() {
 
                     <td className="px-8 py-6">
                       <button
-                        onClick={() => setSelectedReport(report)}
+                        onClick={() => openReportDetail(report._id)}
                         className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 hover:text-[#00adb5] hover:border-[#00adb5]/20 transition-all"
                       >
                         <Eye size={16} />
@@ -385,18 +388,18 @@ export default function AdminReportsPage() {
                 className="bg-slate-50 rounded-[28px] p-5 border border-slate-100"
               >
                 <div className="flex justify-between gap-4">
-                  <div>
-                    <h4 className="font-black text-slate-800 text-sm">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-black text-slate-800 text-sm truncate">
                       {report.reporter_fullname || report.reporter?.fullname || "Anonim"}
                     </h4>
 
-                    <p className="text-xs text-slate-400 font-semibold mt-1">
+                    <p className="text-xs text-slate-400 font-semibold mt-1 truncate">
                       {formatDate(report.created_at)}
                     </p>
                   </div>
 
                   <span
-                    className={`h-fit px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-wide ${statusClassName[report.status] ||
+                    className={`h-fit shrink-0 px-3 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-wide ${statusClassName[report.status] ||
                       "bg-slate-50 text-slate-500 border-slate-100"
                       }`}
                   >
@@ -415,7 +418,7 @@ export default function AdminReportsPage() {
                 </div>
 
                 <button
-                  onClick={() => setSelectedReport(report)}
+                  onClick={() => openReportDetail(report._id)}
                   className="mt-5 w-full py-3 rounded-2xl bg-white border border-slate-100 text-xs font-black uppercase tracking-widest text-[#00adb5]"
                 >
                   Lihat Detail
@@ -429,45 +432,12 @@ export default function AdminReportsPage() {
           )}
         </div>
 
-        {paginationInformation && totalPages > 1 && (
-          <div className="p-6 bg-slate-50/30 border-t border-slate-50 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-slate-400 font-bold">
-              Page <span className="text-slate-700">{currentPage}</span> dari{" "}
-              <span className="text-slate-700">{totalPages}</span>
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={!paginationInformation.hasPreviousPage}
-                className="w-9 h-9 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              >
-                <ChevronLeft size={16} />
-              </button>
-
-              {visiblePaginationPages.map((page) => (
-                <button
-                  key={page}
-                  onClick={() => handlePageChange(page)}
-                  className={`w-9 h-9 rounded-xl border text-xs font-black transition-all ${page === currentPage
-                    ? "bg-[#00adb5] border-[#00adb5] text-white shadow-sm shadow-[#00adb5]/20"
-                    : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
-                    }`}
-                >
-                  {page}
-                </button>
-              ))}
-
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={!paginationInformation.hasNextPage}
-                className="w-9 h-9 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-500 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-        )}
+        <AdminPagination
+          currentPage={currentPage}
+          pagination={paginationInformation}
+          onPageChange={handlePageChange}
+          accentClassName="bg-[#00adb5] border-[#00adb5] text-white shadow-sm shadow-[#00adb5]/20"
+        />
       </div>
 
       {selectedReport && (
@@ -485,60 +455,68 @@ export default function AdminReportsPage() {
               </div>
 
               <button
-                onClick={() => setSelectedReport(null)}
+                onClick={closeReportDetail}
                 className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 hover:text-rose-500 transition-all"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="mt-8">
-              <span
-                className={`px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-wide ${statusClassName[selectedReport.status] ||
-                  "bg-slate-50 text-slate-500 border-slate-100"
-                  }`}
-              >
-                {statusLabel[selectedReport.status] || selectedReport.status || "-"}
-              </span>
-            </div>
-
-            <div className="mt-8 space-y-6">
-              <DetailBlock
-                label="Nama Pelapor"
-                value={selectedReport.reporter_fullname || selectedReport.reporter?.fullname || "Anonim"}
-              />
-              <DetailBlock label="Email Pelapor" value={selectedReport.reporter_email || selectedReport.reporter?.email || "-"} />
-              <DetailBlock label="Lokasi" value={selectedReport.location || "-"} />
-              <DetailBlock label="Waktu Kejadian" value={selectedReport.occurrence_time || "-"} />
-              <DetailBlock label="Tanggal Laporan" value={formatDate(selectedReport.created_at)} />
-
-              {selectedReport.evidence_url && (
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                    Bukti Gambar
-                  </p>
-
-                  <Image
-                    src={selectedReport.evidence_url}
-                    alt="Bukti laporan"
-                    width={200}
-                    height={200}
-                  />
-                </div>
-              )}
-
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
-                  Deskripsi
-                </p>
-
-                <div className="mt-3 bg-slate-50 border border-slate-100 rounded-[24px] p-5">
-                  <p className="text-sm font-medium text-slate-600 leading-7">
-                    {selectedReport.description || "-"}
-                  </p>
-                </div>
+            {isDetailLoading ? (
+              <div className="h-[70vh] flex items-center justify-center">
+                <Loader2 className="animate-spin text-[#00adb5]" size={28} />
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="mt-8">
+                  <span
+                    className={`px-4 py-2 rounded-full border text-[10px] font-black uppercase tracking-wide ${statusClassName[selectedReport.status] ||
+                      "bg-slate-50 text-slate-500 border-slate-100"
+                      }`}
+                  >
+                    {statusLabel[selectedReport.status] || selectedReport.status || "-"}
+                  </span>
+                </div>
+
+                <div className="mt-8 space-y-6">
+                  <DetailBlock
+                    label="Nama Pelapor"
+                    value={selectedReport.reporter_fullname || "Anonim"}
+                  />
+                  <DetailBlock label="Email Pelapor" value={selectedReport.reporter_email || "-"} />
+                  <DetailBlock label="Lokasi" value={selectedReport.location || "-"} />
+                  <DetailBlock label="Waktu Kejadian" value={selectedReport.occurrence_time || "-"} />
+                  <DetailBlock label="Tanggal Laporan" value={formatDate(selectedReport.created_at)} />
+
+                  {selectedReport.evidence_url && (
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                        Bukti Gambar
+                      </p>
+
+                      <Image
+                        src={selectedReport.evidence_url}
+                        alt="Bukti laporan"
+                        width={200}
+                        height={200}
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
+                      Deskripsi
+                    </p>
+
+                    <div className="mt-3 bg-slate-50 border border-slate-100 rounded-[24px] p-5">
+                      <p className="text-sm font-medium text-slate-600 leading-7">
+                        {selectedReport.description || "-"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
