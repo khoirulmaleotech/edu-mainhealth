@@ -1,59 +1,155 @@
-import { NextResponse } from 'next/server';
-import { MongoClient, ObjectId } from 'mongodb';
+import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../../auth/[...nextauth]/authOptions";
 
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
+import { connectDB } from "@/lib/mongodb";
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ success: false }, { status: 401 });
+function getPositiveInteger(value, fallback, max) {
+  const parsed = Number(value);
 
-  const psychologistId = session.user.id; 
+  if (!Number.isInteger(parsed) || parsed < 1) return fallback;
 
+  return Math.min(parsed, max);
+}
+
+function getEscapedRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildPsychologistRoomMatch(psychologistId) {
+  const match = {
+    $or: [
+      { psychologist_id: psychologistId },
+      { participants: { $in: [psychologistId] } },
+    ],
+  };
+
+  if (ObjectId.isValid(psychologistId)) {
+    match.$or.push({ psychologist_id: new ObjectId(psychologistId) });
+    match.$or.push({ participants: { $in: [new ObjectId(psychologistId)] } });
+  }
+
+  return match;
+}
+
+function buildRoomsPipeline({ psychologistId, currentPage, pageSize, search }) {
+  const skipData = (currentPage - 1) * pageSize;
+  const normalizedSearch = search.trim();
+  const pipeline = [
+    { $match: buildPsychologistRoomMatch(psychologistId) },
+    {
+      $addFields: {
+        patientObjectId: {
+          $convert: {
+            input: "$patient_id",
+            to: "objectId",
+            onError: null,
+            onNull: null,
+          },
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "patientObjectId",
+        foreignField: "_id",
+        as: "patient",
+      },
+    },
+    { $unwind: { path: "$patient", preserveNullAndEmptyArrays: true } },
+  ];
+
+  if (normalizedSearch) {
+    const searchRegex = getEscapedRegex(normalizedSearch);
+    pipeline.push({
+      $match: {
+        $or: [
+          { "patient.fullname": { $regex: searchRegex, $options: "i" } },
+          { "patient.email": { $regex: searchRegex, $options: "i" } },
+          { lastMsg: { $regex: searchRegex, $options: "i" } },
+        ],
+      },
+    });
+  }
+
+  pipeline.push({
+    $facet: {
+      data: [
+        { $sort: { updatedAt: -1, createdAt: -1, _id: -1 } },
+        { $skip: skipData },
+        { $limit: pageSize },
+        {
+          $project: {
+            id: "$_id",
+            roomId: "$_id",
+            studentId: "$patientObjectId",
+            name: { $ifNull: ["$patient.fullname", "Pasien Anonim"] },
+            email: { $ifNull: ["$patient.email", "-"] },
+            lastMsg: { $ifNull: ["$lastMsg", "Belum ada pesan"] },
+            time: { $ifNull: ["$updatedAt", "$createdAt"] },
+            risk: { $ifNull: ["$risk", "Medium"] },
+            unread: { $ifNull: ["$unread", 0] },
+          },
+        },
+      ],
+      totalData: [{ $count: "count" }],
+    },
+  });
+
+  return pipeline;
+}
+
+export async function GET(request) {
   try {
-    await client.connect();
-    const db = client.db();
-    
-    // Perbaikan Query: Cari berdasarkan psychologist_id secara eksplisit
-    // Jangan hanya mengandalkan array participants yang ada null-nya
-    const rooms = await db.collection('chat_rooms').aggregate([
-      {
-        $match: {
-          $or: [
-            { psychologist_id: psychologistId },
-            { psychologist_id: new ObjectId(psychologistId) },
-            { participants: { $in: [psychologistId] } }
-          ]
-        }
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "patient_id",
-          foreignField: "_id",
-          as: "patient_data"
-        }
-      },
-      { $unwind: { path: "$patient_data", preserveNullAndEmptyArrays: true } },
-      {
-        $project: {
-          id: "$_id",
-          // Fallback jika patient_data null agar dashboard tidak putih polos
-          name: { $ifNull: ["$patient_data.fullname", "Pasien Anonim"] },
-          lastMsg: { $ifNull: ["$lastMsg", "Belum ada pesan"] },
-          time: { $ifNull: ["$updatedAt", "$createdAt"] },
-          risk: { $ifNull: ["$risk", "Medium"] },
-          unread: { $ifNull: ["$unread", 0] }
-        }
-      },
-      { $sort: { time: -1 } }
-    ]).toArray();
+    const session = await getServerSession(authOptions);
 
-    return NextResponse.json({ success: true, data: rooms });
+    if (!session?.user?.id || session.user.role !== "psychologist") {
+      return NextResponse.json(
+        { success: false, message: "Akses ditolak" },
+        { status: 403 },
+      );
+    }
+
+    const db = (await connectDB()).db();
+    const { searchParams } = new URL(request.url);
+    const currentPage = getPositiveInteger(searchParams.get("page"), 1, 100000);
+    const pageSize = getPositiveInteger(searchParams.get("pageSize"), 20, 100);
+    const search = searchParams.get("search") || "";
+
+    const [payload = { data: [], totalData: [] }] = await db
+      .collection("chat_rooms")
+      .aggregate(
+        buildRoomsPipeline({
+          psychologistId: session.user.id,
+          currentPage,
+          pageSize,
+          search,
+        }),
+        { allowDiskUse: false },
+      )
+      .toArray();
+
+    const totalData = payload.totalData?.[0]?.count || 0;
+
+    return NextResponse.json({
+      success: true,
+      data: payload.data || [],
+      pagination: {
+        currentPage,
+        pageSize,
+        totalData,
+        totalPages: Math.ceil(totalData / pageSize),
+        hasNextPage: totalData > currentPage * pageSize,
+        hasPreviousPage: currentPage > 1,
+      },
+    });
   } catch (error) {
-    console.error("ERR_GET_ROOMS:", error);
-    return NextResponse.json({ success: false }, { status: 500 });
+    console.error("PSYCHOLOGIST_ROOMS_ERROR:", error);
+    return NextResponse.json(
+      { success: false, message: "Gagal memuat daftar chat" },
+      { status: 500 },
+    );
   }
 }

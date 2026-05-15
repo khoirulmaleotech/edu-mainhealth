@@ -1,86 +1,166 @@
-import { NextResponse } from 'next/server';
-import { MongoClient, ObjectId } from 'mongodb';
+import { NextResponse } from "next/server";
+import { ObjectId } from "mongodb";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from '@/app/api/auth/[...nextauth]/authOptions';
 
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
+import { connectDB } from "@/lib/mongodb";
+
+function buildPsychologistRoomMatch(psychologistId) {
+  const match = {
+    $or: [
+      { psychologist_id: psychologistId },
+      { participants: { $in: [psychologistId] } },
+    ],
+  };
+
+  if (ObjectId.isValid(psychologistId)) {
+    match.$or.push({ psychologist_id: new ObjectId(psychologistId) });
+    match.$or.push({ participants: { $in: [new ObjectId(psychologistId)] } });
+  }
+
+  return match;
+}
+
+async function getAuthorizedRoom(db, roomId, psychologistId) {
+  if (!ObjectId.isValid(roomId)) return null;
+
+  return db.collection("chat_rooms").findOne({
+    _id: new ObjectId(roomId),
+    ...buildPsychologistRoomMatch(psychologistId),
+  });
+}
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const roomId = searchParams.get('roomId');
+    const session = await getServerSession(authOptions);
 
-    if (!roomId || roomId === 'undefined') {
-      return NextResponse.json({ success: false, message: "Room ID missing" }, { status: 400 });
+    if (!session?.user?.id || session.user.role !== "psychologist") {
+      return NextResponse.json(
+        { success: false, message: "Akses ditolak" },
+        { status: 403 },
+      );
     }
 
-    await client.connect();
-    const db = client.db();
-    
-    const messages = await db.collection('messages')
-      .find({ room_id: new ObjectId(roomId) })
-      .sort({ timestamp: 1 })
+    const { searchParams } = new URL(request.url);
+    const roomId = searchParams.get("roomId");
+
+    if (!roomId || roomId === "undefined") {
+      return NextResponse.json(
+        { success: false, message: "Room ID diperlukan" },
+        { status: 400 },
+      );
+    }
+
+    const db = (await connectDB()).db();
+    const room = await getAuthorizedRoom(db, roomId, session.user.id);
+
+    if (!room) {
+      return NextResponse.json(
+        { success: false, message: "Room tidak ditemukan" },
+        { status: 404 },
+      );
+    }
+
+    const messages = await db
+      .collection("messages")
+      .find(
+        { room_id: new ObjectId(roomId) },
+        {
+          projection: {
+            _id: 1,
+            sender_id: 1,
+            receiver_id: 1,
+            text: 1,
+            timestamp: 1,
+            createdAt: 1,
+            status: 1,
+          },
+        },
+      )
+      .sort({ timestamp: 1, createdAt: 1 })
       .toArray();
+
+    await db.collection("chat_rooms").updateOne(
+      { _id: new ObjectId(roomId) },
+      { $set: { unread: 0, updatedAt: room.updatedAt || room.createdAt || new Date() } },
+    );
 
     return NextResponse.json({ success: true, data: messages });
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error("PSYCHOLOGIST_MESSAGES_GET_ERROR:", error);
+    return NextResponse.json(
+      { success: false, message: "Gagal memuat pesan" },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
+
+    if (!session?.user?.id || session.user.role !== "psychologist") {
+      return NextResponse.json(
+        { success: false, message: "Akses ditolak" },
+        { status: 403 },
+      );
     }
 
     const { roomId, text } = await request.json();
-    
-    await client.connect();
-    const db = client.db();
+    const trimmedText = (text || "").trim();
 
-    const room = await db.collection('chat_rooms').findOne({ _id: new ObjectId(roomId) });
+    if (!roomId || !trimmedText) {
+      return NextResponse.json(
+        { success: false, message: "Room ID dan pesan diperlukan" },
+        { status: 400 },
+      );
+    }
+
+    const db = (await connectDB()).db();
+    const room = await getAuthorizedRoom(db, roomId, session.user.id);
+
     if (!room) {
-      return NextResponse.json({ success: false, message: "Room not found" }, { status: 404 });
+      return NextResponse.json(
+        { success: false, message: "Room tidak ditemukan" },
+        { status: 404 },
+      );
     }
 
-    // --- PERBAIKAN DI SINI ---
-    // Gunakan field patient_id secara eksplisit karena participants mungkin mengandung null
-    const studentId = room.patient_id instanceof ObjectId ? room.patient_id.toString() : room.patient_id;
+    const studentId = room.patient_id instanceof ObjectId
+      ? room.patient_id.toString()
+      : String(room.patient_id || "");
 
-    const senderId = session.user.id ? String(session.user.id) : null;
-
-    if (!senderId) {
-      return NextResponse.json({ success: false, message: "User ID siswa tidak valid" }, { status: 401 });
-    }
-    
     const newMessage = {
       room_id: new ObjectId(roomId),
-      sender_id: senderId, // Pastikan ini string ID psikolog
+      sender_id: String(session.user.id),
       receiver_id: studentId,
-      text: text,
+      text: trimmedText,
       timestamp: new Date(),
       createdAt: new Date(),
-      status: "sent"
+      status: "sent",
     };
 
-    await db.collection('messages').insertOne(newMessage);
+    const result = await db.collection("messages").insertOne(newMessage);
 
-    await db.collection('chat_rooms').updateOne(
+    await db.collection("chat_rooms").updateOne(
       { _id: new ObjectId(roomId) },
-      { 
-        $set: { 
-          lastMsg: text, 
-          updatedAt: new Date() 
-        } 
-      }
+      {
+        $set: {
+          lastMsg: trimmedText,
+          updatedAt: new Date(),
+        },
+      },
     );
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      data: { _id: result.insertedId, ...newMessage },
+    });
   } catch (error) {
-    console.error("POST_MESSAGES_ERROR:", error);
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error("PSYCHOLOGIST_MESSAGES_POST_ERROR:", error);
+    return NextResponse.json(
+      { success: false, message: "Gagal mengirim pesan" },
+      { status: 500 },
+    );
   }
 }
