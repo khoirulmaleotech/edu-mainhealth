@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ChevronLeft, Loader2, MessageSquare, Search, Send } from "lucide-react";
 import { useSession } from "next-auth/react";
 
+import MarkdownContent from "@/components/MarkdownContent";
 import { fetchInstance } from "@/lib/fetchInstance";
 
 const pageSize = 20;
@@ -33,6 +34,7 @@ export default function PsychologistChatPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const messagesEndRef = useRef(null);
   const didMountSearchRef = useRef(false);
+  const didOpenRequestedRoomRef = useRef(false);
   const selectedRoomId = selectedRoom?.roomId || selectedRoom?.id || selectedRoom?._id;
 
   useEffect(() => {
@@ -92,10 +94,11 @@ export default function PsychologistChatPage() {
   }, [searchTerm]);
 
   useEffect(() => {
-    if (!requestedRoomId || loading) return;
+    if (!requestedRoomId || loading || didOpenRequestedRoomRef.current) return;
     if (String(selectedRoomId || "") === String(requestedRoomId)) return;
 
     const openRequestedRoom = async () => {
+      didOpenRequestedRoomRef.current = true;
       const existingRoom = rooms.find((room) => String(room.roomId || room.id) === String(requestedRoomId));
 
       if (existingRoom) {
@@ -308,7 +311,7 @@ export default function PsychologistChatPage() {
                             ? "bg-[#00adb5] text-white rounded-br-none"
                             : "bg-white border border-slate-100 text-slate-700 rounded-bl-none"
                         }`}>
-                          {message.text}
+                          <MarkdownContent>{message.text}</MarkdownContent>
                         </div>
                         <span className="text-[9px] text-slate-300 uppercase">
                           {formatMessageTime(message)}

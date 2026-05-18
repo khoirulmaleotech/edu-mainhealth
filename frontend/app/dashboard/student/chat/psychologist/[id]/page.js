@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Send, ChevronLeft, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import MarkdownContent from "@/components/MarkdownContent";
 
 export default function StudentChatToPsychologistPage({ params }) {
   const { data: session } = useSession();
@@ -143,7 +144,9 @@ export default function StudentChatToPsychologistPage({ params }) {
                 ? "bg-[#00adb5] text-white rounded-br-none" 
                 : "bg-white border border-slate-100 text-slate-700 rounded-bl-none"
               }`}>
-                <p className="text-sm md:text-base font-bold leading-relaxed">{m.text}</p>
+                <MarkdownContent className="text-sm md:text-base font-bold leading-relaxed">
+                  {m.text}
+                </MarkdownContent>
                 <p className={`text-[9px] mt-2 font-black uppercase opacity-50 ${isMe ? "text-right" : "text-left"}`}>
                   {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>

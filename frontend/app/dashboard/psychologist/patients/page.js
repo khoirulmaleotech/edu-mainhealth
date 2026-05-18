@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 
 import AdminPagination from "@/components/AdminPagination";
 import CustomSelect from "@/components/CustomSelect";
+import MarkdownContent from "@/components/MarkdownContent";
 import { fetchInstance } from "@/lib/fetchInstance";
 import { useDebounce } from "@/hooks/useDebounce";
 
@@ -563,7 +564,7 @@ function CriticalLogsModal({
                                   </span>
                                 </div>
 
-                                <p>{message.content}</p>
+                                <MarkdownContent>{message.content}</MarkdownContent>
 
                                 <p className="text-[10px] mt-3 opacity-70 font-bold">
                                   {formatDate(message.createdAt)}

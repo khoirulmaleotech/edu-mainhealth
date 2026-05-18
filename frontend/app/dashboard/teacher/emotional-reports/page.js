@@ -17,6 +17,7 @@ import {
 import { fetchInstance } from "@/lib/fetchInstance";
 import { useDebounce } from "@/hooks/useDebounce";
 import CustomSelect from "@/components/CustomSelect";
+import MarkdownContent from "@/components/MarkdownContent";
 
 const severityStyles = {
   high: "bg-orange-50 text-orange-600 border-orange-100",
@@ -708,7 +709,7 @@ export default function TeacherWellbeingAlertsPage() {
                           </span>
                         </div>
 
-                        <p>{message.content}</p>
+                        <MarkdownContent>{message.content}</MarkdownContent>
 
                         <p className="text-[10px] mt-3 opacity-70 font-bold">
                           {formatDate(message.createdAt)}
