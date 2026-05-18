@@ -1,25 +1,22 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-
 import {
   BookOpen,
   PlayCircle,
-  Star,
   Search,
   Filter,
-  ChevronRight,
-  Sparkles,
   Bookmark,
-  Clock,
+  Sparkles,
   ArrowRight,
+  Loader2,
 } from "lucide-react";
 
 export default function ParentInsightsPage() {
   const [loading, setLoading] = useState(true);
-
   const [resources, setResources] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -27,9 +24,7 @@ export default function ParentInsightsPage() {
         const res = await fetch("/api/parent/articles", {
           cache: "no-store",
         });
-
         const data = await res.json();
-
         if (data.success) {
           setResources(data.articles || []);
         }
@@ -39,229 +34,139 @@ export default function ParentInsightsPage() {
         setLoading(false);
       }
     };
-
     fetchArticles();
   }, []);
 
+  // Fungsi Filter Search
+  const filteredResources = useMemo(() => {
+    return resources.filter((res) =>
+      res.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      res.category?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery, resources]);
+
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex flex-col justify-center items-center min-h-[400px] gap-4">
+        <Loader2 className="animate-spin text-primary" size={40} />
+        <p className="text-slate-400 font-medium animate-pulse">Memuat wawasan...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-
+    <div className="max-w-7xl mx-auto space-y-10 p-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      
       {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div className="space-y-2">
-          <h2 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-            Wawasan Parenting{" "}
-            <BookOpen className="text-primary" size={28} />
+          <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-[0.2em]">
+            <Sparkles size={16} /> Knowledge Center
+          </div>
+          <h2 className="text-4xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+            Wawasan Parenting
           </h2>
-
-          <p className="text-slate-500 font-medium italic text-sm">
-            Tips dan panduan untuk mendampingi setiap langkah pertumbuhan anak.
+          <p className="text-slate-500 font-medium text-base max-w-lg">
+            Temukan panduan eksklusif dan tips praktis untuk mendukung tumbuh kembang buah hati Anda.
           </p>
         </div>
 
-        <div className="flex items-center bg-white px-5 py-3 rounded-2xl shadow-sm border border-slate-100 w-full max-w-sm">
-          <Search size={18} className="text-slate-400 mr-2" />
-
+        {/* SEARCH BAR FUNCTIONAL */}
+        <div className="relative group w-full lg:max-w-md">
+          <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
+            <Search size={18} className="text-slate-400 group-focus-within:text-primary transition-colors" />
+          </div>
           <input
             type="text"
-            placeholder="Cari topik..."
-            className="bg-transparent outline-none text-sm w-full font-medium"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari topik atau judul artikel..."
+            className="w-full bg-white pl-12 pr-5 py-4 rounded-[24px] shadow-sm border border-slate-100 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-slate-700"
           />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+      {/* SUB-HEADER & FILTER */}
+      <div className="flex justify-between items-center border-b border-slate-100 pb-6">
+        <h4 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
+          {searchQuery ? `Hasil Pencarian (${filteredResources.length})` : "Rekomendasi Terkini"}
+        </h4>
+      </div>
 
-        {/* MAIN FEED */}
-        <div className="lg:col-span-2 space-y-8">
+      {/* ARTICLES GRID - 3 COLUMNS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {filteredResources.length > 0 ? (
+          filteredResources.map((res, i) => {
+            const isVideo = res.type?.toLowerCase() === "video";
+            
+            return (
+              <Link
+                href={`/dashboard/parent/insights/${res._id}`}
+                key={res._id || i}
+                className="group bg-white rounded-[32px] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgb(0,0,0,0.08)] transition-all duration-500 overflow-hidden flex flex-col active:scale-[0.98]"
+              >
+                {/* THUMBNAIL AREA */}
+                <div className="relative h-52 overflow-hidden bg-slate-100">
+                  <div className={`absolute inset-0 opacity-20 bg-primary`} />
+                  <div className="absolute inset-0 flex items-center justify-center transition-transform duration-700 group-hover:scale-110">
+                    {isVideo ? (
+                      <div className="relative">
+                        <PlayCircle size={56} className="text-primary relative z-10" />
+                        <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-150"></div>
+                      </div>
+                    ) : (
+                      <BookOpen size={56} className="text-primary/40" />
+                    )}
+                  </div>
+                  
+                  {/* Badge Type */}
+                  <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-slate-800 shadow-sm">
+                    {res.type || "Article"}
+                  </div>
+                </div>
 
-          <div className="flex justify-between items-center">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-              Rekomendasi Untuk Anda
-            </h4>
+                {/* CONTENT AREA */}
+                <div className="p-7 flex-1 flex flex-col">
+                  <div className="flex-1 space-y-3">
+                    <span className="text-[10px] font-black text-primary uppercase tracking-widest block">
+                      {res.category || "Parenting"}
+                    </span>
+                    <h3 className="font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors text-lg line-clamp-2">
+                      {res.title}
+                    </h3>
+                    <p className="text-slate-500 text-sm line-clamp-2 font-medium leading-relaxed">
+                      {res.excerpt || "Klik untuk membaca panduan selengkapnya mengenai topik ini."}
+                    </p>
+                  </div>
 
-            <div className="flex gap-2">
-              <button className="p-2 bg-white rounded-xl border border-slate-100 text-slate-400 hover:text-primary transition-all shadow-sm">
-                <Filter size={16} />
-              </button>
+                  <div className="flex justify-between items-center pt-6 mt-6 border-t border-slate-50">
+                    <div className="flex items-center gap-2 text-primary font-bold text-xs group-hover:gap-3 transition-all">
+                      Baca Sekarang <ArrowRight size={14} />
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })
+        ) : (
+          <div className="col-span-full py-20 bg-slate-50 rounded-[40px] border-2 border-dashed border-slate-200 text-center space-y-4">
+            <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center mx-auto text-slate-300">
+              <Search size={32} />
             </div>
-          </div>
-
-          {/* ARTICLES GRID */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-            {resources.length > 0 ? (
-              resources.map((res, i) => {
-
-                const bgColor =
-                  res.thumbnail_color === "primary"
-                    ? "bg-primary/10"
-                    : res.thumbnail_color === "secondary"
-                    ? "bg-secondary/10"
-                    : "bg-slate-100";
-
-                return (
-                  <Link
-                    href={`/dashboard/parent/insights/${res._id}`}
-                    key={i}
-                    className="group bg-white rounded-[40px] border border-slate-100 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer overflow-hidden flex flex-col active:scale-[0.98]"
-                  >
-
-                    {/* IMAGE AREA */}
-                    <div
-                      className={`h-48 ${bgColor} flex items-center justify-center group-hover:scale-105 transition-transform duration-700 relative`}
-                    >
-
-                      {res.type === "Video" ? (
-                        <PlayCircle
-                          size={48}
-                          className="text-primary opacity-40"
-                        />
-                      ) : (
-                        <BookOpen
-                          size={48}
-                          className="text-secondary opacity-40"
-                        />
-                      )}
-                    </div>
-
-                    {/* CONTENT */}
-                    <div className="p-8 flex-1 flex flex-col justify-between space-y-4">
-
-                      <div className="space-y-3">
-
-                        <span className="text-[10px] font-black text-primary uppercase tracking-widest">
-                          {res.category || "Parenting"}
-                        </span>
-
-                        <h3 className="font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors text-lg">
-                          {res.title}
-                        </h3>
-                      </div>
-
-                      <div className="flex justify-between items-center pt-4 border-t border-slate-50">
-
-                        <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 uppercase tracking-tight">
-
-                          <span>
-                            {res.type || "Artikel"}
-                          </span>
-                        </div>
-
-                        <Bookmark
-                          size={16}
-                          className="text-slate-200 hover:text-secondary transition-colors"
-                        />
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })
-            ) : (
-              <div className="col-span-2 bg-white rounded-[40px] border border-slate-100 p-16 text-center">
-
-                <p className="text-slate-400 font-medium">
-                  Belum ada artikel tersedia
-                </p>
-              </div>
+            <div>
+              <p className="text-slate-800 font-bold text-lg">Topik tidak ditemukan</p>
+              <p className="text-slate-400 text-sm">Coba gunakan kata kunci lain atau bersihkan pencarian.</p>
+            </div>
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="text-primary font-bold text-sm underline"
+              >
+                Hapus Pencarian
+              </button>
             )}
           </div>
-        </div>
-
-        {/* SIDEBAR */}
-        <div className="space-y-8">
-
-          {/* WEEKLY FOCUS */}
-          <div className="bg-slate-900 p-8 rounded-[40px] text-white shadow-2xl relative overflow-hidden">
-
-            <div className="relative z-10">
-
-              <h4 className="text-secondary font-black text-[10px] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                <Sparkles size={16} fill="currentColor" />
-                Fokus Pekan Ini
-              </h4>
-
-              <h3 className="text-xl font-bold mb-4 tracking-tight">
-                Membangun Komunikasi Dua Arah
-              </h3>
-
-              <p className="text-xs text-slate-400 leading-relaxed font-medium mb-6">
-                Minggu ini, cobalah teknik "Active Listening". Fokus
-                mendengarkan tanpa memberikan nasihat kecuali diminta oleh
-                anak.
-              </p>
-
-              <button className="w-full py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2">
-                Pelajari Tekniknya <ArrowRight size={14} />
-              </button>
-            </div>
-
-            <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-primary opacity-20 rounded-full blur-3xl"></div>
-          </div>
-
-          {/* TOPICS */}
-          <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
-
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              Topik Terkait
-            </h4>
-
-            <div className="space-y-2">
-
-              {[
-                "Kesehatan Mental",
-                "Persiapan Kuliah",
-                "Gaya Belajar",
-                "Keamanan Digital",
-              ].map((topic, i) => (
-                <button
-                  key={i}
-                  className="w-full flex justify-between items-center p-4 rounded-2xl hover:bg-slate-50 transition-all group border border-transparent hover:border-slate-100"
-                >
-
-                  <span className="text-xs font-bold text-slate-700">
-                    {topic}
-                  </span>
-
-                  <ChevronRight
-                    size={14}
-                    className="text-slate-300 group-hover:text-primary transition-all"
-                  />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* WEBINAR */}
-          <div className="bg-secondary/10 p-8 rounded-[40px] border border-secondary/20">
-
-            <div className="flex items-center gap-3 mb-4">
-              <Star className="text-secondary fill-secondary" size={20} />
-
-              <h4 className="font-bold text-slate-900 text-sm tracking-tight">
-                Webinar Parenting
-              </h4>
-            </div>
-
-            <p className="text-[11px] text-slate-700 leading-relaxed font-semibold italic">
-              "Cara Menghadapi Tekanan Akademik di Kelas 12" — Sabtu ini pukul
-              19:00 WIB.
-            </p>
-
-            <button className="w-full mt-6 py-3 bg-secondary text-slate-900 rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] transition-transform">
-              Ikuti Sesi
-            </button>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
