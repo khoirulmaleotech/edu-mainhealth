@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -11,10 +11,13 @@ import {
   ArrowRight,
   ChevronRight,
   Star,
-  BrainCircuit
+  BrainCircuit,
+  Menu,
+  X
 } from 'lucide-react';
 
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const ecosystem = [
     { title: "Student App", desc: "Curhat aman dengan AI Mood Buddy, lapor bullying anonim, dan eksplorasi minat bakat.", icon: <MessageCircle className="text-primary" />, link: "/dashboard/student" },
     { title: "Parent Portal", desc: "Pantau tren emosional dan bakat anak secara transparan tanpa melanggar privasi chat.", icon: <Star className="text-secondary" />, link: "/dashboard/parent" },
@@ -26,11 +29,11 @@ export default function HomePage() {
     <div className="min-h-screen bg-white font-sans selection:bg-primary selection:text-white">
       {/* NAVBAR */}
       <nav className="fixed w-full bg-white/80 backdrop-blur-xl z-50 border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-8 py-5 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-5 md:px-8 py-4 md:py-5 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={50} height={50} />
+            <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={50} height={50} className="h-11 w-11 md:h-[50px] md:w-[50px]" />
             <div className="flex flex-col">
-              <span className="text-2xl font-black text-primary leading-none tracking-tighter uppercase">EduMind</span>
+              <span className="text-xl md:text-2xl font-black text-primary leading-none tracking-tighter uppercase">EduMind</span>
               <span className="text-[9px] font-bold text-slate-400 tracking-[0.3em] uppercase">By Maleotech</span>
             </div>
           </Link>
@@ -39,12 +42,35 @@ export default function HomePage() {
             <Link href="#ecosystem" className="hover:text-primary transition">Ekosistem</Link>
             <Link href="#features" className="hover:text-primary transition">Fitur Utama</Link>
             <Link href="#security" className="hover:text-primary transition">Keamanan</Link>
+            <Link href="/carrier" className="hover:text-primary transition">Karier</Link>
           </div>
           
-          <Link href="/login" className="bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary transition-all shadow-xl shadow-slate-200">
+          <Link href="/login" className="hidden sm:inline-flex bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary transition-all shadow-xl shadow-slate-200">
             Masuk Portal
           </Link>
+
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            className="lg:hidden p-3 rounded-2xl bg-slate-50 text-slate-700 border border-slate-100"
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
+
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-slate-100 bg-white/95 backdrop-blur-xl px-5 py-4 shadow-xl shadow-slate-200/60">
+            <div className="grid gap-2 text-xs font-black uppercase tracking-widest text-slate-500">
+              <Link onClick={() => setMobileMenuOpen(false)} href="#ecosystem" className="rounded-2xl px-4 py-3 hover:bg-primary/10 hover:text-primary transition">Ekosistem</Link>
+              <Link onClick={() => setMobileMenuOpen(false)} href="#features" className="rounded-2xl px-4 py-3 hover:bg-primary/10 hover:text-primary transition">Fitur Utama</Link>
+              <Link onClick={() => setMobileMenuOpen(false)} href="#security" className="rounded-2xl px-4 py-3 hover:bg-primary/10 hover:text-primary transition">Keamanan</Link>
+              <Link onClick={() => setMobileMenuOpen(false)} href="/carrier" className="rounded-2xl px-4 py-3 bg-primary/10 text-primary transition">Karier</Link>
+              <Link onClick={() => setMobileMenuOpen(false)} href="/login" className="mt-2 rounded-2xl bg-slate-900 px-4 py-4 text-center text-white transition hover:bg-primary">Masuk Portal</Link>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* HERO SECTION */}
