@@ -15,7 +15,8 @@ import {
   Search,
   Loader2,
   Menu,
-  X
+  X,
+  HeartPulse
 } from 'lucide-react';
 
 export default function ParentLayout({ children }) {
@@ -92,6 +93,7 @@ export default function ParentLayout({ children }) {
           <ParentNavItem href="/dashboard/parent" icon={<Home size={20} />} label="Beranda" active={pathname === '/dashboard/parent'} />
           <ParentNavItem href="/dashboard/parent/talent" icon={<Star size={20} />} label="Minat & Bakat" active={pathname === '/dashboard/parent/talent'} />
           <ParentNavItem href="/dashboard/parent/insights" icon={<BookOpen size={20} />} label="Edukasi Orang Tua" active={pathname === '/dashboard/parent/insights'} />
+          <ParentNavItem href="/dashboard/parent/assesmen" icon={<HeartPulse size={20} />} label="Deteksi Dini" active={pathname === '/dashboard/parent/assesmen'} />
         </nav>
 
         <div className="p-6 border-t border-slate-50 space-y-1">
