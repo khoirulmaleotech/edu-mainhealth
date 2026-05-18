@@ -1,6 +1,7 @@
 "use client";
 import { useState } from 'react';
 import HandoverCard from '@/components/HandoverCard';
+import MarkdownContent from '@/components/MarkdownContent';
 
 export default function ChildChatPage() {
   const [messages, setMessages] = useState([]);
@@ -65,7 +66,7 @@ export default function ChildChatPage() {
                 ? 'bg-primary text-white rounded-br-none' 
                 : 'bg-slate-100 text-slate-700 rounded-bl-none shadow-sm'
             }`}>
-              {msg.content}
+              <MarkdownContent>{msg.content}</MarkdownContent>
             </div>
           </div>
         ))}
