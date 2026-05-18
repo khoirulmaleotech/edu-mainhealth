@@ -41,6 +41,8 @@ const requiredArrayFields = [
   "availability",
 ];
 
+const LIST_PASSWORD = process.env.CARRIER_APPLICANTS_PASSWORD || "edumind2026#!";
+
 const s3Client = new S3Client({
   endpoint: "https://sgp1.digitaloceanspaces.com",
   forcePathStyle: false,
@@ -61,6 +63,22 @@ const ses = new SESClient({
 
 function getFormString(formData, key) {
   return String(formData.get(key) || "").trim();
+}
+
+function getPositiveInteger(value, fallback, max) {
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed < 1) return fallback;
+
+  return Math.min(parsed, max);
+}
+
+function getEscapedRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function isAuthorizedListRequest(request) {
+  return request.headers.get("x-carrier-password") === LIST_PASSWORD;
 }
 
 function parseArrayField(formData, key) {
@@ -219,6 +237,108 @@ function buildApplicationEmailHtml(application) {
       </div>
     </div>
   `;
+}
+
+export async function GET(request) {
+  try {
+    if (!isAuthorizedListRequest(request)) {
+      return NextResponse.json(
+        { success: false, message: "Password tidak valid." },
+        { status: 401 },
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const currentPage = getPositiveInteger(searchParams.get("page"), 1, 100000);
+    const pageSize = getPositiveInteger(searchParams.get("pageSize"), 10, 1000);
+    const search = (searchParams.get("search") || "").trim();
+    const type = searchParams.get("type") || "all";
+    const exportMode = searchParams.get("export") === "1";
+    const skipData = (currentPage - 1) * pageSize;
+    const matchFilter = {};
+
+    if (type !== "all") {
+      matchFilter["job_snapshot.type"] = type;
+    }
+
+    if (search) {
+      const regex = { $regex: getEscapedRegex(search), $options: "i" };
+      matchFilter.$or = [
+        { "applicant.full_name": regex },
+        { "applicant.email": regex },
+        { "applicant.whatsapp": regex },
+        { "applicant.domicile": regex },
+        { "job_snapshot.title": regex },
+      ];
+    }
+
+    const db = (await connectDB()).db();
+
+    if (exportMode) {
+      const data = await db
+        .collection("career_applications")
+        .find(matchFilter)
+        .sort({ createdAt: -1, _id: -1 })
+        .limit(5000)
+        .toArray();
+
+      return NextResponse.json({ success: true, data });
+    }
+
+    const [payload = { data: [], totalData: [] }] = await db
+      .collection("career_applications")
+      .aggregate([
+        { $match: matchFilter },
+        {
+          $facet: {
+            data: [
+              { $sort: { createdAt: -1, _id: -1 } },
+              { $skip: skipData },
+              { $limit: pageSize },
+              {
+                $project: {
+                  job_id: 1,
+                  job_snapshot: 1,
+                  applicant: 1,
+                  education: 1,
+                  experience: 1,
+                  interest: 1,
+                  availability: 1,
+                  closing: 1,
+                  files: 1,
+                  status: 1,
+                  createdAt: 1,
+                },
+              },
+            ],
+            totalData: [{ $count: "count" }],
+          },
+        },
+      ])
+      .toArray();
+
+    const totalData = payload.totalData?.[0]?.count || 0;
+
+    return NextResponse.json({
+      success: true,
+      data: payload.data || [],
+      pagination: {
+        currentPage,
+        pageSize,
+        totalData,
+        totalPages: Math.ceil(totalData / pageSize),
+        hasNextPage: totalData > currentPage * pageSize,
+        hasPreviousPage: currentPage > 1,
+      },
+    });
+  } catch (error) {
+    console.error("CAREER_APPLICATION_LIST_ERROR:", error);
+
+    return NextResponse.json(
+      { success: false, message: error.message || "Gagal memuat data pendaftar." },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(request) {
