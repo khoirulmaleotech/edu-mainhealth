@@ -185,7 +185,7 @@ function FileField({ label, file, onChange, optional }) {
             {label} {optional && <span className="text-slate-400">(optional)</span>}
           </p>
           <p className="mt-1 truncate text-xs font-bold text-slate-400">
-            {file?.name || "PDF, DOC, DOCX, PNG, JPG maksimal 8MB"}
+            {file?.name || "PDF, DOC, DOCX, PNG, JPG"}
           </p>
         </div>
       </div>
@@ -257,6 +257,7 @@ export default function CareerPage() {
   const [cvFile, setCvFile] = useState(null);
   const [strFile, setStrFile] = useState(null);
   const [status, setStatus] = useState({ type: "", message: "" });
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedJob = useMemo(
@@ -266,6 +267,10 @@ export default function CareerPage() {
 
   const updateForm = (key, value) => {
     setForm((previous) => ({ ...previous, [key]: value }));
+  };
+
+  const updateWhatsapp = (value) => {
+    updateForm("whatsapp", value.replace(/\D/g, ""));
   };
 
   const toggleSection = (sectionId) => {
@@ -284,6 +289,17 @@ export default function CareerPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setStatus({ type: "", message: "" });
+    setShowSuccessPopup(false);
+
+    if (!/^8\d{7,13}$/.test(form.whatsapp)) {
+      setStatus({
+        type: "error",
+        message: "Nomor WhatsApp harus diawali angka 8 setelah prefix +62.",
+      });
+      setOpenSection("personal");
+      return;
+    }
+
     setIsSubmitting(true);
 
     const payload = new FormData();
@@ -318,6 +334,7 @@ export default function CareerPage() {
         type: "success",
         message: "Pendaftaran berhasil dikirim. Tim Edumind akan meninjau data kamu.",
       });
+      setShowSuccessPopup(true);
       setForm(initialForm);
       setExpertise([]);
       setActivities([]);
@@ -336,6 +353,29 @@ export default function CareerPage() {
 
   return (
     <div className="min-h-screen bg-[#f8f5ed] font-sans text-slate-800 selection:bg-primary selection:text-white">
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-[32px] bg-white p-7 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-50 text-emerald-500">
+              <CheckCircle2 size={34} />
+            </div>
+            <h3 className="mt-5 text-2xl font-black tracking-tight text-slate-900">
+              Pendaftaran terkirim
+            </h3>
+            <p className="mt-3 text-sm font-semibold leading-relaxed text-slate-500">
+              Tim Edumind akan meninjau data kamu dan menghubungi melalui email atau WhatsApp jika ada tahapan lanjutan.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowSuccessPopup(false)}
+              className="mt-6 w-full rounded-2xl bg-primary px-5 py-4 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-primary/20"
+            >
+              Mengerti
+            </button>
+          </div>
+        </div>
+      )}
+
       <nav className="sticky top-0 z-40 border-b border-primary/10 bg-[#f8f5ed]/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-3">
@@ -489,24 +529,40 @@ export default function CareerPage() {
                 onToggle={toggleSection}
               >
                 <div className="grid gap-4 md:grid-cols-2">
-                <Field label="Nama Lengkap" required><TextInput value={form.fullName} onChange={(e) => updateForm("fullName", e.target.value)} /></Field>
-                <Field label="Nama Panggilan" required><TextInput value={form.nickName} onChange={(e) => updateForm("nickName", e.target.value)} /></Field>
-                <Field label="Jenis Kelamin" required>
-                  <select value={form.gender} onChange={(e) => updateForm("gender", e.target.value)} className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-primary/30">
-                    <option value="">Pilih</option>
-                    <option value="Perempuan">Perempuan</option>
-                    <option value="Laki-laki">Laki-laki</option>
-                    <option value="Tidak ingin menyebutkan">Tidak ingin menyebutkan</option>
-                  </select>
-                </Field>
-                <Field label="Domisili Kota/Kabupaten" required><TextInput value={form.domicile} onChange={(e) => updateForm("domicile", e.target.value)} /></Field>
-                <Field label="Nomor WhatsApp" required><TextInput value={form.whatsapp} onChange={(e) => updateForm("whatsapp", e.target.value)} /></Field>
-                <Field label="Email Aktif" required><TextInput type="email" value={form.email} onChange={(e) => updateForm("email", e.target.value)} /></Field>
-                <div className="md:col-span-2">
-                  <Field label="Link LinkedIn / CV / Portofolio">
-                    <TextInput value={form.profileLink} onChange={(e) => updateForm("profileLink", e.target.value)} placeholder="https://" />
+                  <Field label="Nama Lengkap" required><TextInput value={form.fullName} onChange={(e) => updateForm("fullName", e.target.value)} /></Field>
+                  <Field label="Nama Panggilan" required><TextInput value={form.nickName} onChange={(e) => updateForm("nickName", e.target.value)} /></Field>
+                  <Field label="Jenis Kelamin" required>
+                    <select value={form.gender} onChange={(e) => updateForm("gender", e.target.value)} className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-primary/30">
+                      <option value="">Pilih</option>
+                      <option value="Perempuan">Perempuan</option>
+                      <option value="Laki-laki">Laki-laki</option>
+                      <option value="Tidak ingin menyebutkan">Tidak ingin menyebutkan</option>
+                    </select>
                   </Field>
-                </div>
+                  <Field label="Domisili Kota/Kabupaten" required><TextInput value={form.domicile} onChange={(e) => updateForm("domicile", e.target.value)} /></Field>
+                  <Field label="Nomor WhatsApp" required>
+                    <div className="flex overflow-hidden rounded-2xl border-2 border-slate-100 bg-slate-50 transition focus-within:border-primary/30 focus-within:bg-white">
+                      <span className="flex items-center border-r border-slate-200 bg-white px-4 text-sm font-black text-slate-500">
+                        +62
+                      </span>
+                      <input
+                        inputMode="numeric"
+                        value={form.whatsapp}
+                        onChange={(e) => updateWhatsapp(e.target.value)}
+                        placeholder="81234567890"
+                        className="w-full bg-transparent px-4 py-3 text-sm font-bold text-slate-700 outline-none"
+                      />
+                    </div>
+                    <p className="mt-2 text-[10px] font-bold text-slate-400">
+                      Masukkan nomor tanpa 0, harus diawali angka 8.
+                    </p>
+                  </Field>
+                  <Field label="Email Aktif" required><TextInput type="email" value={form.email} onChange={(e) => updateForm("email", e.target.value)} /></Field>
+                  <div className="md:col-span-2">
+                    <Field label="Link LinkedIn / CV / Portofolio">
+                      <TextInput value={form.profileLink} onChange={(e) => updateForm("profileLink", e.target.value)} placeholder="https://" />
+                    </Field>
+                  </div>
                 </div>
               </CollapsibleSection>
 
@@ -520,33 +576,33 @@ export default function CareerPage() {
                 onToggle={toggleSection}
               >
                 <div className="grid gap-4 md:grid-cols-3">
-                <Field label="Pendidikan Terakhir" required>
-                  <select value={form.educationLevel} onChange={(e) => updateForm("educationLevel", e.target.value)} className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-primary/30">
-                    <option value="">Pilih</option>
-                    <option value="S1 Psikologi">S1 Psikologi</option>
-                    <option value="Profesi Psikolog">Profesi Psikolog</option>
-                    <option value="S2 / S3">S2 / S3</option>
-                  </select>
+                  <Field label="Pendidikan Terakhir" required>
+                    <select value={form.educationLevel} onChange={(e) => updateForm("educationLevel", e.target.value)} className="w-full rounded-2xl border-2 border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-primary/30">
+                      <option value="">Pilih</option>
+                      <option value="S1 Psikologi">S1 Psikologi</option>
+                      <option value="Profesi Psikolog">Profesi Psikolog</option>
+                      <option value="S2 / S3">S2 / S3</option>
+                    </select>
+                  </Field>
+                  <Field label="Universitas Asal" required><TextInput value={form.university} onChange={(e) => updateForm("university", e.target.value)} /></Field>
+                  <Field label="Tahun Lulus" required><TextInput value={form.graduationYear} onChange={(e) => updateForm("graduationYear", e.target.value)} /></Field>
+                </div>
+
+                <Field label="Bidang Keahlian" required>
+                  <CheckboxGroup options={expertiseOptions} selected={expertise} onToggle={(option) => setExpertise((items) => toggleOption(items, option))} />
                 </Field>
-                <Field label="Universitas Asal" required><TextInput value={form.university} onChange={(e) => updateForm("university", e.target.value)} /></Field>
-                <Field label="Tahun Lulus" required><TextInput value={form.graduationYear} onChange={(e) => updateForm("graduationYear", e.target.value)} /></Field>
-              </div>
 
-              <Field label="Bidang Keahlian" required>
-                <CheckboxGroup options={expertiseOptions} selected={expertise} onToggle={(option) => setExpertise((items) => toggleOption(items, option))} />
-              </Field>
+                <Field label="Saat ini sedang beraktivitas sebagai" required>
+                  <CheckboxGroup options={activityOptions} selected={activities} onToggle={(option) => setActivities((items) => toggleOption(items, option))} />
+                </Field>
 
-              <Field label="Saat ini sedang beraktivitas sebagai" required>
-                <CheckboxGroup options={activityOptions} selected={activities} onToggle={(option) => setActivities((items) => toggleOption(items, option))} />
-              </Field>
+                <Field label="Pengalaman di dunia pendidikan" required>
+                  <CheckboxGroup options={educationExperienceOptions} selected={educationExperiences} onToggle={(option) => setEducationExperiences((items) => toggleOption(items, option))} />
+                </Field>
 
-              <Field label="Pengalaman di dunia pendidikan" required>
-                <CheckboxGroup options={educationExperienceOptions} selected={educationExperiences} onToggle={(option) => setEducationExperiences((items) => toggleOption(items, option))} />
-              </Field>
-
-              <Field label="Ceritakan pengalaman paling bermakna bersama siswa / sekolah" required>
-                <TextArea value={form.meaningfulExperience} onChange={(e) => updateForm("meaningfulExperience", e.target.value)} />
-              </Field>
+                <Field label="Ceritakan pengalaman paling bermakna bersama siswa / sekolah" required>
+                  <TextArea value={form.meaningfulExperience} onChange={(e) => updateForm("meaningfulExperience", e.target.value)} />
+                </Field>
               </CollapsibleSection>
 
               <CollapsibleSection
@@ -558,18 +614,18 @@ export default function CareerPage() {
                 isComplete={Boolean(form.motivation && educationIssues.length && contributionAreas.length)}
                 onToggle={toggleSection}
               >
-              <Field label="Kenapa tertarik bergabung dengan Edumind?" required>
-                <TextArea value={form.motivation} onChange={(e) => updateForm("motivation", e.target.value)} />
-              </Field>
-              <Field label="Isu pendidikan yang ingin kamu bantu selesaikan" required>
-                <CheckboxGroup options={educationIssueOptions} selected={educationIssues} onToggle={(option) => setEducationIssues((items) => toggleOption(items, option))} />
-              </Field>
-              {educationIssues.includes("Lainnya") && (
-                <Field label="Isu lainnya"><TextInput value={form.educationIssueOther} onChange={(e) => updateForm("educationIssueOther", e.target.value)} /></Field>
-              )}
-              <Field label="Area kontribusi yang diminati" required>
-                <CheckboxGroup options={contributionAreaOptions} selected={contributionAreas} onToggle={(option) => setContributionAreas((items) => toggleOption(items, option))} />
-              </Field>
+                <Field label="Kenapa tertarik bergabung dengan Edumind?" required>
+                  <TextArea value={form.motivation} onChange={(e) => updateForm("motivation", e.target.value)} />
+                </Field>
+                <Field label="Isu pendidikan yang ingin kamu bantu selesaikan" required>
+                  <CheckboxGroup options={educationIssueOptions} selected={educationIssues} onToggle={(option) => setEducationIssues((items) => toggleOption(items, option))} />
+                </Field>
+                {educationIssues.includes("Lainnya") && (
+                  <Field label="Isu lainnya"><TextInput value={form.educationIssueOther} onChange={(e) => updateForm("educationIssueOther", e.target.value)} /></Field>
+                )}
+                <Field label="Area kontribusi yang diminati" required>
+                  <CheckboxGroup options={contributionAreaOptions} selected={contributionAreas} onToggle={(option) => setContributionAreas((items) => toggleOption(items, option))} />
+                </Field>
               </CollapsibleSection>
 
               <CollapsibleSection
@@ -581,29 +637,29 @@ export default function CareerPage() {
                 isComplete={Boolean(form.projectBasedAvailability && form.reachableCities && availability.length)}
                 onToggle={toggleSection}
               >
-              <Field label="Bersedia project-based sesuai school client?" required>
-                <div className="grid grid-cols-2 gap-3">
-                  {["Ya", "Tidak"].map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => updateForm("projectBasedAvailability", option)}
-                      className={`rounded-2xl border px-4 py-3 text-xs font-black transition ${form.projectBasedAvailability === option
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-slate-100 bg-white text-slate-500"
-                        }`}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
-              </Field>
-              <Field label="Kota/wilayah yang siap dijangkau untuk project" required>
-                <TextInput value={form.reachableCities} onChange={(e) => updateForm("reachableCities", e.target.value)} />
-              </Field>
-              <Field label="Ketersediaan waktu" required>
-                <CheckboxGroup options={availabilityOptions} selected={availability} onToggle={(option) => setAvailability((items) => toggleOption(items, option))} />
-              </Field>
+                <Field label="Bersedia project-based sesuai school client?" required>
+                  <div className="grid grid-cols-2 gap-3">
+                    {["Ya", "Tidak"].map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => updateForm("projectBasedAvailability", option)}
+                        className={`rounded-2xl border px-4 py-3 text-xs font-black transition ${form.projectBasedAvailability === option
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-slate-100 bg-white text-slate-500"
+                          }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+                <Field label="Kota/wilayah yang siap dijangkau untuk project" required>
+                  <TextInput value={form.reachableCities} onChange={(e) => updateForm("reachableCities", e.target.value)} />
+                </Field>
+                <Field label="Ketersediaan waktu" required>
+                  <CheckboxGroup options={availabilityOptions} selected={availability} onToggle={(option) => setAvailability((items) => toggleOption(items, option))} />
+                </Field>
               </CollapsibleSection>
 
               <CollapsibleSection
@@ -615,21 +671,21 @@ export default function CareerPage() {
                 isComplete={Boolean(form.healthyEducationMeaning && form.expectation && (cvFile || form.profileLink))}
                 onToggle={toggleSection}
               >
-              <Field label="Apa arti pendidikan yang sehat menurutmu?" required>
-                <TextArea value={form.healthyEducationMeaning} onChange={(e) => updateForm("healthyEducationMeaning", e.target.value)} />
-              </Field>
-              <Field label="Harapan jika bergabung bersama Edumind.id" required>
-                <TextArea value={form.expectation} onChange={(e) => updateForm("expectation", e.target.value)} />
-              </Field>
-              <div className="grid gap-4 md:grid-cols-2">
-                <FileField label="Upload CV / Portofolio" file={cvFile} onChange={setCvFile} />
-                <FileField label="Upload STR/SIPP" file={strFile} onChange={setStrFile} optional />
-              </div>
+                <Field label="Apa arti pendidikan yang sehat menurutmu?" required>
+                  <TextArea value={form.healthyEducationMeaning} onChange={(e) => updateForm("healthyEducationMeaning", e.target.value)} />
+                </Field>
+                <Field label="Harapan jika bergabung bersama Edumind.id" required>
+                  <TextArea value={form.expectation} onChange={(e) => updateForm("expectation", e.target.value)} />
+                </Field>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FileField label="Upload CV / Portofolio" file={cvFile} onChange={setCvFile} />
+                  <FileField label="Upload STR/SIPP" file={strFile} onChange={setStrFile} optional />
+                </div>
               </CollapsibleSection>
             </div>
 
             <div className="border-t border-slate-100 bg-white p-4 md:p-5">
-              {status.message && (
+              {status.message && status.type !== "success" && (
                 <div className={`mb-3 rounded-3xl px-5 py-4 text-sm font-bold ${status.type === "success"
                   ? "bg-emerald-50 text-emerald-700"
                   : "bg-rose-50 text-rose-700"

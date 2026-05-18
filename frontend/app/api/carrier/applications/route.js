@@ -263,10 +263,18 @@ export async function POST(request) {
     }
 
     const email = textData.email.toLowerCase();
+    const whatsapp = textData.whatsapp.replace(/\D/g, "");
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json(
         { success: false, message: "Format email tidak valid." },
+        { status: 400 },
+      );
+    }
+
+    if (!/^8\d{7,13}$/.test(whatsapp)) {
+      return NextResponse.json(
+        { success: false, message: "Nomor WhatsApp harus diawali angka 8 setelah prefix +62." },
         { status: 400 },
       );
     }
@@ -303,7 +311,7 @@ export async function POST(request) {
         nick_name: textData.nickName,
         gender: textData.gender,
         domicile: textData.domicile,
-        whatsapp: textData.whatsapp,
+        whatsapp: `+62${whatsapp}`,
         email,
         profile_link: profileLink,
       },
