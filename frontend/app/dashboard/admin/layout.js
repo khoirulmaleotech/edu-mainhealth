@@ -20,7 +20,7 @@ export default function AdminLayout({ children }) {
     { name: 'Verifikasi Sekolah', icon: <Building2 size={20} />, path: '/dashboard/admin/verify-schools' },
     { name: 'Verifikasi Psikolog', icon: <ShieldCheck size={20} />, path: '/dashboard/admin/verify-psychologist' },
     { name: 'Manajemen User', icon: <Users size={20} />, path: '/dashboard/admin/users' },
-    { name: 'Manajemen Artikel', icon: <Newspaper size={20} />, path: '/dashboard/admin/articles' },
+    { name: 'Manajemen Konten', icon: <Newspaper size={20} />, path: '/dashboard/admin/articles' },
     { name: 'Laporan Insiden', icon: <HeartPulse size={20} />, path: '/dashboard/admin/reports' },
   ];
 

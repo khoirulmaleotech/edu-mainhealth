@@ -14,13 +14,23 @@ export async function GET() {
     client = new MongoClient(uri);
 
     await client.connect();
-
     const db = client.db();
-
     const articles = await db
       .collection("articles")
       .find({
         status: "Published",
+      })
+      .project({
+        title: 1,
+        description: 1,
+        content: 1,
+        category: 1,
+        type: 1,
+        speaker: 1,
+        webinarDate: 1,
+        webinarLink: 1,
+        thumbnail: 1,
+        createdAt: 1,
       })
       .sort({
         createdAt: -1,
@@ -32,12 +42,16 @@ export async function GET() {
       articles,
     });
   } catch (error) {
-    console.error("GET PARENT ARTICLES ERROR:", error);
+    console.error(
+      "GET PARENT ARTICLES ERROR:",
+      error
+    );
 
     return NextResponse.json(
       {
         success: false,
-        message: "Gagal mengambil artikel",
+        message:
+          "Gagal mengambil artikel",
       },
       { status: 500 }
     );

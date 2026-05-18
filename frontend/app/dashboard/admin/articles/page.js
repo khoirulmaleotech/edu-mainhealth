@@ -198,7 +198,7 @@ export default function ParentArticleManagement() {
 
               <div>
                 <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">
-                  Management Artikel Parenting
+                  Management Konten
                 </h1>
 
                 <p className="text-slate-500 font-medium text-sm mt-1">
@@ -219,7 +219,7 @@ export default function ParentArticleManagement() {
           >
             <Plus size={18} />
 
-            Tambah Artikel
+            Tambah Konten
           </button>
 
         </div>
@@ -470,18 +470,19 @@ export default function ParentArticleManagement() {
                     <td className="px-6 py-6">
 
                       <div className="flex items-center justify-center gap-2">
-
                         {/* VIEW */}
-                        <button
-                          onClick={() =>
-                            router.push(
-                              `/dashboard/admin/articles/${article._id}`
-                            )
-                          }
-                          className="w-11 h-11 rounded-2xl bg-slate-100 hover:bg-primary hover:text-white transition-all flex items-center justify-center text-slate-600"
-                        >
-                          <Eye size={16} />
-                        </button>
+                        {article.type !== "Webinar" && (
+                          <button
+                            onClick={() =>
+                              router.push(
+                                `/dashboard/admin/articles/${article._id}`
+                              )
+                            }
+                            className="w-11 h-11 rounded-2xl bg-slate-100 hover:bg-primary hover:text-white transition-all flex items-center justify-center text-slate-600"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        )}
 
                         {/* EDIT */}
                         <button
@@ -570,13 +571,19 @@ export default function ParentArticleManagement() {
                     </div>
                   </div>
 
-                  <div className="mt-5 grid grid-cols-3 gap-2">
-                    <button
-                      onClick={() => router.push(`/dashboard/admin/articles/${article._id}`)}
-                      className="py-3 rounded-2xl bg-white border border-slate-100 text-xs font-black uppercase tracking-widest text-primary"
-                    >
-                      Lihat
-                    </button>
+                  <div className={`mt-5 grid gap-2 ${article.type === "Webinar"? "grid-cols-2": "grid-cols-3"}`}>
+                    {article.type !== "Webinar" && (
+                      <button
+                        onClick={() =>
+                          router.push(
+                            `/dashboard/admin/articles/${article._id}`
+                          )
+                        }
+                        className="py-3 rounded-2xl bg-white border border-slate-100 text-xs font-black uppercase tracking-widest text-primary"
+                      >
+                        Lihat
+                      </button>
+                    )}
                     <button
                       onClick={() => router.push(`/dashboard/admin/articles/${article._id}/edit`)}
                       className="py-3 rounded-2xl bg-white border border-slate-100 text-xs font-black uppercase tracking-widest text-slate-600"
