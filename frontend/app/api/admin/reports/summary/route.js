@@ -4,6 +4,8 @@ import { connectDB } from "@/lib/mongodb";
 
 import { requireAdminSession } from "../_utils";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const session = await requireAdminSession();

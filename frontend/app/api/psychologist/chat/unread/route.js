@@ -5,6 +5,8 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { connectDB } from "@/lib/mongodb";
 
+export const dynamic = 'force-dynamic';
+
 function buildPsychologistRoomMatch(psychologistId) {
   const match = {
     $or: [
