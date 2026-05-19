@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { hash } from 'bcryptjs';
-import { MongoClient, ObjectId } from 'mongodb';
-
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+import { ObjectId } from 'mongodb';
+// Impor fungsi connectDB terpusat yang dipertahankan di folder lib Bapak
+import { connectDB } from "@/lib/mongodb"; 
 
 export async function POST(request) {
   try {
@@ -16,14 +15,16 @@ export async function POST(request) {
       institution_id,
       institution_name,
       sipp_number,
-      student_email,    // ← BARU: khusus role parent
+      student_email,    // Khusus role parent
     } = body;
 
+    // 1. Validasi Data Wajib
     if (!fullname || !email || !password || !role) {
       return NextResponse.json({ message: "Data wajib diisi semua." }, { status: 400 });
     }
 
-    await client.connect();
+    // 2. Gunakan koneksi pooling terpusat dari global cache
+    const client = await connectDB();
     const db = client.db();
 
     // Cek email duplikat
@@ -66,6 +67,7 @@ export async function POST(request) {
     }
     // ────────────────────────────────────────────────────────────────────
 
+    // 3. Hash Password dengan Salt Rounds yang aman
     const hashedPassword = await hash(password, 12);
 
     const newUser = {
@@ -78,19 +80,21 @@ export async function POST(request) {
       updatedAt: new Date(),
     };
 
+    // 4. Pengondisian Data Berdasarkan Role Stakeholder
     if (role === 'psychologist') {
       newUser.work_at = institution_name;
       newUser.sipp = sipp_number;
     } else if (role === 'parent') {
-      // Parent tidak perlu school_id — relasinya lewat family_links
+      // Parent tidak perlu school_id — relasinya dijembatani lewat family_links
     } else {
       if (!institution_id) {
         return NextResponse.json({ message: "Asal sekolah wajib dipilih." }, { status: 400 });
       }
-      newUser.school_id = new ObjectId(institution_id);
+      // Validasi agar instansi ObjectId dari string aman dan tidak merusak serverless
+      newUser.school_id = ObjectId.isValid(institution_id) ? new ObjectId(institution_id) : institution_id;
     }
 
-    // Simpan user baru
+    // 5. Eksekusi penyimpanan user baru ke MongoDB
     const result = await db.collection('users').insertOne(newUser);
     const newParentId = result.insertedId;
 
