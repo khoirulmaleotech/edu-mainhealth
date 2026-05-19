@@ -1,7 +1,8 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { MongoClient } from "mongodb";
 import { compare } from "bcryptjs";
+// Impor fungsi connectDB terpusat yang dipertahankan di folder lib Bapak
+import { connectDB } from "@/lib/mongodb"; 
 
 const handler = NextAuth({
   // 1. Pengaturan Session (Expired 1 Hari)
@@ -15,7 +16,8 @@ const handler = NextAuth({
     CredentialsProvider({
       name: "Credentials",
       async authorize(credentials) {
-        const client = await MongoClient.connect(process.env.MONGODB_URI);
+        // Menggunakan koneksi terpusat yang memanfaatkan pooling global caching
+        const client = await connectDB();
         const db = client.db();
 
         // Cari user berdasarkan email
@@ -24,7 +26,7 @@ const handler = NextAuth({
         });
 
         if (!user) {
-          client.close();
+          // HAPUS client.close() karena kita ingin pooling koneksinya tetap hidup di cache global
           throw new Error("Email tidak terdaftar!");
         }
 
@@ -32,30 +34,26 @@ const handler = NextAuth({
         const isValid = await compare(credentials.password, user.password);
 
         if (!isValid) {
-          client.close();
           throw new Error("Password salah!");
         }
 
         // Cek Verifikasi (Terutama untuk Psikolog/Sekolah)
         if (!user.is_verified && user.role !== 'superadmin') {
-          client.close();
           throw new Error("Akun Anda belum diverifikasi oleh admin.");
         }
-
-        client.close();
 
         // Data yang dikembalikan untuk disimpan di JWT
         return {
           id: user._id.toString(),
           name: user.fullname,
           email: user.email,
-          role: user.role, // Penting untuk redirect dashboard
+          role: user.role, // Penting untuk fungsi redirect dashboard stakeholder
         };
       },
     }),
   ],
 
-  // 3. Callbacks: Memasukkan role ke dalam session
+  // 3. Callbacks: Memasukkan role dan id ke dalam session agar bisa terbaca di layout/page
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -65,7 +63,7 @@ const handler = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (token) {
+      if (token && session.user) {
         session.user.role = token.role;
         session.user.id = token.id;
       }
@@ -76,7 +74,7 @@ const handler = NextAuth({
   // 4. Secret & Pages
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: "/login", // Arahkan ke page login buatan kita
+    signIn: "/login", // Mengarahkan ke landing page login EduMind by Educourse
   },
 });
 
