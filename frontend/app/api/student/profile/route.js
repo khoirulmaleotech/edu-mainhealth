@@ -1,64 +1,85 @@
 import { NextResponse } from 'next/server';
-import { MongoClient, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+// Impor fungsi connectDB terpusat yang dipertahankan di folder lib Bapak
+import { connectDB } from "@/lib/mongodb"; 
 
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
-
+// Konfigurasi DigitalOcean Spaces Singleton di luar handler
 const s3Client = new S3Client({
-  endpoint: "https://sgp1.digitaloceanspaces.com",
+  endpoint: "https://sgp1.digitaloceanspaces.com", // Endpoint wilayah Singapura
   forcePathStyle: false,
-  region: "us-east-1",
+  region: "us-east-1", // Diperlukan sebagai konfigurasi internal SDK AWS untuk Spaces
   credentials: {
     accessKeyId: process.env.DO_SPACES_KEY,
     secretAccessKey: process.env.DO_SPACES_SECRET
   }
 });
 
+// GET: Mengambil data detail profil user/siswa
 export async function GET() {
   try {
+    // 1. Validasi Autentikasi Session User
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ success: false }, { status: 401 });
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, message: "Sesi tidak valid atau kedaluwarsa" }, { status: 401 });
+    }
 
-    await client.connect();
+    // 2. Gunakan koneksi pooling terpusat dari global cache (Hemat port Atlas)
+    const client = await connectDB();
     const db = client.db();
+
+    const userIdStr = session.user.id;
+    // Validasi format ObjectId sebelum query dilakukan
+    const queryId = ObjectId.isValid(userIdStr) ? new ObjectId(userIdStr) : userIdStr;
+
+    // 3. Ambil data dokumen tanpa menyertakan password demi keamanan data
     const user = await db.collection('users').findOne(
-      { _id: new ObjectId(session.user.id) },
+      { _id: queryId },
       { projection: { password: 0 } }
     );
 
+    if (!user) {
+      return NextResponse.json({ success: false, message: "User tidak ditemukan" }, { status: 404 });
+    }
+
     return NextResponse.json({ success: true, user });
   } catch (error) {
+    console.error("❌ PROFILE_GET_ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
 
+// PATCH: Memperbarui data informasi umum dan foto avatar user/siswa
 export async function PATCH(request) {
   try {
+    // 1. Validasi Autentikasi Session User
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
+    // 2. Parsing Payload berbasis Form Data (Mendukung file binary avatar)
     const data = await request.formData();
     const fullname = data.get('fullname');
     const phone = data.get('phone');
-    const file = data.get('file');
+    const file = data.get('file'); // Berupa objek File/Blob dari input frontend
 
     const updateData = { 
-      fullname, 
-      phone, 
       updated_at: new Date() 
     };
 
-    // Logika Upload ke DigitalOcean Spaces jika ada file baru
+    // Hanya petakan field yang dikirim dari form agar tidak menimpa data yang sudah ada dengan null
+    if (fullname !== null && fullname !== undefined) updateData.fullname = fullname;
+    if (phone !== null && phone !== undefined) updateData.phone = phone;
+
+    // 3. Logika Upload ke DigitalOcean Spaces jika ada berkas file foto baru
     if (file && file.size > 0) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
       
-      // Nama file unik (menggunakan ID user dan timestamp)
+      // Nama file unik (menggunakan ID user dan timestamp) untuk menghindari tumpang tindih berkas cache
       const fileName = `avatars/${session.user.id}-${Date.now()}.png`;
       const bucketName = process.env.DO_SPACES_BUCKET;
 
@@ -66,19 +87,25 @@ export async function PATCH(request) {
         Bucket: bucketName,
         Key: fileName,
         Body: buffer,
-        ACL: "public-read", // Agar gambar bisa diakses melalui URL
+        ACL: "public-read", // Membuka akses publik agar dapat dibaca via tautan URL di img src frontend
         ContentType: file.type,
       }));
 
-      // Simpan URL gambar ke field 'image' di database
+      // Simpan tautan URL absolut gambar ke field 'image' di database MongoDB
       updateData.image = `https://${bucketName}.sgp1.digitaloceanspaces.com/${fileName}`;
     }
 
-    await client.connect();
+    // 4. Gunakan koneksi pooling terpusat dari global cache (Aman dari Connection Full)
+    const client = await connectDB();
     const db = client.db();
 
+    const userIdStr = session.user.id;
+    // Validasi format ObjectId sebelum mengeksekusi update
+    const queryId = ObjectId.isValid(userIdStr) ? new ObjectId(userIdStr) : userIdStr;
+
+    // 5. Eksekusi pembaruan data ke koleksi users
     const result = await db.collection('users').updateOne(
-      { _id: new ObjectId(session.user.id) },
+      { _id: queryId },
       { $set: updateData }
     );
 
@@ -86,9 +113,9 @@ export async function PATCH(request) {
       return NextResponse.json({ success: false, message: "User tidak ditemukan" }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: "Profil berhasil diperbarui" });
   } catch (error) {
-    console.error("PROFILE_PATCH_ERROR:", error);
+    console.error("❌ PROFILE_PATCH_ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
