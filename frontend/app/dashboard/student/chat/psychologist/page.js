@@ -17,24 +17,38 @@ export default function StudentPsychologistListPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    const fetchPsychologists = async () => {
-      try {
-        const res = await fetch('/api/student/psychologists');
-        const json = await res.json();
-        if (json.success) setPsychologists(json.data);
-      } catch (err) {
-        console.error("Error fetching psychologists:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+useEffect(() => {
+  let interval;
 
-    if (session?.user?.id) {
-      fetchPsychologists();
+  const fetchPsychologists = async () => {
+    try {
+      const res = await fetch('/api/student/psychologists');
+
+      const json = await res.json();
+
+      if (json.success) {
+        setPsychologists(json.data);
+      }
+
+    } catch (err) {
+      console.error("Error fetching psychologists:", err);
+
+    } finally {
+      setLoading(false);
     }
-    
-  }, [session?.user?.id]);
+  };
+
+  if (session?.user?.id) {
+    fetchPsychologists();
+
+    interval = setInterval(() => {
+      fetchPsychologists();
+    }, 5000);
+  }
+
+  return () => clearInterval(interval);
+
+}, [session?.user?.id]);
 
   const filteredData = psychologists.filter(p => 
     p.fullname.toLowerCase().includes(searchTerm.toLowerCase())

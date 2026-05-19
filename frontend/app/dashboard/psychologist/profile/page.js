@@ -38,32 +38,40 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSave = async (dataToSave = formData) => {
-    setSaving(true);
-    try {
-      await fetchInstance("/api/psychologist/profile", {
-        method: "PUT",
-        body: JSON.stringify(dataToSave),
-      });
-      setProfile(dataToSave);
-      setIsEditing(false);
-    } catch (error) {
-      alert("Gagal memperbarui profil");
-    } finally {
-      setSaving(false);
-    }
-  };
+const handleSave = async (dataToSave = formData) => {
+  setSaving(true);
 
-  const toggleOnlineStatus = () => {
-    const newValue = !profile.is_online;
-    const updatedData = { ...profile, is_online: newValue };
-    
-    setProfile(updatedData);
-    setFormData(updatedData);
-    
-    handleSave(updatedData);
-  };
+  try {
+    await fetchInstance("/api/psychologist/profile", {
+      method: "PUT",
+      body: JSON.stringify(dataToSave),
+    });
 
+    await getProfile();
+
+    setIsEditing(false);
+
+  } catch (error) {
+    alert("Gagal memperbarui profil");
+
+  } finally {
+    setSaving(false);
+  }
+};
+
+const toggleOnlineStatus = async () => {
+  try {
+    const updatedData = {
+      ...profile,
+      is_online: !profile.is_online
+    };
+
+    await handleSave(updatedData);
+
+  } catch (error) {
+    console.error(error);
+  }
+};
   if (loading) return (
     <div className="flex flex-col items-center justify-center p-20 gap-4">
       <div className="w-10 h-10 border-4 border-slate-200 border-t-[#00adb5] rounded-full animate-spin" />
