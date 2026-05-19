@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -8,19 +9,20 @@ import {
   Star,
   Loader2,
   CheckCircle2,
-  Heart,
   Users,
   X,
-  Check,
+ Check,
   Bell,
   ChevronRight,
   RefreshCw,
 } from "lucide-react";
 
-// ─── Pending Parent Request Card ──────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Pending Parent Request Card
+// ─────────────────────────────────────────────────────────────
 
 function ParentRequestCard({ link, onRespond }) {
-  const [loading, setLoading] = useState(null); // 'approve' | 'reject' | null
+  const [loading, setLoading] = useState(null);
 
   const handleAction = async (action) => {
     setLoading(action);
@@ -31,17 +33,19 @@ function ParentRequestCard({ link, onRespond }) {
   return (
     <div className="flex items-center justify-between gap-4 bg-white border-2 border-amber-100 rounded-[24px] p-5 shadow-sm animate-in slide-in-from-top-2">
       <div className="flex items-center gap-4">
-        {/* Avatar placeholder */}
         <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-2xl flex-shrink-0">
           🏠
         </div>
+
         <div>
           <p className="text-sm font-black text-slate-800">
             {link.parent_name || "Orang Tua"}
           </p>
+
           <p className="text-[11px] text-slate-400 font-medium">
             {link.parent_email}
           </p>
+
           <p className="text-[10px] text-amber-500 font-bold mt-0.5">
             Meminta akses ke data emosionalmu
           </p>
@@ -54,7 +58,6 @@ function ParentRequestCard({ link, onRespond }) {
           onClick={() => handleAction("reject")}
           disabled={!!loading}
           className="w-10 h-10 rounded-xl bg-red-50 hover:bg-red-100 text-red-500 flex items-center justify-center transition-all disabled:opacity-50"
-          title="Tolak"
         >
           {loading === "reject" ? (
             <Loader2 size={16} className="animate-spin" />
@@ -62,12 +65,12 @@ function ParentRequestCard({ link, onRespond }) {
             <X size={16} />
           )}
         </button>
+
         {/* Approve */}
         <button
           onClick={() => handleAction("approve")}
           disabled={!!loading}
           className="w-10 h-10 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 flex items-center justify-center transition-all disabled:opacity-50"
-          title="Setujui"
         >
           {loading === "approve" ? (
             <Loader2 size={16} className="animate-spin" />
@@ -80,7 +83,9 @@ function ParentRequestCard({ link, onRespond }) {
   );
 }
 
-// ─── Parent Requests Section ───────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Parent Requests Section
+// ─────────────────────────────────────────────────────────────
 
 function ParentRequestsSection({ studentId }) {
   const [requests, setRequests] = useState([]);
@@ -89,17 +94,26 @@ function ParentRequestsSection({ studentId }) {
 
   const pushToast = (msg, type = "success") => {
     const id = Date.now();
+
     setToasts((t) => [...t, { id, msg, type }]);
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3500);
+
+    setTimeout(() => {
+      setToasts((t) => t.filter((x) => x.id !== id));
+    }, 3500);
   };
 
   const fetchRequests = useCallback(async () => {
     if (!studentId) return;
+
     setFetching(true);
+
     try {
       const res = await fetch("/api/family/pending");
       const data = await res.json();
-      if (data.success) setRequests(data.requests);
+
+      if (data.success) {
+        setRequests(data.requests);
+      }
     } catch {
       console.error("Gagal mengambil permintaan orang tua");
     } finally {
@@ -115,12 +129,20 @@ function ParentRequestsSection({ studentId }) {
     try {
       const res = await fetch("/api/family/respond", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ link_id: linkId, action }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          link_id: linkId,
+          action,
+        }),
       });
+
       const data = await res.json();
+
       if (res.ok) {
         setRequests((prev) => prev.filter((r) => r._id !== linkId));
+
         pushToast(
           action === "approve"
             ? "Orang tua berhasil dihubungkan! ✅"
@@ -135,12 +157,12 @@ function ParentRequestsSection({ studentId }) {
     }
   };
 
-  if (fetching) return null; // Silent loading — tidak ganggu UI utama
-  if (requests.length === 0) return null; // Tidak tampil jika tidak ada request
+  if (fetching) return null;
+  if (requests.length === 0) return null;
 
   return (
     <>
-      {/* Toast notifications */}
+      {/* Toast */}
       <div className="fixed top-6 right-6 z-50 space-y-2 pointer-events-none">
         {toasts.map((t) => (
           <div
@@ -158,50 +180,53 @@ function ParentRequestsSection({ studentId }) {
         ))}
       </div>
 
-      {/* Request banner */}
-      <section className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-100 rounded-[32px] p-6 space-y-4 animate-in fade-in duration-500">
-        {/* Header */}
+      {/* Section */}
+      <section className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-100 rounded-[32px] p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-10 h-10 bg-amber-100 rounded-2xl flex items-center justify-center">
                 <Bell className="text-amber-600" size={20} />
               </div>
-              {/* badge */}
+
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
                 {requests.length}
               </span>
             </div>
+
             <div>
               <h3 className="text-sm font-black text-slate-800">
                 Permintaan Koneksi Orang Tua
               </h3>
+
               <p className="text-[11px] text-slate-500 font-medium">
                 {requests.length} permintaan menunggu persetujuan kamu
               </p>
             </div>
           </div>
+
           <button
             onClick={fetchRequests}
-            className="text-amber-500 hover:text-amber-700 transition-colors"
-            title="Refresh"
+            className="text-amber-500 hover:text-amber-700"
           >
             <RefreshCw size={16} />
           </button>
         </div>
 
-        {/* Info note */}
         <div className="bg-white/70 text-[11px] text-slate-500 font-medium px-4 py-3 rounded-2xl leading-relaxed border border-amber-100">
-          💡 Jika kamu menyetujui, orang tua dapat melihat{" "}
+          Jika kamu menyetujui, orang tua dapat melihat{" "}
           <strong>ringkasan mood</strong> dan{" "}
           <strong>laporan perkembanganmu</strong>. Data percakapan pribadi{" "}
           <strong>tidak akan dibagikan</strong>.
         </div>
 
-        {/* Request cards */}
         <div className="space-y-3">
           {requests.map((r) => (
-            <ParentRequestCard key={r._id} link={r} onRespond={handleRespond} />
+            <ParentRequestCard
+              key={r._id}
+              link={r}
+              onRespond={handleRespond}
+            />
           ))}
         </div>
       </section>
@@ -209,12 +234,16 @@ function ParentRequestsSection({ studentId }) {
   );
 }
 
-// ─── Mood Check-in ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Mood Check-in
+// ─────────────────────────────────────────────────────────────
 
 function MoodCheckIn({ sessionId }) {
   const [isMoodLoading, setIsMoodLoading] = useState(false);
   const [lastMood, setLastMood] = useState(null);
   const [selectedMood, setSelectedMood] = useState(null);
+  const [hoveredMood, setHoveredMood] = useState(null);
+  const [note, setNote] = useState("");
 
   const moodEmojis = [
     { emoji: "😢", label: "Sedih" },
@@ -226,73 +255,146 @@ function MoodCheckIn({ sessionId }) {
 
   useEffect(() => {
     if (!sessionId) return;
+
     fetch("/api/student/mood")
       .then((r) => r.json())
       .then((data) => {
-        if (data.success && data.logs.length > 0) setLastMood(data.logs[0]);
+        if (data.success && data.logs?.length > 0) {
+          setLastMood(data.logs[0]);
+        }
       })
       .catch(console.error);
   }, [sessionId]);
 
-  const handleMoodCheckIn = async (moodData) => {
+  const handleMoodCheckIn = async () => {
+    if (!selectedMood) return;
+
     setIsMoodLoading(true);
+
     try {
       const res = await fetch("/api/student/mood", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mood: moodData.emoji, label: moodData.label }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mood: selectedMood.emoji,
+          label: selectedMood.label,
+          note,
+        }),
       });
+
       if (res.ok) {
-        setLastMood({ mood: moodData.emoji, label: moodData.label });
-        setSelectedMood(moodData.label);
-        setTimeout(() => setSelectedMood(null), 5000);
+        setLastMood({
+          mood: selectedMood.emoji,
+          label: selectedMood.label,
+          note,
+        });
+
+        setSelectedMood(null);
+        setNote("");
       }
     } catch (err) {
-      console.error("Gagal mencatat mood:", err);
+      console.error(err);
     } finally {
       setIsMoodLoading(false);
     }
   };
 
   return (
-    <div className="bg-white p-5 rounded-[30px] shadow-sm border border-slate-100 flex flex-wrap items-center gap-4">
-      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] pl-2">
-        Mood Check-in:
-      </p>
-      <div className="flex gap-2 items-center min-h-[40px]">
-        {isMoodLoading ? (
-          <Loader2 className="animate-spin text-[#00adb5] mx-8" size={20} />
-        ) : lastMood ? (
-          <div className="flex items-center gap-3 animate-in zoom-in">
-            <div className="text-2xl">{lastMood.mood}</div>
-            <div className="flex items-center gap-2 px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-xs font-bold border border-emerald-100">
-              <CheckCircle2 size={14} /> Mood {lastMood.label} Tercatat
-            </div>
-            <button
-              onClick={() => setLastMood(null)}
-              className="text-[10px] text-slate-400 underline hover:text-[#00adb5] font-bold ml-1"
-            >
-              Ganti
-            </button>
-          </div>
-        ) : (
-          moodEmojis.map((m, i) => (
-            <button
-              key={i}
-              onClick={() => handleMoodCheckIn(m)}
-              className="text-2xl hover:scale-125 transition-transform active:scale-95 hover:drop-shadow-md p-1"
-              title={m.label}
-            >
-              {m.emoji}
-            </button>
-          ))
+    <div className="bg-white border border-slate-100 rounded-[26px] shadow-sm p-4 w-full space-y-4">
+      <div className="flex justify-between items-center px-1">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+          Mood Check-in
+        </p>
+
+        {!lastMood && (hoveredMood || selectedMood) && (
+          <span className="text-[10px] font-bold text-[#00adb5]">
+            {hoveredMood || selectedMood?.label}
+          </span>
         )}
       </div>
+
+      {lastMood ? (
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="text-3xl">{lastMood.mood}</div>
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-bold w-fit">
+                <CheckCircle2 size={13} />
+                {lastMood.label}
+              </div>
+
+              {lastMood.note && (
+                <p className="text-xs text-slate-500 mt-1 truncate max-w-[180px]">
+                  "{lastMood.note}"
+                </p>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setLastMood(null)}
+            className="text-[10px] font-bold text-slate-400 hover:text-[#00adb5]"
+          >
+            Ganti
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Emoji */}
+          <div className="flex gap-2 flex-wrap">
+            {moodEmojis.map((m, i) => (
+              <button
+                key={i}
+                type="button"
+                onMouseEnter={() => setHoveredMood(m.label)}
+                onMouseLeave={() => setHoveredMood(null)}
+                onClick={() => setSelectedMood(m)}
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center text-2xl border transition-all duration-300 ${
+                  selectedMood?.label === m.label
+                    ? "border-[#00adb5] bg-[#00adb5]/10 scale-110"
+                    : "border-slate-100 bg-slate-50/50 hover:border-[#00adb5]/30"
+                }`}
+              >
+                {m.emoji}
+              </button>
+            ))}
+          </div>
+
+          {/* Note */}
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Apa yang kamu rasakan? (opsional)"
+            className="w-full h-20 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#00adb5] resize-none"
+          />
+
+          {/* Button */}
+          <button
+            onClick={handleMoodCheckIn}
+            disabled={!selectedMood || isMoodLoading}
+            className="w-full h-11 rounded-2xl bg-[#00adb5] text-white text-xs font-black uppercase tracking-[0.2em] disabled:opacity-40 flex items-center justify-center gap-2"
+          >
+            {isMoodLoading ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Menyimpan...
+              </>
+            ) : (
+              "Simpan Mood"
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── Main Dashboard ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Main Dashboard
+// ─────────────────────────────────────────────────────────────
 
 export default function StudentPage() {
   const { data: session } = useSession();
@@ -326,24 +428,23 @@ export default function StudentPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
-      {/* ── Welcome + Mood ── */}
-      <section className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-800 tracking-tight">
-            Halo, {firstName}! 👋
-          </h2>
-          <p className="text-slate-500 mt-1 font-medium italic">
-            Bagaimana kabarmu hari ini? Klik emoji yang paling mewakilimu.
-          </p>
-        </div>
-        <MoodCheckIn sessionId={session?.user?.id} />
+      {/* Welcome */}
+      <section>
+        <h2 className="text-3xl font-bold text-slate-800 tracking-tight">
+          Halo, {firstName}! 👋
+        </h2>
+
+        <p className="text-slate-500 mt-1 font-medium italic">
+          Bagaimana kabarmu hari ini?
+        </p>
       </section>
 
-      {/* ── PARENT REQUESTS (muncul hanya jika ada) ── */}
+      {/* Parent Requests */}
       <ParentRequestsSection studentId={session?.user?.id} />
 
-      {/* ── Main Content Grid ── */}
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left */}
         <div className="lg:col-span-2 space-y-8">
           {/* Quick Access */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -351,14 +452,18 @@ export default function StudentPage() {
               <div
                 key={i}
                 onClick={() => router.push(item.href)}
-                className={`group p-8 rounded-[40px] ${item.color} border border-transparent hover:border-white hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500 cursor-pointer ${i === 2 ? "md:col-span-2" : ""}`}
+                className={`group p-8 rounded-[40px] ${item.color} border border-transparent hover:border-white hover:shadow-2xl hover:shadow-slate-200/50 transition-all duration-500 cursor-pointer ${
+                  i === 2 ? "md:col-span-2" : ""
+                }`}
               >
-                <div className="bg-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm mb-6 group-hover:rotate-6 transition-transform">
+                <div className="bg-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm mb-6">
                   {React.cloneElement(item.icon, { size: 28 })}
                 </div>
+
                 <h4 className="text-xl font-bold text-slate-800 mb-2">
                   {item.title}
                 </h4>
+
                 <p className="text-slate-500 text-sm leading-relaxed font-medium">
                   {item.desc}
                 </p>
@@ -366,64 +471,41 @@ export default function StudentPage() {
             ))}
           </div>
 
-          {/* Insight Banner */}
+          {/* Insight */}
           <div className="bg-[#00adb5] p-10 rounded-[45px] text-white relative overflow-hidden shadow-2xl shadow-[#00adb5]/20">
             <div className="relative z-10 max-w-xl">
-              <h4 className="text-[#fbcd2b] font-black text-xl mb-4 flex items-center gap-2 uppercase tracking-[0.2em]">
+              <h4 className="text-[#fbcd2b] font-black text-xl mb-4 uppercase tracking-[0.2em]">
                 Insight Hari Ini ✨
               </h4>
+
               <p className="text-xl opacity-95 leading-relaxed font-bold italic">
-                "Kesehatan mentalmu adalah prioritas utama. Luangkan waktu
-                sejenak untuk mendengarkan diri sendiri hari ini."
+                "Kesehatan mentalmu adalah prioritas utama."
               </p>
+
               <button
                 onClick={() => router.push("/dashboard/student/chat")}
-                className="mt-8 bg-white/20 hover:bg-white/40 backdrop-blur-md px-10 py-4 rounded-2xl text-sm font-black transition-all border border-white/20 uppercase tracking-widest"
+                className="mt-8 bg-white/20 hover:bg-white/40 px-10 py-4 rounded-2xl text-sm font-black"
               >
                 Mulai Cerita
               </button>
             </div>
-            <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
           </div>
         </div>
 
-        {/* ── Sidebar ── */}
+        {/* Right Sidebar */}
         <div className="space-y-8">
-          {/* Psychologist CTA */}
-          <div className="bg-slate-900 p-10 rounded-[40px] text-white relative overflow-hidden shadow-xl">
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-[#00adb5] rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-[#00adb5]/20">
-                <Heart className="text-white" size={24} />
-              </div>
-              <h4 className="text-lg font-black mb-3 leading-tight">
-                Butuh teman bicara yang ahli?
-              </h4>
-              <p className="text-sm text-slate-400 leading-relaxed font-medium mb-8">
-                Tim psikolog profesional kami siap mendengarkan ceritamu tanpa
-                menghakimi.
-              </p>
-              <button
-                onClick={() =>
-                  router.push("/dashboard/student/chat/psychologist")
-                }
-                className="w-full py-4 bg-[#00adb5] text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-[#00c2cb] transition-all hover:scale-[1.02] active:scale-95 shadow-lg shadow-[#00adb5]/20"
-              >
-                Hubungi Psikolog
-              </button>
-            </div>
-          </div>
+          <MoodCheckIn sessionId={session?.user?.id} />
 
-          {/* Connected parents info — shown when student has active links */}
           <ConnectedParentsWidget studentId={session?.user?.id} />
 
-          {/* Tips */}
-          <div className="bg-[#fbcd2b]/10 p-8 rounded-[40px] border border-[#fbcd2b]/20 relative overflow-hidden">
+          <div className="bg-[#fbcd2b]/10 p-8 rounded-[40px] border border-[#fbcd2b]/20">
             <h4 className="text-[10px] font-black text-[#fbcd2b] mb-3 uppercase tracking-[0.2em]">
               Tips Wellbeing 💡
             </h4>
+
             <p className="text-sm text-slate-700 leading-relaxed font-bold italic">
               "Tarik napas dalam-dalam selama 4 hitungan, tahan selama 7, dan
-              buang selama 8. Teknik ini ampuh meredakan cemas."
+              buang selama 8, Teknik ini ampuh meredakan cemas"
             </p>
           </div>
         </div>
@@ -432,20 +514,25 @@ export default function StudentPage() {
   );
 }
 
-// ─── Connected Parents Widget ─────────────────────────────────────────────────
-// Shows active parent connections + option to revoke
+// ─────────────────────────────────────────────────────────────
+// Connected Parents Widget
+// ─────────────────────────────────────────────────────────────
 
 function ConnectedParentsWidget({ studentId }) {
   const [parents, setParents] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const router = useRouter();
 
   useEffect(() => {
     if (!studentId) return;
+
     fetch("/api/family/active")
       .then((r) => r.json())
       .then((d) => {
-        if (d.success) setParents(d.parents);
+        if (d.success) {
+          setParents(d.parents);
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -458,10 +545,12 @@ function ConnectedParentsWidget({ studentId }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users size={16} className="text-[#00adb5]" />
+
           <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider">
             Orang Tua Terhubung
           </h4>
         </div>
+
         <span className="text-[10px] font-bold bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full">
           {parents.length} aktif
         </span>
@@ -477,11 +566,15 @@ function ConnectedParentsWidget({ studentId }) {
               <p className="text-xs font-bold text-slate-700">
                 {p.parent_name || "Orang Tua"}
               </p>
-              <p className="text-[10px] text-slate-400">{p.parent_email}</p>
+
+              <p className="text-[10px] text-slate-400">
+                {p.parent_email}
+              </p>
             </div>
+
             <button
               onClick={() => router.push("/dashboard/student/family")}
-              className="text-slate-300 hover:text-[#00adb5] transition-colors"
+              className="text-slate-300 hover:text-[#00adb5]"
             >
               <ChevronRight size={16} />
             </button>
@@ -491,7 +584,7 @@ function ConnectedParentsWidget({ studentId }) {
 
       <button
         onClick={() => router.push("/dashboard/student/family")}
-        className="w-full text-[10px] font-black text-slate-400 hover:text-[#00adb5] uppercase tracking-widest transition-colors"
+        className="w-full text-[10px] font-black text-slate-400 hover:text-[#00adb5] uppercase tracking-widest"
       >
         Kelola Koneksi Keluarga →
       </button>
