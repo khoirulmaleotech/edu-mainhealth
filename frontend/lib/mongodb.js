@@ -1,51 +1,32 @@
 import { MongoClient } from "mongodb";
 
 const uri = process.env.MONGODB_URI;
+const options = {
+  // CRITICAL: Batasi pool size maksimal per instance di serverless Next.js
+  maxPoolSize: 5, 
+  minPoolSize: 1,
+  // Menutup koneksi yang idle secara otomatis agar tidak menggantung di Atlas
+  maxIdleTimeMS: 10000, 
+};
 
-if (!uri) {
-  throw new Error("Please add MONGODB_URI");
+let client;
+let clientPromise;
+
+if (!process.env.MONGODB_URI) {
+  throw new Error("Silakan tambahkan MONGODB_URI ke file .env.local");
 }
 
-let cached = global.mongo;
-
-if (!cached) {
-  cached = global.mongo = {
-    client: null,
-    promise: null,
-  };
+if (process.env.NODE_ENV === "development") {
+  // Dalam mode development, gunakan variabel global agar koneksi tidak di-reset setiap kali Fast Refresh
+  if (!global._mongoClientPromise) {
+    client = new MongoClient(uri, options);
+    global._mongoClientPromise = client.connect();
+  }
+  clientPromise = global._mongoClientPromise;
+} else {
+  // Dalam mode produksi, buat client baru namun batasi lewat maxPoolSize di atas
+  client = new MongoClient(uri, options);
+  clientPromise = client.connect();
 }
 
-export async function connectDB() {
-  // Already connected
-  if (cached.client) {
-    return cached.client;
-  }
-
-  // Create connection promise once
-  if (!cached.promise) {
-    const client = new MongoClient(uri, {
-      maxPoolSize: 10,
-      minPoolSize: 2,
-      maxIdleTimeMS: 30000,
-    });
-
-    cached.promise = client.connect();
-  }
-
-  try {
-    cached.client = await cached.promise;
-
-    console.log("✅ MongoDB Connected");
-
-    return cached.client;
-  } catch (error) {
-    cached.promise = null;
-
-    console.error(
-      "❌ MongoDB Connection Error:",
-      error
-    );
-
-    throw error;
-  }
-}
+export default clientPromise;
