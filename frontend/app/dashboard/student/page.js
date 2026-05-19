@@ -472,26 +472,6 @@ export default function StudentPage() {
               </div>
             ))}
           </div>
-
-          {/* Insight */}
-          <div className="bg-[#00adb5] p-10 rounded-[45px] text-white relative overflow-hidden shadow-2xl shadow-[#00adb5]/20">
-            <div className="relative z-10 max-w-xl">
-              <h4 className="text-[#fbcd2b] font-black text-xl mb-4 uppercase tracking-[0.2em]">
-                Insight Hari Ini ✨
-              </h4>
-
-              <p className="text-xl opacity-95 leading-relaxed font-bold italic">
-                "Kesehatan mentalmu adalah prioritas utama."
-              </p>
-
-              <button
-                onClick={() => router.push("/dashboard/student/chat")}
-                className="mt-8 bg-white/20 hover:bg-white/40 px-10 py-4 rounded-2xl text-sm font-black"
-              >
-                Mulai Cerita
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Right Sidebar */}
