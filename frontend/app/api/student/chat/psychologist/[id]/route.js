@@ -1,26 +1,32 @@
 import { NextResponse } from 'next/server';
-import { MongoClient, ObjectId } from 'mongodb';
+import { ObjectId } from 'mongodb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../../auth/[...nextauth]/authOptions";
-
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+// Impor fungsi connectDB yang dipertahankan di folder lib Bapak
+import { connectDB } from "@/lib/mongodb"; 
 
 export async function GET(request, { params }) {
-  const psychologistId = params.id;
+  // Pastikan parameter id dari URL terbaca dengan benar
+  const { id: psychologistId } = params;
   const session = await getServerSession(authOptions);
 
+  // 1. Validasi Autentikasi Session User
   if (!session) {
-    return NextResponse.json({ success: false, message: "Login diperlukan" }, { status: 401 });
+    return NextResponse.json(
+      { success: false, message: "Login diperlukan" }, 
+      { status: 401 }
+    );
   }
 
   const studentId = session.user.id; // Ambil ID siswa dari session
 
   try {
-    await client.connect();
-    const db = client.db();
+    // 2. Gunakan koneksi database terpusat yang hemat pool size
+    const client = await connectDB();
+    // Jika nama DB tidak dispesifikasikan di uri, Atlas otomatis menggunakan default dari env/string koneksi
+    const db = client.db(); 
     
-    // 1. Cari atau buat Room yang berisi Siswa & Psikolog ini
+    // 3. Cari atau buat Room yang berisi Siswa & Psikolog ini
     let room = await db.collection('chat_rooms').findOne({
       participants: { $all: [studentId, psychologistId] }
     });
@@ -29,30 +35,44 @@ export async function GET(request, { params }) {
     if (!room) {
       const newRoom = {
         participants: [studentId, psychologistId],
-        patient_id: new ObjectId(studentId),
-        psychologist_id: new ObjectId(psychologistId),
+        // Ambil penanganan ObjectId secara aman dari string ID session/params
+        patient_id: ObjectId.isValid(studentId) ? new ObjectId(studentId) : studentId,
+        psychologist_id: ObjectId.isValid(psychologistId) ? new ObjectId(psychologistId) : psychologistId,
         lastMsg: "Memulai percakapan baru...",
         risk: "Medium",
         unread: 0,
         updatedAt: new Date(),
         createdAt: new Date()
       };
+      
       const result = await db.collection('chat_rooms').insertOne(newRoom);
       room = { _id: result.insertedId, ...newRoom };
     }
 
-    // 2. Ambil data pesan berdasarkan room_id tersebut
+    // 4. Ambil data pesan berdasarkan room_id tersebut
     const messages = await db.collection('messages')
       .find({ room_id: room._id })
       .sort({ timestamp: 1 })
       .toArray();
 
-    // 3. Ambil profil Psikolog untuk header
-    const psychologist = await db.collection('users').findOne(
-      { _id: new ObjectId(psychologistId) },
-      { projection: { fullname: 1, isOnline: 1 } }
-    );
+    // 5. Ambil profil Psikolog untuk komponen header chat di frontend
+    let psychologist = null;
+    if (ObjectId.isValid(psychologistId)) {
+      psychologist = await db.collection('users').findOne(
+        { _id: new ObjectId(psychologistId) },
+        { projection: { fullname: 1, isOnline: 1 } }
+      );
+    }
 
+    // Jika id psikolog di database bukan bentuk ObjectId melainkan string biasa
+    if (!psychologist) {
+      psychologist = await db.collection('users').findOne(
+        { _id: psychologistId },
+        { projection: { fullname: 1, isOnline: 1 } }
+      );
+    }
+
+    // 6. Kembalikan response payload sukses
     return NextResponse.json({ 
       success: true, 
       data: { 
@@ -61,7 +81,12 @@ export async function GET(request, { params }) {
         roomId: room._id 
       } 
     });
+
   } catch (error) {
-    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+    console.error("❌ Error at Get Chat API:", error);
+    return NextResponse.json(
+      { success: false, message: error.message || "Gagal memproses data chat" }, 
+      { status: 500 }
+    );
   }
 }
