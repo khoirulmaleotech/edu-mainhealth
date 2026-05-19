@@ -125,17 +125,17 @@ export default function StudentLayout({ children }) {
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
           <NavItem href="/dashboard/student" icon={<Home size={20} />} label="Dashboard" active={pathname === '/dashboard/student'} />
-          <NavItem href="/dashboard/student/chat" icon={<MessageCircle size={20} />} label="Curhat Aman" active={pathname === '/dashboard/student/chat'} />
-          <NavItem href="/dashboard/student/chat/psychologist" icon={<Stethoscope size={20} />} label="Konsultasi Psikolog" active={pathname.includes('/psychologist')} />
-          <NavItem href="/dashboard/student/progress" icon={<BarChart2 size={20} />} label="Progress Saya" active={pathname === '/dashboard/student/progress'} />
-          <NavItem href="/dashboard/student/talent" icon={<Star size={20} />} label="Minat Bakat" active={pathname === '/dashboard/student/talent'} />
-          <NavItem href="/dashboard/student/report" icon={<ShieldAlert size={20} />} label="Lapor Insiden" active={pathname.includes('/report')} />
-          <NavItem href="/dashboard/student/tilik-diri" icon={<Star size={20} />} label="Tilik Diri" active={pathname === '/dashboard/student/tilik-diri'} />
+          <NavItem href="/dashboard/student/chat" icon={<MessageCircle size={20} />} label="Student Diary Buddy" active={pathname === '/dashboard/student/chat'} />
+          <NavItem href="/dashboard/student/report" icon={<ShieldAlert size={20} />} label="Student Safe Space" active={pathname.includes('/report')} />
+          <NavItem href="/dashboard/student/tilik-diri" icon={<Star size={20} />} label="Self Reflection - Tilik Diri" active={pathname === '/dashboard/student/tilik-diri'} />
+          <NavItem href="/dashboard/student/progress" icon={<BarChart2 size={20} />} label="My Journey" active={pathname === '/dashboard/student/progress'} />
+          <NavItem href="/dashboard/student/chat/psychologist" icon={<Stethoscope size={20} />} label="Professional Support" active={pathname.includes('/psychologist')} />
+          <NavItem href="/dashboard/student/talent" icon={<Star size={20} />} label="Self Explorer" active={pathname === '/dashboard/student/talent'} />
         </nav>
 
         <div className="p-4 border-t border-slate-100 space-y-2">
-          <NavItem href="/dashboard/student/profile" icon={<User size={20} />} label="Profil" active={pathname === '/dashboard/student/profile'} />
-          <NavItem href="/logout" icon={<LogOut size={20} />} label="Keluar" danger />
+          <NavItem href="/dashboard/student/profile" icon={<User size={20} />} label="Profile" active={pathname === '/dashboard/student/profile'} />
+          <NavItem href="/logout" icon={<LogOut size={20} />} label="Exit" danger />
         </div>
       </aside>
 
@@ -181,14 +181,14 @@ export default function StudentLayout({ children }) {
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-3 w-48 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 animate-in fade-in zoom-in duration-200">
                   <Link href="/" className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors">
-                    <Home size={18} /> Beranda
+                    <Home size={18} /> Dashboard
                   </Link>
                   <Link href="/dashboard/student/profile" className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
-                    <User size={18} /> Profil
+                    <User size={18} /> Profile
                   </Link>
                   <div className="h-px bg-slate-100 my-1 mx-4" />
                   <Link href="/logout" className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors">
-                    <LogOut size={18} /> Keluar
+                    <LogOut size={18} /> Exit
                   </Link>
                 </div>
               )}

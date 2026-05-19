@@ -367,7 +367,7 @@ function MoodCheckIn({ sessionId }) {
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Apa yang kamu rasakan? (opsional)"
+            placeholder="Apa yang sedang kamu rasakan hari ini? (opsional)"
             className="w-full h-20 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#00adb5] resize-none"
           />
 
@@ -404,25 +404,25 @@ export default function StudentPage() {
 
   const quickAccess = [
     {
-      title: "Curhat Aman",
+      title: "Student Diary Buddy",
       href: "/dashboard/student/chat",
       icon: <MessageCircle className="text-[#00adb5]" />,
       color: "bg-[#00adb5]/10",
-      desc: "Ngobrol bareng AI Mood Buddy untuk melepas penatmu.",
+      desc: "Ruang aman untuk bercerita, memahami perasaanmu, dan mendapatkan dukungan awal saat kamu membutuhkannya. ",
     },
     {
-      title: "Lapor Bullying",
+      title: "Student Safe Space",
       href: "/dashboard/student/report",
       icon: <ShieldAlert className="text-rose-500" />,
       color: "bg-rose-50",
-      desc: "Laporkan tindakan tidak nyaman atau perundungan secara rahasia.",
+      desc: "Kamu berhak merasa aman di lingkungan sekolah. Jika ada situasi yang membuatmu merasa tidak aman atau tidak nyaman, seperti perundungan, kekerasan verbal, atau lainnya kamu bisa bercerita secara rahasia di sini. ",
     },
     {
-      title: "Talent Mapping",
+      title: "Self Explorer",
       href: "/dashboard/student/talent",
       icon: <Star className="text-[#fbcd2b]" />,
       color: "bg-[#fbcd2b]/15",
-      desc: "Temukan minat dan bakatmu untuk masa depan yang cerah.",
+      desc: "Kenali minat dan kekuatan diri untuk menggali potensi terbaikmu.",
     },
   ];
 
@@ -431,11 +431,13 @@ export default function StudentPage() {
       {/* Welcome */}
       <section>
         <h2 className="text-3xl font-bold text-slate-800 tracking-tight">
-          Halo, {firstName}! 👋
+          Halo {firstName}! 👋
         </h2>
 
         <p className="text-slate-500 mt-1 font-medium italic">
-          Bagaimana kabarmu hari ini?
+          Senang melihatmu hari ini. <br/>
+          Yuk, luangkan sedikit waktu untuk mengecek kabar dirimu. 
+
         </p>
       </section>
 
