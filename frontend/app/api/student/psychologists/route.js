@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from 'next/server';
 import { connectDB } from "@/lib/mongodb";
 
@@ -20,10 +22,17 @@ export async function GET() {
       })
       .toArray();
 
-    return NextResponse.json({
-      success: true,
-      data: psychologists
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: psychologists
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate"
+        }
+      }
+    );
 
   } catch (error) {
     console.error("PSYCHOLOGIST_LIST_ERROR:", error);

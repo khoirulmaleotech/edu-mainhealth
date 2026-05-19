@@ -22,12 +22,13 @@ useEffect(() => {
 
   const fetchPsychologists = async () => {
     try {
-      const res = await fetch('/api/student/psychologists');
-
+      const res = await fetch('/api/student/psychologists', {
+        cache: "no-store"
+      });
       const json = await res.json();
 
       if (json.success) {
-        setPsychologists(json.data);
+        setPsychologists([...json.data]);
       }
 
     } catch (err) {
