@@ -37,7 +37,6 @@ export async function GET() {
         success: true,
         student: null,
         talents: [],
-        careerRecommendations: [],
       });
     }
 
@@ -77,12 +76,6 @@ export async function GET() {
         avatar: student.avatar || null,
       },
       talents,
-      careerRecommendations: [
-        "Content Strategist",
-        "Public Relations",
-        "Creative Director",
-        "UX Researcher",
-      ],
     });
   } catch (error) {
     return NextResponse.json(

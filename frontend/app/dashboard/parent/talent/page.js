@@ -158,35 +158,6 @@ export default function ParentTalentPage() {
                 </div>
               )}
             </div>
-
-            {/* CAREER PREDICTION SECTION - Full Width Inside Card */}
-            <div className="mt-20 p-1 bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 rounded-[38px]">
-              <div className="bg-white/60 backdrop-blur-sm p-8 rounded-[36px] border border-white flex flex-col md:flex-row items-center gap-8">
-                <div className="flex-shrink-0 flex flex-col items-center md:items-start text-center md:text-left">
-                  <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-[0.2em] mb-2">
-                    <Rocket size={14} /> Future Career
-                  </div>
-                  <h5 className="font-extrabold text-slate-800 text-xl tracking-tight">
-                    Rekomendasi Karier
-                  </h5>
-                </div>
-                
-                <div className="flex flex-wrap justify-center md:justify-start gap-3">
-                  {careerRecommendations.length > 0 ? (
-                    careerRecommendations.map((job, i) => (
-                      <span 
-                        key={i} 
-                        className="px-6 py-3 bg-white border border-slate-200 shadow-[0_4px_12px_rgb(0,0,0,0.03)] rounded-[20px] text-sm font-bold text-slate-700 hover:scale-105 hover:border-primary hover:text-primary transition-all duration-300"
-                      >
-                        {job}
-                      </span>
-                    ))
-                  ) : (
-                    <p className="text-sm text-slate-400 font-medium italic">Data rekomendasi karier sedang diproses...</p>
-                  )}
-                </div>
-              </div>
-            </div>
           </section>
         </div>
     </div>
