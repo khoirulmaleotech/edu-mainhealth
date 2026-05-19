@@ -4,17 +4,15 @@ import {
   Search, 
   MessageCircle, 
   Star, 
-  Clock, 
-  ChevronRight, 
   ArrowLeft,
   Loader2,
-  Filter
+  ShieldCheck
 } from 'lucide-react';
 import Link from 'next/link';
-import { useSession } from "next-auth/react"; // Tambahkan import session
+import { useSession } from "next-auth/react";
 
 export default function StudentPsychologistListPage() {
-  const { data: session } = useSession(); // Ambil data session
+  const { data: session } = useSession();
   const [psychologists, setPsychologists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,12 +30,11 @@ export default function StudentPsychologistListPage() {
       }
     };
 
-    // Pengecekan session sebelum fetch data
     if (session?.user?.id) {
       fetchPsychologists();
     }
     
-  }, [session?.user?.id]); // Dependensi ID agar stabil dan tidak loop
+  }, [session?.user?.id]);
 
   const filteredData = psychologists.filter(p => 
     p.fullname.toLowerCase().includes(searchTerm.toLowerCase())
@@ -72,9 +69,6 @@ export default function StudentPsychologistListPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="flex items-center justify-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all">
-          <Filter size={16} /> Filter Status
-        </button>
       </div>
 
       {/* PSYCHOLOGIST GRID */}
@@ -82,79 +76,106 @@ export default function StudentPsychologistListPage() {
         {loading ? (
           <div className="col-span-full py-20 text-center">
             <Loader2 className="animate-spin mx-auto text-[#00adb5] mb-4" size={40} />
-            <p className="text-sm font-bold text-slate-400">Menghubungkan ke pusat bantuan...</p>
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Menghubungkan ke pusat bantuan...</p>
           </div>
         ) : filteredData.length === 0 ? (
           <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-100 rounded-[40px] text-slate-400 font-medium">
             Maaf, tidak ada psikolog yang ditemukan.
           </div>
         ) : (
-          filteredData.map((psy) => (
-            <div key={psy._id} className="bg-white rounded-[40px] border border-slate-200 p-6 hover:shadow-xl hover:shadow-slate-200/40 transition-all group relative overflow-hidden">
-              
-              {/* Online Badge */}
-              <div className={`absolute top-6 right-6 flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                psy.isOnline ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-50 text-slate-400 border border-slate-100'
-              }`}>
-                <div className={`w-1.5 h-1.5 rounded-full ${psy.isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`}></div>
-                {psy.isOnline ? 'Online' : 'Offline'}
+          filteredData.map((psy) => {
+            // Simplified Logic: Hanya cek is_online
+            const isOnline = psy.is_online === true;
+
+            return (
+              <div key={psy._id} className="bg-white rounded-[40px] border border-slate-200 p-6 hover:shadow-xl hover:shadow-slate-200/40 transition-all group relative overflow-hidden">
+                
+                {/* Status Badge */}
+                <div className={`absolute top-6 right-6 flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                  isOnline 
+                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                    : 'bg-slate-50 text-slate-400 border-slate-100'
+                }`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${
+                    isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'
+                  }`}></div>
+                  {isOnline ? 'Online' : 'Offline'}
+                </div>
+
+                <div className="flex flex-col items-center text-center space-y-4">
+                  <div className="relative">
+                    <div className="w-24 h-24 rounded-[32px] bg-[#00adb5] flex items-center justify-center text-white font-black text-3xl shadow-lg shadow-[#00adb5]/20 border-4 border-white transition-transform group-hover:scale-105">
+                      {psy.fullname.charAt(0)}
+                    </div>
+                    {psy.is_verified && (
+                      <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-lg shadow-sm">
+                        <ShieldCheck size={16} className="text-[#00adb5]" fill="#e0fbfc" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-black text-slate-800 group-hover:text-[#00adb5] transition-colors leading-tight">
+                      {psy.fullname}
+                    </h3>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">
+                      {psy.work_at || "Psikolog Profesional"}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-6 py-2">
+                    <div className="text-center">
+                      <p className="text-xs font-black text-slate-800">4.9</p>
+                      <div className="flex text-amber-400 gap-0.5 mt-0.5"><Star size={10} fill="currentColor" /></div>
+                    </div>
+                    <div className="w-px h-6 bg-slate-100"></div>
+                    <div className="text-center">
+                      <p className="text-xs font-black text-slate-800">Aktif</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Terverifikasi</p>
+                    </div>
+                  </div>
+
+                  <div className="w-full pt-4">
+                    <Link 
+                      href={isOnline ? `/dashboard/student/chat/psychologist/${psy._id}` : "#"}
+                      onClick={(e) => !isOnline && e.preventDefault()}
+                      className={`w-full py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-sm ${
+                        isOnline 
+                        ? 'bg-[#00adb5] text-white shadow-[#00adb5]/20 hover:scale-[1.02] active:scale-95' 
+                        : 'bg-slate-100 text-slate-400 cursor-not-allowed opacity-70'
+                      }`}
+                    >
+                      <MessageCircle size={16} /> 
+                      {isOnline ? 'Mulai Konsultasi' : 'Sedang Offline'}
+                    </Link>
+                  </div>
+                </div>
               </div>
-
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-[32px] bg-slate-100 flex items-center justify-center text-3xl shadow-inner border-4 border-white">
-                    {psy.fullname.charAt(0)}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-black text-slate-800 group-hover:text-[#00adb5] transition-colors">{psy.fullname}</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Spesialis Psikologi Remaja</p>
-                </div>
-
-                <div className="flex items-center gap-6 py-2">
-                  <div className="text-center">
-                    <p className="text-xs font-black text-slate-800">4.9</p>
-                    <div className="flex text-amber-400 gap-0.5 mt-0.5"><Star size={10} fill="currentColor" /></div>
-                  </div>
-                  <div className="w-px h-6 bg-slate-100"></div>
-                  <div className="text-center">
-                    <p className="text-xs font-black text-slate-800">80+</p>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Sesi Selesai</p>
-                  </div>
-                </div>
-
-                <div className="w-full pt-4">
-                  <Link 
-                    href={`/dashboard/student/chat/psychologist/${psy._id}`}
-                    className={`w-full py-4 rounded-2xl font-bold text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-sm ${
-                      psy.isOnline 
-                      ? 'bg-[#00adb5] text-white shadow-[#00adb5]/20 hover:scale-[1.02]' 
-                      : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                    }`}
-                  >
-                    <MessageCircle size={16} /> {psy.isOnline ? 'Mulai Konsultasi' : 'Sedang Sibuk'}
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
       {/* INFORMASI TAMBAHAN */}
-      <div className="bg-slate-900 text-white p-8 rounded-[40px] flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative">
+      <div className="bg-slate-900 text-white p-8 rounded-[40px] flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden relative shadow-2xl shadow-slate-900/20">
         <div className="relative z-10 text-center md:text-left">
           <h4 className="font-bold text-lg">Semua Sesi Bersifat Rahasia</h4>
-          <p className="text-xs text-slate-400 mt-1 max-w-md font-medium">Privasimu adalah prioritas kami. Obrolan hanya bisa diakses oleh kamu dan psikolog pilihanmu.</p>
+          <p className="text-xs text-slate-400 mt-1 max-w-md font-medium leading-relaxed">
+            Privasimu adalah prioritas kami. Obrolan dienkripsi secara aman dan hanya bisa diakses oleh kamu dan psikolog pilihanmu.
+          </p>
         </div>
         <div className="flex items-center gap-4 relative z-10">
           <div className="flex -space-x-3">
              {[1,2,3].map(i => (
-               <div key={i} className="w-10 h-10 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[10px] font-bold">P</div>
+               <div key={i} className="w-10 h-10 rounded-full border-4 border-slate-900 bg-slate-700 flex items-center justify-center text-[10px] font-black text-white">
+                 {String.fromCharCode(64 + i)}
+               </div>
              ))}
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-[#00adb5]">12 Psikolog Aktif</p>
+          <div className="flex flex-col">
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#00adb5]">Pakar Konseling</p>
+            <p className="text-[9px] text-slate-500 font-bold uppercase">Siap Mendengarkan</p>
+          </div>
         </div>
       </div>
 

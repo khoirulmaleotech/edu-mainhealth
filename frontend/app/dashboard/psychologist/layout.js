@@ -7,6 +7,7 @@ import {
   Activity,
   LogOut,
   Menu,
+  User, // Tambahkan ikon User untuk profil
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -20,8 +21,7 @@ export default function PsychologistLayout({ children }) {
   const { data: session } = useSession();
 
   const menuItems = [
-
-    { name: "Daftar Pasien", icon: <UserRound size={20} />, path: "/dashboard/psychologist/patients" },
+    { name: "Daftar Siswa", icon: <UserRound size={20} />, path: "/dashboard/psychologist/patients" },
     {
       name: "Konsultasi Chat",
       icon: <MessageCircle size={20} />,
@@ -29,6 +29,9 @@ export default function PsychologistLayout({ children }) {
       unread: unreadCount,
     },
   ];
+
+  const profilePath = "/dashboard/psychologist/profile";
+  const isProfileActive = pathname === profilePath;
 
   useEffect(() => {
     let mounted = true;
@@ -100,13 +103,30 @@ export default function PsychologistLayout({ children }) {
           })}
         </nav>
 
-        <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="mt-auto flex items-center gap-4 px-4 py-4 rounded-2xl font-bold text-sm text-red-400 hover:bg-red-500/10 transition-all border border-red-500/20"
-        >
-          <LogOut size={20} />
-          Keluar Sistem
-        </button>
+        {/* Bagian Bawah Sidebar */}
+        <div className="mt-auto space-y-2">
+          <Link
+            href={profilePath}
+            onClick={() => setSidebarOpen(false)}
+            className={`
+              flex items-center gap-4 px-4 py-3.5 rounded-2xl font-bold text-sm transition-all
+              ${isProfileActive 
+                ? 'bg-[#00adb5] text-white shadow-lg shadow-[#00adb5]/20' 
+                : 'hover:bg-white/5 hover:text-white'}
+            `}
+          >
+            <User size={20} />
+            <span>Profil Saya</span>
+          </Link>
+
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl font-bold text-sm text-red-400 hover:bg-red-500/10 transition-all border border-red-500/20"
+          >
+            <LogOut size={20} />
+            Keluar Sistem
+          </button>
+        </div>
       </aside>
 
       <main className="flex-1 flex flex-col min-w-0">
