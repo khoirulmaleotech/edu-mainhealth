@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   ChevronDown,
-  Loader2
+  Loader2,
+  MessagesSquare
 } from 'lucide-react';
 
 export default function StudentLayout({ children }) {
@@ -128,6 +129,7 @@ export default function StudentLayout({ children }) {
           <NavItem href="/dashboard/student/chat" icon={<MessageCircle size={20} />} label="Student Diary Buddy" active={pathname === '/dashboard/student/chat'} />
           <NavItem href="/dashboard/student/report" icon={<ShieldAlert size={20} />} label="Student Safe Space" active={pathname.includes('/report')} />
           <NavItem href="/dashboard/student/tilik-diri" icon={<Star size={20} />} label="Self Reflection - Tilik Diri" active={pathname === '/dashboard/student/tilik-diri'} />
+          <NavItem href="/dashboard/student/chat/teacher" icon={<MessagesSquare size={20} />} label="Student Support" active={pathname.includes('/teacher')} />
           <NavItem href="/dashboard/student/progress" icon={<BarChart2 size={20} />} label="My Journey" active={pathname === '/dashboard/student/progress'} />
           <NavItem href="/dashboard/student/chat/psychologist" icon={<Stethoscope size={20} />} label="Professional Support" active={pathname.includes('/psychologist')} />
           <NavItem href="/dashboard/student/talent" icon={<Star size={20} />} label="Self Explorer" active={pathname === '/dashboard/student/talent'} />

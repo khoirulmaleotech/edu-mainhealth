@@ -1,13 +1,23 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Users, UserCheck, BookOpen, Plus, Trash2,
-  Edit2, ChevronDown, ChevronUp, UserMinus,
-  Loader2, CheckSquare, Square, AlertTriangle,
-  Search
+  Users,
+  UserCheck,
+  BookOpen,
+  Plus,
+  Trash2,
+  Edit2,
+  ChevronDown,
+  ChevronUp,
+  UserMinus,
+  Loader2,
+  CheckSquare,
+  Square,
+  AlertTriangle,
+  Search,
 } from "lucide-react";
 
-import { useDebounce } from "@/hooks/useDebounce"; 
+import { useDebounce } from "@/hooks/useDebounce";
 
 const API = "/api/school-admin/homeroom";
 
@@ -29,11 +39,21 @@ export default function HomeroomPage() {
     students: [],
     page: 1,
     totalPages: 1,
-    loading: false
+    loading: false,
   });
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showStudentModal, setShowStudentModal] = useState(null);
+
+  // Custom Confirm Dialog State
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+    confirmText: "Ya",
+  });
+
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [newClassName, setNewClassName] = useState("");
   const [newAcYear, setNewAcYear] = useState("");
@@ -46,9 +66,19 @@ export default function HomeroomPage() {
     setTimeout(() => setToast(""), 3000);
   };
 
+  const closeConfirm = () => {
+    setConfirmDialog({ ...confirmDialog, isOpen: false });
+  };
+
   useEffect(() => {
     setPage(1);
-    setExpandedData({ classId: null, students: [], page: 1, totalPages: 1, loading: false });
+    setExpandedData({
+      classId: null,
+      students: [],
+      page: 1,
+      totalPages: 1,
+      loading: false,
+    });
   }, [debouncedSearch]);
 
   const fetchData = useCallback(async () => {
@@ -68,15 +98,17 @@ export default function HomeroomPage() {
     }
   }, [page, limit, debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => { 
-    fetchData(); 
+  useEffect(() => {
+    fetchData();
   }, [fetchData]);
 
   // Fungsi fetch siswa untuk kelas tertentu (ketika di klik)
   const fetchClassStudents = async (classId, studentPage) => {
-    setExpandedData(prev => ({ ...prev, classId, loading: true }));
+    setExpandedData((prev) => ({ ...prev, classId, loading: true }));
     try {
-      const res = await fetch(`${API}?action=get_students&classId=${classId}&studentPage=${studentPage}&studentLimit=6`);
+      const res = await fetch(
+        `${API}?action=get_students&classId=${classId}&studentPage=${studentPage}&studentLimit=6`,
+      );
       const json = await res.json();
       if (json.success) {
         setExpandedData({
@@ -84,17 +116,23 @@ export default function HomeroomPage() {
           students: json.students,
           page: json.pagination.page,
           totalPages: json.pagination.totalPages,
-          loading: false
+          loading: false,
         });
       }
     } catch (err) {
-      setExpandedData(prev => ({ ...prev, loading: false }));
+      setExpandedData((prev) => ({ ...prev, loading: false }));
     }
   };
 
   const handleExpandClass = (classId) => {
     if (expandedData.classId === classId) {
-      setExpandedData({ classId: null, students: [], page: 1, totalPages: 1, loading: false });
+      setExpandedData({
+        classId: null,
+        students: [],
+        page: 1,
+        totalPages: 1,
+        loading: false,
+      });
       return;
     }
     fetchClassStudents(classId, 1);
@@ -110,7 +148,7 @@ export default function HomeroomPage() {
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.message);
-      await fetchData(); 
+      await fetchData();
       return true;
     } catch (e) {
       showToast("❌ " + e.message);
@@ -174,13 +212,26 @@ export default function HomeroomPage() {
     }
   };
 
-  const handleRemoveStudent = async (classId, studentId) => {
-    if (!confirm("Keluarkan siswa dari kelas ini?")) return;
-    const ok = await patchApi({ action: "remove_student", classId, studentId });
-    if (ok) {
-      showToast("✅ Siswa dikeluarkan dari kelas");
-      fetchClassStudents(classId, expandedData.page); // Refresh siswa di halaman aktif
-    }
+  // Diperbarui: Menggunakan Custom Confirm
+  const handleRemoveStudent = (classId, studentId) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: "Keluarkan Siswa",
+      message: "Keluarkan siswa dari kelas ini?",
+      confirmText: "Keluarkan",
+      onConfirm: async () => {
+        const ok = await patchApi({
+          action: "remove_student",
+          classId,
+          studentId,
+        });
+        if (ok) {
+          showToast("✅ Siswa dikeluarkan dari kelas");
+          fetchClassStudents(classId, expandedData.page); // Refresh siswa di halaman aktif
+        }
+        closeConfirm();
+      },
+    });
   };
 
   const handleRenameClass = async () => {
@@ -196,14 +247,24 @@ export default function HomeroomPage() {
     }
   };
 
-  const handleDeleteClass = async (classId, studentCount) => {
+  // Diperbarui: Menggunakan Custom Confirm
+  const handleDeleteClass = (classId, studentCount) => {
     const msg =
       studentCount > 0
         ? `Kelas ini memiliki ${studentCount} siswa. Semua siswa akan dilepas dari kelas. Lanjutkan?`
         : "Hapus kelas ini?";
-    if (!confirm(msg)) return;
-    const ok = await patchApi({ action: "delete_class", classId });
-    if (ok) showToast("✅ Kelas dihapus");
+
+    setConfirmDialog({
+      isOpen: true,
+      title: "Hapus Kelas",
+      message: msg,
+      confirmText: "Hapus",
+      onConfirm: async () => {
+        const ok = await patchApi({ action: "delete_class", classId });
+        if (ok) showToast("✅ Kelas dihapus");
+        closeConfirm();
+      },
+    });
   };
 
   if (loading && !data)
@@ -264,45 +325,74 @@ export default function HomeroomPage() {
       {/* SUMMARY CARDS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total Kelas", value: summary.totalClasses, icon: BookOpen, color: "text-[#00adb5] bg-[#00adb5]/10 border-[#00adb5]/20" },
-          { label: "Guru Tersedia", value: summary.totalTeachers, icon: UserCheck, color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
-          { label: "Siswa di Kelas", value: summary.assignedStudents, icon: Users, color: "text-sky-600 bg-sky-50 border-sky-100" },
-          { label: "Siswa Belum Masuk", value: summary.unassignedStudents, icon: AlertTriangle, color: "text-amber-600 bg-amber-50 border-amber-100" },
+          {
+            label: "Total Kelas",
+            value: summary.totalClasses,
+            icon: BookOpen,
+            color: "text-[#00adb5] bg-[#00adb5]/10 border-[#00adb5]/20",
+          },
+          {
+            label: "Guru Tersedia",
+            value: summary.totalTeachers,
+            icon: UserCheck,
+            color: "text-emerald-600 bg-emerald-50 border-emerald-100",
+          },
+          {
+            label: "Siswa di Kelas",
+            value: summary.assignedStudents,
+            icon: Users,
+            color: "text-sky-600 bg-sky-50 border-sky-100",
+          },
+          {
+            label: "Siswa Belum Masuk",
+            value: summary.unassignedStudents,
+            icon: AlertTriangle,
+            color: "text-amber-600 bg-amber-50 border-amber-100",
+          },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className={`rounded-3xl border p-5 ${color}`}>
             <Icon size={20} className="mb-2" />
             <p className="text-2xl font-black">{value ?? 0}</p>
-            <p className="text-[10px] sm:text-xs font-bold mt-1 opacity-70 uppercase tracking-wider">{label}</p>
+            <p className="text-[10px] sm:text-xs font-bold mt-1 opacity-70 uppercase tracking-wider">
+              {label}
+            </p>
           </div>
         ))}
       </div>
 
       {/* SEARCH AND CONTROLS */}
       <div className="bg-white p-4 rounded-3xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-         <div className="relative w-full sm:max-w-md">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari kelas, nama guru, atau murid..."
-              className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#00adb5]/20 transition-all"
-            />
-         </div>
-         {isFetching && (
-            <div className="flex items-center gap-2 text-slate-400 text-sm font-medium pr-4">
-               <Loader2 size={16} className="animate-spin" /> Memperbarui...
-            </div>
-         )}
+        <div className="relative w-full sm:max-w-md">
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            size={18}
+          />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cari kelas, nama guru, atau murid..."
+            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#00adb5]/20 transition-all"
+          />
+        </div>
+        {isFetching && (
+          <div className="flex items-center gap-2 text-slate-400 text-sm font-medium pr-4">
+            <Loader2 size={16} className="animate-spin" /> Memperbarui...
+          </div>
+        )}
       </div>
 
       {/* CLASSES LIST */}
-      <div className={`transition-opacity duration-300 ${isFetching ? 'opacity-50' : 'opacity-100'}`}>
+      <div
+        className={`transition-opacity duration-300 ${isFetching ? "opacity-50" : "opacity-100"}`}
+      >
         {classes.length === 0 ? (
           <div className="bg-white rounded-[30px] border border-slate-200 p-16 text-center text-slate-400 mt-4">
             <BookOpen size={40} className="mx-auto mb-3 opacity-30" />
             <p className="font-semibold">
-               {debouncedSearch ? "Pencarian tidak ditemukan." : "Belum ada kelas. Buat kelas pertama Anda."}
+              {debouncedSearch
+                ? "Pencarian tidak ditemukan."
+                : "Belum ada kelas. Buat kelas pertama Anda."}
             </p>
           </div>
         ) : (
@@ -312,7 +402,10 @@ export default function HomeroomPage() {
               const isRenaming = renaming?.classId === cls._id;
 
               return (
-                <div key={cls._id} className="bg-white rounded-[24px] border border-slate-200 overflow-hidden shadow-sm transition-all">
+                <div
+                  key={cls._id}
+                  className="bg-white rounded-[24px] border border-slate-200 overflow-hidden shadow-sm transition-all"
+                >
                   <div className="flex flex-col md:flex-row md:items-center gap-4 p-5">
                     <div className="flex-1">
                       {isRenaming ? (
@@ -320,8 +413,12 @@ export default function HomeroomPage() {
                           <input
                             className="border border-[#00adb5]/50 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-800 outline-none focus:ring-2 ring-[#00adb5]/50 w-44 md:w-64"
                             value={renaming.name}
-                            onChange={(e) => setRenaming({ ...renaming, name: e.target.value })}
-                            onKeyDown={(e) => e.key === "Enter" && handleRenameClass()}
+                            onChange={(e) =>
+                              setRenaming({ ...renaming, name: e.target.value })
+                            }
+                            onKeyDown={(e) =>
+                              e.key === "Enter" && handleRenameClass()
+                            }
                             autoFocus
                           />
                           <button
@@ -340,7 +437,9 @@ export default function HomeroomPage() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-lg font-black text-slate-800">{cls.name}</h3>
+                          <h3 className="text-lg font-black text-slate-800">
+                            {cls.name}
+                          </h3>
                           <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full uppercase">
                             {cls.academic_year || "—"}
                           </span>
@@ -351,32 +450,64 @@ export default function HomeroomPage() {
                       )}
 
                       <div className="mt-2 flex items-center gap-2">
-                        <UserCheck size={15} className="text-slate-400 shrink-0" />
+                        <UserCheck
+                          size={15}
+                          className="text-slate-400 shrink-0"
+                        />
                         <select
                           value={cls.homeroom_teacher_id || ""}
-                          onChange={(e) => handleAssignTeacher(cls._id, e.target.value || null)}
+                          onChange={(e) =>
+                            handleAssignTeacher(cls._id, e.target.value || null)
+                          }
                           className="text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 outline-none hover:border-[#00adb5]/50 focus:border-[#00adb5] transition font-medium w-full sm:w-auto min-w-[200px]"
                         >
                           <option value="">— Pilih Wali Kelas —</option>
                           {teachers.map((t) => (
-                            <option key={t._id} value={t._id}>{t.fullname}</option>
+                            <option key={t._id} value={t._id}>
+                              {t.fullname}
+                            </option>
                           ))}
                         </select>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0 self-start md:self-auto mt-2 md:mt-0">
-                      <button onClick={() => setRenaming({ classId: cls._id, name: cls.name })} className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 transition" title="Rename kelas">
+                      <button
+                        onClick={() =>
+                          setRenaming({ classId: cls._id, name: cls.name })
+                        }
+                        className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 transition"
+                        title="Rename kelas"
+                      >
                         <Edit2 size={16} />
                       </button>
-                      <button onClick={() => { setShowStudentModal(cls._id); setSelectedStudents([]); }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#00adb5]/10 text-[#00adb5] hover:bg-[#00adb5]/20 text-xs font-bold transition">
+                      <button
+                        onClick={() => {
+                          setShowStudentModal(cls._id);
+                          setSelectedStudents([]);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#00adb5]/10 text-[#00adb5] hover:bg-[#00adb5]/20 text-xs font-bold transition"
+                      >
                         <Plus size={14} /> Tambah Siswa
                       </button>
-                      <button onClick={() => handleDeleteClass(cls._id, cls.student_count)} className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-500 transition" title="Hapus kelas">
+                      <button
+                        onClick={() =>
+                          handleDeleteClass(cls._id, cls.student_count)
+                        }
+                        className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-500 transition"
+                        title="Hapus kelas"
+                      >
                         <Trash2 size={16} />
                       </button>
-                      <button onClick={() => handleExpandClass(cls._id)} className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 transition">
-                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      <button
+                        onClick={() => handleExpandClass(cls._id)}
+                        className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-500 transition"
+                      >
+                        {isExpanded ? (
+                          <ChevronUp size={16} />
+                        ) : (
+                          <ChevronDown size={16} />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -385,15 +516,27 @@ export default function HomeroomPage() {
                   {isExpanded && (
                     <div className="border-t border-slate-100 px-5 pb-5 pt-4 bg-slate-50/50">
                       <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
-                        Daftar Siswa {expandedData.loading && <Loader2 size={12} className="animate-spin text-[#00adb5]" />}
+                        Daftar Siswa{" "}
+                        {expandedData.loading && (
+                          <Loader2
+                            size={12}
+                            className="animate-spin text-[#00adb5]"
+                          />
+                        )}
                       </h4>
-                      
-                      {!expandedData.loading && expandedData.students.length === 0 ? (
-                        <p className="text-sm text-slate-400 italic">Belum ada siswa di kelas ini.</p>
+
+                      {!expandedData.loading &&
+                      expandedData.students.length === 0 ? (
+                        <p className="text-sm text-slate-400 italic">
+                          Belum ada siswa di kelas ini.
+                        </p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                           {expandedData.students.map((s) => (
-                            <div key={s._id} className="flex items-center justify-between bg-white border border-slate-100 rounded-xl px-4 py-2.5 shadow-sm">
+                            <div
+                              key={s._id}
+                              className="flex items-center justify-between bg-white border border-slate-100 rounded-xl px-4 py-2.5 shadow-sm"
+                            >
                               <div className="flex items-center gap-2.5">
                                 <div className="w-7 h-7 rounded-full bg-[#00adb5]/10 flex items-center justify-center text-xs font-black text-[#00adb5]">
                                   {s.fullname.charAt(0).toUpperCase()}
@@ -402,7 +545,13 @@ export default function HomeroomPage() {
                                   {s.fullname}
                                 </span>
                               </div>
-                              <button onClick={() => handleRemoveStudent(cls._id, s._id)} className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition shrink-0" title="Keluarkan siswa">
+                              <button
+                                onClick={() =>
+                                  handleRemoveStudent(cls._id, s._id)
+                                }
+                                className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition shrink-0"
+                                title="Keluarkan siswa"
+                              >
                                 <UserMinus size={15} />
                               </button>
                             </div>
@@ -414,25 +563,37 @@ export default function HomeroomPage() {
                       {expandedData.totalPages > 1 && (
                         <div className="flex items-center justify-between mt-4 bg-white p-2 rounded-xl border border-slate-100 shadow-sm max-w-sm">
                           <button
-                            onClick={() => fetchClassStudents(cls._id, expandedData.page - 1)}
-                            disabled={expandedData.page <= 1 || expandedData.loading}
+                            onClick={() =>
+                              fetchClassStudents(cls._id, expandedData.page - 1)
+                            }
+                            disabled={
+                              expandedData.page <= 1 || expandedData.loading
+                            }
                             className="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg disabled:opacity-50 transition"
                           >
                             Sebelumnya
                           </button>
                           <span className="text-xs font-bold text-slate-400">
-                            Hal <span className="text-slate-700">{expandedData.page}</span> / {expandedData.totalPages}
+                            Hal{" "}
+                            <span className="text-slate-700">
+                              {expandedData.page}
+                            </span>{" "}
+                            / {expandedData.totalPages}
                           </span>
                           <button
-                            onClick={() => fetchClassStudents(cls._id, expandedData.page + 1)}
-                            disabled={expandedData.page >= expandedData.totalPages || expandedData.loading}
+                            onClick={() =>
+                              fetchClassStudents(cls._id, expandedData.page + 1)
+                            }
+                            disabled={
+                              expandedData.page >= expandedData.totalPages ||
+                              expandedData.loading
+                            }
                             className="px-3 py-1.5 text-xs font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg disabled:opacity-50 transition"
                           >
                             Selanjutnya
                           </button>
                         </div>
                       )}
-
                     </div>
                   )}
                 </div>
@@ -452,7 +613,8 @@ export default function HomeroomPage() {
               Sebelumnya
             </button>
             <span className="text-sm font-bold text-slate-400">
-              Halaman <span className="text-slate-700">{pagination.page}</span> dari {pagination.totalPages}
+              Halaman <span className="text-slate-700">{pagination.page}</span>{" "}
+              dari {pagination.totalPages}
             </span>
             <button
               disabled={pagination.page >= pagination.totalPages}
@@ -469,7 +631,9 @@ export default function HomeroomPage() {
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-[30px] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-xl font-black text-slate-800 mb-5">Buat Kelas Baru</h3>
+            <h3 className="text-xl font-black text-slate-800 mb-5">
+              Buat Kelas Baru
+            </h3>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
               Nama Kelas
             </label>
@@ -492,7 +656,10 @@ export default function HomeroomPage() {
             />
             <div className="flex gap-3">
               <button
-                onClick={() => { setShowCreateModal(false); setNewClassName(""); }}
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setNewClassName("");
+                }}
                 className="flex-1 py-3 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
               >
                 Batal
@@ -522,7 +689,10 @@ export default function HomeroomPage() {
 
             {unassignedStudents.length === 0 ? (
               <div className="text-center py-10 text-slate-400 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-                <Users size={36} className="mx-auto mb-2 opacity-30 text-slate-400" />
+                <Users
+                  size={36}
+                  className="mx-auto mb-2 opacity-30 text-slate-400"
+                />
                 <p className="text-sm font-semibold">
                   Semua siswa sudah memiliki kelas.
                 </p>
@@ -538,7 +708,7 @@ export default function HomeroomPage() {
                       setSelectedStudents(
                         selectedStudents.length === unassignedStudents.length
                           ? []
-                          : unassignedStudents.map((s) => s._id)
+                          : unassignedStudents.map((s) => s._id),
                       )
                     }
                     className="text-xs font-bold text-[#00adb5] bg-white px-3 py-1.5 rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 transition"
@@ -558,7 +728,7 @@ export default function HomeroomPage() {
                           setSelectedStudents(
                             checked
                               ? selectedStudents.filter((id) => id !== s._id)
-                              : [...selectedStudents, s._id]
+                              : [...selectedStudents, s._id],
                           )
                         }
                         className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border text-left transition ${
@@ -568,9 +738,15 @@ export default function HomeroomPage() {
                         }`}
                       >
                         {checked ? (
-                          <CheckSquare size={18} className="text-[#00adb5] shrink-0" />
+                          <CheckSquare
+                            size={18}
+                            className="text-[#00adb5] shrink-0"
+                          />
                         ) : (
-                          <Square size={18} className="text-slate-300 shrink-0" />
+                          <Square
+                            size={18}
+                            className="text-slate-300 shrink-0"
+                          />
                         )}
                         <span className="text-sm font-medium text-slate-700">
                           {s.fullname}
@@ -584,7 +760,10 @@ export default function HomeroomPage() {
 
             <div className="flex gap-3 mt-6">
               <button
-                onClick={() => { setShowStudentModal(null); setSelectedStudents([]); }}
+                onClick={() => {
+                  setShowStudentModal(null);
+                  setSelectedStudents([]);
+                }}
                 className="flex-1 py-3 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
               >
                 Batal
@@ -595,9 +774,44 @@ export default function HomeroomPage() {
                   disabled={saving || selectedStudents.length === 0}
                   className="flex-1 py-3 rounded-2xl bg-[#00adb5] text-white text-sm font-bold hover:bg-[#00adb5]/90 transition disabled:opacity-50"
                 >
-                  {saving ? "Menyimpan..." : `Tambahkan (${selectedStudents.length})`}
+                  {saving
+                    ? "Menyimpan..."
+                    : `Tambahkan (${selectedStudents.length})`}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Custom Confirm Dialog */}
+      {confirmDialog.isOpen && (
+        <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-[30px] p-8 w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-4 text-rose-500">
+              <AlertTriangle size={28} />
+              <h3 className="text-xl font-black text-slate-800">
+                {confirmDialog.title}
+              </h3>
+            </div>
+            <p className="text-slate-600 text-sm font-medium mb-8">
+              {confirmDialog.message}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={closeConfirm}
+                disabled={saving}
+                className="flex-1 py-3 rounded-2xl border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmDialog.onConfirm}
+                disabled={saving}
+                className="flex-1 py-3 rounded-2xl bg-rose-500 text-white text-sm font-bold hover:bg-rose-600 transition disabled:opacity-50"
+              >
+                {saving ? "Memproses..." : confirmDialog.confirmText}
+              </button>
             </div>
           </div>
         </div>

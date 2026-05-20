@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessagesSquare,
   Users,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
@@ -39,6 +40,11 @@ export default function TeacherLayout({ children }) {
       name: "Laporan Insiden",
       icon: <HeartPulse size={20} />,
       path: "/dashboard/teacher/incident-reports",
+    },
+    {
+      name: "Konsultasi Chat",
+      icon: <MessagesSquare size={20} />,
+      path: "/dashboard/teacher/chat",
     },
   ];
 
