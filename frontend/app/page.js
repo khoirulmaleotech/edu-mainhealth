@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
@@ -11,13 +11,10 @@ import {
   ArrowRight,
   ChevronRight,
   Star,
-  BrainCircuit,
-  Menu,
-  X
+  BrainCircuit
 } from 'lucide-react';
 
-export default function HomePage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+export default function HomePage({ onTriggerAuth }) {
   const ecosystem = [
     { title: "Student App", desc: "Curhat aman dengan AI Mood Buddy, lapor bullying anonim, dan eksplorasi minat bakat.", icon: <MessageCircle className="text-primary" />, link: "/dashboard/student" },
     { title: "Parent Portal", desc: "Pantau tren emosional dan bakat anak secara transparan tanpa melanggar privasi chat.", icon: <Star className="text-secondary" />, link: "/dashboard/parent" },
@@ -26,53 +23,8 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white font-sans selection:bg-primary selection:text-white">
-      {/* NAVBAR */}
-      <nav className="fixed w-full bg-white/80 backdrop-blur-xl z-50 border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-5 md:px-8 py-4 md:py-5 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={50} height={50} className="h-11 w-11 md:h-[50px] md:w-[50px]" />
-            <div className="flex flex-col">
-              <span className="text-xl md:text-2xl font-black text-primary leading-none tracking-tighter uppercase">EduMind</span>
-              <span className="text-[9px] font-bold text-slate-400 tracking-[0.3em] uppercase">By Maleotech</span>
-            </div>
-          </Link>
-          
-          <div className="hidden lg:flex space-x-10 text-sm font-black uppercase tracking-widest text-slate-500">
-            <Link href="#ecosystem" className="hover:text-primary transition">Ekosistem</Link>
-            <Link href="#features" className="hover:text-primary transition">Fitur Utama</Link>
-            <Link href="#security" className="hover:text-primary transition">Keamanan</Link>
-            <Link href="/carrier" className="hover:text-primary transition">Karier</Link>
-          </div>
-          
-          <Link href="/login" className="hidden sm:inline-flex bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary transition-all shadow-xl shadow-slate-200">
-            Masuk Portal
-          </Link>
-
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((open) => !open)}
-            className="lg:hidden p-3 rounded-2xl bg-slate-50 text-slate-700 border border-slate-100"
-            aria-label="Toggle navigation menu"
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
-
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-100 bg-white/95 backdrop-blur-xl px-5 py-4 shadow-xl shadow-slate-200/60">
-            <div className="grid gap-2 text-xs font-black uppercase tracking-widest text-slate-500">
-              <Link onClick={() => setMobileMenuOpen(false)} href="#ecosystem" className="rounded-2xl px-4 py-3 hover:bg-primary/10 hover:text-primary transition">Ekosistem</Link>
-              <Link onClick={() => setMobileMenuOpen(false)} href="#features" className="rounded-2xl px-4 py-3 hover:bg-primary/10 hover:text-primary transition">Fitur Utama</Link>
-              <Link onClick={() => setMobileMenuOpen(false)} href="#security" className="rounded-2xl px-4 py-3 hover:bg-primary/10 hover:text-primary transition">Keamanan</Link>
-              <Link onClick={() => setMobileMenuOpen(false)} href="/carrier" className="rounded-2xl px-4 py-3 bg-primary/10 text-primary transition">Karier</Link>
-              <Link onClick={() => setMobileMenuOpen(false)} href="/login" className="mt-2 rounded-2xl bg-slate-900 px-4 py-4 text-center text-white transition hover:bg-primary">Masuk Portal</Link>
-            </div>
-          </div>
-        )}
-      </nav>
-
+    <div className="min-h-screen bg-white">
+      
       {/* HERO SECTION */}
       <section className="pt-48 pb-32 px-8 overflow-hidden">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
@@ -92,9 +44,12 @@ export default function HomePage() {
               Platform kesehatan mental terpadu yang menghubungkan Siswa, Orang Tua, Guru, dan Psikolog dalam satu ekosistem cerdas.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link href="/login" className="px-10 py-5 bg-primary text-white rounded-[24px] font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/30 flex items-center justify-center gap-3 hover:scale-105 transition-all">
+              <button 
+                onClick={onTriggerAuth}
+                className="px-10 py-5 bg-primary text-white rounded-[24px] font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/30 flex items-center justify-center gap-3 hover:scale-105 transition-all"
+              >
                 Mulai Curhat Aman <ArrowRight size={18} />
-              </Link>
+              </button>
               <Link href="#ecosystem" className="px-10 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-[24px] font-black text-sm uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center">
                 Lihat Ekosistem
               </Link>
@@ -182,42 +137,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-slate-900 text-white pt-32 pb-10 px-8">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-20 pb-20 border-b border-white/5">
-          <div className="lg:col-span-5 space-y-8">
-            <div className="flex items-center gap-4">
-              <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={60} height={60} className="brightness-125" />
-              <div className="flex flex-col">
-                <span className="text-3xl font-black text-primary leading-none tracking-tighter uppercase">EduMind</span>
-                <span className="text-[10px] font-bold text-slate-500 tracking-[0.3em] uppercase tracking-widest">Global Wellbeing</span>
-              </div>
-            </div>
-            <p className="text-slate-400 text-lg leading-relaxed max-w-sm">
-              Memberdayakan ekosistem pendidikan dengan teknologi AI untuk kesehatan mental yang inklusif dan aman.
-            </p>
-          </div>
-          <div className="lg:col-span-3 space-y-8 font-bold uppercase text-[10px] tracking-widest text-slate-500">
-            <h4 className="text-white text-sm tracking-normal">Navigasi</h4>
-            <ul className="space-y-4">
-              <li><Link href="/dashboard/student" className="hover:text-primary transition">Dashboard Student</Link></li>
-              <li><Link href="/dashboard/parent" className="hover:text-primary transition">Portal Orang Tua</Link></li>
-              <li><Link href="/dashboard/teacher" className="hover:text-primary transition">Teacher Dashboard</Link></li>
-            </ul>
-          </div>
-          <div className="lg:col-span-4 space-y-8">
-            <h4 className="text-white font-bold">Kontak Kami</h4>
-            <div className="space-y-4 text-slate-400 font-medium">
-              <p>📍 Intermark Indonesia Ruko 8, Tangerang Selatan</p>
-              <p>📞 +62 821-4391-0521</p>
-              <p className="text-primary font-black">✉️ support@maleotech.com</p>
-            </div>
-          </div>
-        </div>
-        <div className="text-center pt-10 text-[10px] font-black text-slate-600 uppercase tracking-widest">
-          © 2026 PT. Maleo Teknologi Indonesia. Seluruh Hak Cipta Dilindungi.
-        </div>
-      </footer>
     </div>
   );
 }
