@@ -14,46 +14,238 @@ const mailTransporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD,
   },
 });
-// TUNGGU TEXT YANG BENAR DARI MBA HEGGY
+
 function getSeverityEmailMeta(severityCode) {
   if (severityCode === "mild") {
     return {
       color: "#22c55e",
-      title: "Hasil Bagus, tetap jaga ya!",
-      message:
-        "Kamu menunjukkan tanda-tanda yang ringan. Terus lakukan hal-hal positif yang membuat harimu lebih nyaman.",
-      nextStep:
-        "Tetap ceritakan perasaanmu kepada orang dewasa kepercayaan jika kamu butuh.",
+      title: "Depresi Ringan",
+      message: `
+        <p>Halo Sobat,</p>
+
+        <p>
+          Terima kasih sudah mengisi Asesmen Tilik Diri dengan jujur dan terbuka.
+          Berdasarkan hasil asesmen, saat ini terdapat beberapa tanda yang mengarah
+          pada gejala depresi ringan.
+        </p>
+
+        <p>
+          Kondisi ini bisa muncul ketika seseorang sedang merasa lelah, tertekan,
+          kehilangan semangat, atau menghadapi banyak pikiran dalam waktu tertentu.
+          Hal tersebut bukan berarti kamu lemah atau gagal. Banyak orang juga pernah
+          mengalami fase seperti ini.
+        </p>
+
+        <p>
+          Yang penting sekarang adalah mulai lebih memperhatikan kondisi dirimu sendiri.
+          Cobalah memberi waktu untuk beristirahat, menjaga pola tidur, makan dengan teratur,
+          mengurangi tekanan berlebihan pada diri sendiri, serta tetap melakukan aktivitas
+          yang membuatmu merasa nyaman dan bermakna.
+        </p>
+
+        <p>
+          Kamu juga tidak harus menghadapi semuanya sendirian. Jika ada hal yang mengganggu
+          pikiranmu, cobalah bercerita kepada orang yang kamu percaya, seperti orang tua,
+          guru, teman dekat, atau konselor sekolah.
+        </p>
+
+        <p>
+          Semoga kamu terus bertumbuh menjadi pribadi yang lebih kuat dan semakin mengenal
+          dirimu sendiri. Terima kasih karena sudah berani peduli terhadap kesehatan mentalmu.
+        </p>
+      `,
+      nextStep: "Salam hangat,<br/>Tim Pendamping Asesmen Tilik Diri",
     };
   }
+
   if (severityCode === "moderate") {
     return {
       color: "#0284c7",
-      title: "Ayo perhatikan lebih serius",
-      message:
-        "Hasilmu menunjukkan perhatian sedang. Ini waktu yang baik untuk mulai ngobrol dengan guru BK atau konselor.",
-      nextStep: "Coba atur waktu bicara dengan orang dewasa yang kamu percaya.",
+      title: "Depresi Sedang",
+      message: `
+        <p>Halo Sobat,</p>
+
+        <p>
+          Terima kasih sudah mengisi Asesmen Tilik Diri dengan jujur.
+          Berdasarkan hasil asesmen, saat ini terdeteksi adanya gejala depresi
+          pada tingkat sedang.
+        </p>
+
+        <p>
+          Kami memahami bahwa akhir-akhir ini mungkin ada banyak hal yang terasa berat,
+          melelahkan, atau mengganggu pikiran dan perasaanmu.
+        </p>
+
+        <p>
+          Mungkin kamu merasa lebih mudah sedih, kehilangan semangat,
+          sulit fokus, merasa lelah terus-menerus, atau merasa sendirian
+          menghadapi semuanya.
+        </p>
+
+        <p>
+          Perasaan seperti ini penting untuk diperhatikan dan tidak dibiarkan
+          berlarut terlalu lama. Kamu tidak harus menanggung semuanya sendiri.
+        </p>
+
+        <p>
+          Cobalah mulai memberikan perhatian lebih pada kondisi dirimu:
+        </p>
+
+        <ul>
+          <li>menjaga pola tidur dan makan,</li>
+          <li>mengurangi tekanan yang terlalu berat,</li>
+          <li>beristirahat ketika lelah,</li>
+          <li>dan tetap terhubung dengan orang-orang yang membuatmu merasa aman dan didengar.</li>
+        </ul>
+
+        <p>
+          Jika perasaan ini mulai mengganggu kegiatan sehari-hari,
+          sekolah, hubungan dengan orang lain, atau membuatmu semakin merasa terpuruk,
+          sangat disarankan untuk mulai mencari bantuan dan dukungan.
+        </p>
+
+        <p>
+          Kamu bisa berbicara dengan orang tua, wali, guru BK,
+          konselor sekolah, atau tenaga profesional seperti psikolog dan konselor.
+        </p>
+
+        <p>
+          Tidak apa-apa untuk meminta bantuan. Justru itu adalah langkah berani
+          untuk menjaga diri sendiri.
+        </p>
+
+        <p>
+          Percayalah bahwa kondisi ini bisa dilalui sedikit demi sedikit.
+          Kamu tidak sendirian, dan selalu ada orang yang siap membantu.
+        </p>
+      `,
+      nextStep: "Salam hangat,<br/>Tim Pendamping Asesmen Tilik Diri",
     };
   }
-  if (severityCode === "severe") {
+
+  if (severityCode === "severe" || severityCode === "very_severe") {
     return {
-      color: "#f97316",
-      title: "Perlu bantu lebih cepat",
-      message:
-        "Jawabanmu menunjukkan kondisi berat. Ayo segera minta dukungan dari konselor atau orang dewasa terdekat.",
-      nextStep:
-        "Buka dashboard dan hubungi konselor sekolah untuk mendapatkan bantuan lebih cepat.",
+      color: "#ef4444",
+      title: "Depresi Berat / Sangat Berat",
+      message: `
+        <p>Halo Sobat,</p>
+
+        <p>
+          Terima kasih karena sudah berani dan jujur mengisi Asesmen Tilik Diri.
+          Kami memahami bahwa mungkin ada banyak hal yang sedang terasa sangat berat
+          untuk kamu hadapi akhir-akhir ini.
+        </p>
+
+        <p>
+          Berdasarkan hasil asesmen, saat ini terdeteksi adanya gejala depresi
+          pada tingkat berat/sangat berat.
+        </p>
+
+        <p>
+          Kondisi ini menunjukkan bahwa kamu mungkin sedang mengalami tekanan emosional
+          yang cukup besar dan membutuhkan perhatian serta dukungan lebih lanjut.
+        </p>
+
+        <p>
+          Pertama-tama, penting untuk kamu tahu bahwa apa yang kamu rasakan saat ini
+          bukan tanda bahwa kamu lemah, gagal, atau tidak berharga.
+        </p>
+
+        <p>
+          Ketika seseorang menghadapi tekanan, kesedihan, kelelahan emosional,
+          atau masalah yang berlangsung cukup lama, kondisi mentalnya memang bisa
+          sangat terdampak.
+        </p>
+
+        <p>
+          Kamu juga tidak harus melewati fase ini sendirian.
+        </p>
+
+        <p>
+          Kami sangat menyarankan agar kamu segera mencari dukungan dari:
+        </p>
+
+        <ul>
+          <li>orang tua atau keluarga,</li>
+          <li>guru atau wali kelas,</li>
+          <li>guru BK/konselor sekolah,</li>
+          <li>psikolog,</li>
+          <li>atau tenaga profesional lainnya.</li>
+        </ul>
+
+        <p>
+          Jika kamu merasa sangat kewalahan, kehilangan harapan,
+          atau memiliki pikiran untuk menyakiti diri sendiri,
+          mohon jangan memendamnya sendirian.
+        </p>
+
+        <p>
+          Percayalah bahwa kondisi ini tidak akan selalu terasa seperti sekarang.
+          Fase yang berat ini bisa dilalui perlahan dengan dukungan,
+          bantuan, dan waktu.
+        </p>
+
+        <p>
+          Kamu berharga, dan perasaanmu penting.
+          Terima kasih sudah bertahan sejauh ini.
+        </p>
+      `,
+      nextStep: "Salam hangat,<br/>Tim Pendamping Asesmen Tilik Diri",
     };
   }
+
   return {
-    color: "#ef4444",
-    title: "Segera minta bantuan",
-    message:
-      "Hasil ini sangat mendesak. Segera cari bantuan dari guru, konselor, atau orang tua yang kamu percaya.",
-    nextStep:
-      "Kalau bisa, bicarakan sekarang juga dengan orang dewasa yang dapat membantu.",
+    color: "#22c55e",
+    title: "Tidak Terdeteksi Adanya Depresi",
+    message: `
+      <p>Halo Sobat,</p>
+
+      <p>
+        Terima kasih sudah meluangkan waktu untuk mengisi Asesmen Tilik Diri
+        dengan jujur.
+      </p>
+
+      <p>
+        Berdasarkan hasil asesmen yang kamu isi, saat ini tidak terdeteksi
+        adanya gejala depresi yang signifikan dalam dirimu.
+      </p>
+
+      <p>
+        Ini adalah hal yang baik dan patut diapresiasi.
+        Artinya, secara umum kamu masih mampu menjalani aktivitas sehari-hari
+        dan menghadapi tantangan yang ada dengan cukup baik.
+      </p>
+
+      <p>
+        Namun demikian, menjaga kesehatan mental tetap penting dilakukan,
+        sama seperti menjaga kesehatan fisik.
+      </p>
+
+      <p>
+        Tetaplah memberikan ruang untuk dirimu beristirahat,
+        melakukan hal-hal yang kamu sukai, menjaga hubungan baik
+        dengan orang-orang terdekat, serta berbicara dengan orang
+        yang dipercaya ketika sedang merasa lelah atau memiliki masalah.
+      </p>
+
+      <p>
+        Ingat bahwa setiap orang bisa mengalami masa sulit dalam hidupnya,
+        dan meminta bantuan bukanlah tanda kelemahan.
+      </p>
+
+      <p>
+        Semoga kamu terus tumbuh menjadi pribadi yang sehat, kuat,
+        dan mampu menjaga dirimu dengan baik.
+      </p>
+
+      <p>
+        Terima kasih sudah peduli terhadap kondisi dirimu sendiri.
+      </p>
+    `,
+    nextStep: "Salam hangat,<br/>Tim Pendamping Asesmen Tilik Diri",
   };
 }
+
 
 function buildTilikDiriEmailHtml({
   name,
@@ -126,34 +318,41 @@ function buildTilikDiriEmailHtml({
 //  Sangat Berat 21 – 30  → rujukan / penanganan mendesak
 
 function classifySeverity(score) {
-  if (score <= 10) {
+  // 0–4
+  if (score <= 4) {
     return {
-      level: "Ringan",
+      level: "Tidak Terdeteksi",
+      code: "normal",
+      action: "self_care",
+      color: "bg-emerald-300",
+    };
+  }
+
+  // 5–9
+  if (score <= 9) {
+    return {
+      level: "Depresi Ringan",
       code: "mild",
       action: "monitor",
-      color: "bg-emerald-400",
+      color: "bg-emerald-500",
     };
   }
-  if (score <= 16) {
+
+  // 10–14
+  if (score <= 14) {
     return {
-      level: "Sedang",
+      level: "Depresi Sedang",
       code: "moderate",
       action: "counseling_scheduled",
-      color: "bg-sky-400",
+      color: "bg-sky-500",
     };
   }
-  if (score <= 20) {
-    return {
-      level: "Berat",
-      code: "severe",
-      action: "counseling_urgent",
-      color: "bg-orange-500",
-    };
-  }
+
+  // 15–30
   return {
-    level: "Sangat Berat",
-    code: "very_severe",
-    action: "immediate_referral",
+    level: "Depresi Berat / Sangat Berat",
+    code: "severe",
+    action: "immediate_support",
     color: "bg-red-500",
   };
 }
