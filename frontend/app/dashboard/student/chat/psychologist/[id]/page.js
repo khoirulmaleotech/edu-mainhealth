@@ -35,32 +35,44 @@ export default function StudentChatToPsychologistPage({ params }) {
     if (session?.user?.id) {
       fetchData();
     }
-  }, [params.id, session?.user?.id]); // Gunakan session.user.id sebagai dependensi stabil
+  }, [params.id, session?.user?.id]);
 
-  // 2. LOGIKA SEOLAH-OLAH SOCKET (Polling setiap 3 detik)
+  // 2. UPDATE LOGIKA: Mengganti polling lama dengan EventSource (HTTP Real-time Stream)
   useEffect(() => {
-    let interval;
-    
-    // Hanya jalankan polling jika session dan roomId sudah ada
+    let eventSource;
+
     if (session?.user?.id && roomId) {
-      interval = setInterval(async () => {
+      // Membuka jalur pipa stream real-time khusus room terkait
+      eventSource = new EventSource(`/api/student/chat/stream?roomId=${roomId}`);
+
+      // Menangkap event suntikan pesan baru dari database
+      eventSource.addEventListener("newMessage", (event) => {
         try {
-          const res = await fetch(`/api/student/chat/psychologist/${params.id}`);
-          const json = await res.json();
-          if (json.success) {
-            // Update messages jika ada perbedaan panjang array (pesan baru)
-            if (json.data.messages.length !== messages.length) {
-              setMessages(json.data.messages);
-            }
-          }
-        } catch (error) {
-          console.error("Polling error:", error);
+          const newMsg = JSON.parse(event.data);
+          
+          // Filter validasi: Masukkan pesan jika belum ada di layar (menghindari duplikasi optimistic update)
+          setMessages((prev) => {
+            const isExist = prev.some((m) => String(m._id) === String(newMsg._id));
+            if (isExist) return prev;
+            return [...prev, newMsg];
+          });
+        } catch (err) {
+          console.error("Gagal membaca payload stream:", err);
         }
-      }, 3000); // Cek pesan baru setiap 3 detik
+      });
+
+      eventSource.onerror = (err) => {
+        console.error("Koneksi stream terputus, mengupayakan reconnect...", err);
+      };
     }
 
-    return () => clearInterval(interval); // Bersihkan interval saat pindah halaman
-  }, [roomId, messages.length, session?.user?.id, params.id]);
+    // Bersihkan jalur pipa stream saat siswa berpindah halaman
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [roomId, session?.user?.id]);
 
   // Auto Scroll
   useEffect(() => {
@@ -75,7 +87,7 @@ export default function StudentChatToPsychologistPage({ params }) {
     const currentText = input;
     const tempId = Date.now().toString();
     
-    // Optimistic Update (Tampilkan di layar dulu)
+    // Optimistic Update (Tampilkan di layar dulu demi kelancaran UX)
     const tempMsg = {
       _id: tempId,
       sender_id: session.user.id,

@@ -293,7 +293,6 @@ export default function StudentChatPage() {
       };
 
       updatedMessages.push(audioMessage);
-
       formData.append('file', audioBlob, 'recording.ogg');
     } else {
       const textMessage = {
@@ -303,7 +302,6 @@ export default function StudentChatPage() {
       };
 
       updatedMessages.push(textMessage);
-
       formData.append('message', input);
     }
 
@@ -341,10 +339,7 @@ export default function StudentChatPage() {
           }
         ]);
 
-        if (loggedUser === userId && sessionStorage.getItem("is_critical") === userId) {
-          return;
-        }
-
+        // UPDATE LOGIKA: Membuka kunci pemicu agar indikasi "high" maupun "critical" selalu memunculkan pop-up bantuan
         if (
           data.riskLevel === "high" ||
           data.riskLevel === "critical"
