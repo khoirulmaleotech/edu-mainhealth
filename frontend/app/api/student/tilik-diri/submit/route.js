@@ -5,13 +5,14 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/authOptions";
 import nodemailer from "nodemailer";
 
 const uri = process.env.MONGODB_URI;
+
 const mailTransporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT || 587),
-  secure: process.env.EMAIL_SECURE === "true",
+  host: "smtp.gmail.com", // Langsung tembak server Google agar tidak lari ke 127.0.0.1
+  port: 465,              // Port 465 jauh lebih aman dan stabil untuk Google SMTP
+  secure: true,           // true untuk port 465 (SSL murni)
   auth: {
     user: process.env.EMAIL_USERNAME,
-    pass: process.env.EMAIL_PASSWORD,
+    pass: process.env.EMAIL_PASSWORD
   },
 });
 
@@ -22,37 +23,11 @@ function getSeverityEmailMeta(severityCode) {
       title: "Depresi Ringan",
       message: `
         <p>Halo Sobat,</p>
-
-        <p>
-          Terima kasih sudah mengisi Asesmen Tilik Diri dengan jujur dan terbuka.
-          Berdasarkan hasil asesmen, saat ini terdapat beberapa tanda yang mengarah
-          pada gejala depresi ringan.
-        </p>
-
-        <p>
-          Kondisi ini bisa muncul ketika seseorang sedang merasa lelah, tertekan,
-          kehilangan semangat, atau menghadapi banyak pikiran dalam waktu tertentu.
-          Hal tersebut bukan berarti kamu lemah atau gagal. Banyak orang juga pernah
-          mengalami fase seperti ini.
-        </p>
-
-        <p>
-          Yang penting sekarang adalah mulai lebih memperhatikan kondisi dirimu sendiri.
-          Cobalah memberi waktu untuk beristirahat, menjaga pola tidur, makan dengan teratur,
-          mengurangi tekanan berlebihan pada diri sendiri, serta tetap melakukan aktivitas
-          yang membuatmu merasa nyaman dan bermakna.
-        </p>
-
-        <p>
-          Kamu juga tidak harus menghadapi semuanya sendirian. Jika ada hal yang mengganggu
-          pikiranmu, cobalah bercerita kepada orang yang kamu percaya, seperti orang tua,
-          guru, teman dekat, atau konselor sekolah.
-        </p>
-
-        <p>
-          Semoga kamu terus bertumbuh menjadi pribadi yang lebih kuat dan semakin mengenal
-          dirimu sendiri. Terima kasih karena sudah berani peduli terhadap kesehatan mentalmu.
-        </p>
+        <p>Terima kasih sudah mengisi Asesmen Tilik Diri dengan jujur dan terbuka. Berdasarkan hasil asesmen, saat ini terdapat beberapa tanda yang mengarah pada gejala depresi ringan.</p>
+        <p>Kondisi ini bisa muncul ketika seseorang sedang merasa lelah, tertekan, kehilangan semangat, atau menghadapi banyak pikiran dalam waktu tertentu. Hal tersebut bukan berarti kamu lemah atau gagal. Banyak orang juga pernah mengalami fase seperti ini.</p>
+        <p>Yang penting sekarang adalah mulai lebih memperhatikan kondisi dirimu sendiri. Cobalah memberi waktu untuk beristirahat, menjaga pola tidur, makan dengan teratur, mengurangi tekanan berlebihan pada diri sendiri, serta tetap melakukan aktivitas yang membuatmu merasa nyaman dan bermakna.</p>
+        <p>Kamu juga tidak harus menghadapi semuanya sendirian. Jika ada hal yang mengganggu pikiranmu, cobalah bercerita kepada orang yang kamu percaya, seperti orang tua, guru, teman dekat, atau konselor sekolah.</p>
+        <p>Semoga kamu terus bertumbuh menjadi pribadi yang lebih kuat dan semakin mengenal dirimu sendiri. Terima kasih karena sudah berani peduli terhadap kesehatan mentalmu.</p>
       `,
       nextStep: "Salam hangat,<br/>Tim Pendamping Asesmen Tilik Diri",
     };
@@ -64,60 +39,21 @@ function getSeverityEmailMeta(severityCode) {
       title: "Depresi Sedang",
       message: `
         <p>Halo Sobat,</p>
-
-        <p>
-          Terima kasih sudah mengisi Asesmen Tilik Diri dengan jujur.
-          Berdasarkan hasil asesmen, saat ini terdeteksi adanya gejala depresi
-          pada tingkat sedang.
-        </p>
-
-        <p>
-          Kami memahami bahwa akhir-akhir ini mungkin ada banyak hal yang terasa berat,
-          melelahkan, atau mengganggu pikiran dan perasaanmu.
-        </p>
-
-        <p>
-          Mungkin kamu merasa lebih mudah sedih, kehilangan semangat,
-          sulit fokus, merasa lelah terus-menerus, atau merasa sendirian
-          menghadapi semuanya.
-        </p>
-
-        <p>
-          Perasaan seperti ini penting untuk diperhatikan dan tidak dibiarkan
-          berlarut terlalu lama. Kamu tidak harus menanggung semuanya sendiri.
-        </p>
-
-        <p>
-          Cobalah mulai memberikan perhatian lebih pada kondisi dirimu:
-        </p>
-
+        <p>Terima kasih sudah mengisi Asesmen Tilik Diri dengan jujur. Berdasarkan hasil asesmen, saat ini terdeteksi adanya gejala depresi pada tingkat sedang.</p>
+        <p>Kami memahami bahwa akhir-akhir ini mungkin ada banyak hal yang terasa berat, melelahkan, atau mengganggu pikiran dan perasaanmu.</p>
+        <p>Mungkin kamu merasa lebih mudah sedih, kehilangan semangat, sulit fokus, merasa lelah terus-menerus, atau merasa sendirian menghadapi semuanya.</p>
+        <p>Perasaan seperti ini penting untuk diperhatikan dan tidak dibiarkan berlarut terlalu lama. Kamu tidak harus menanggung semuanya sendiri.</p>
+        <p>Cobalah mulai memberikan perhatian lebih pada kondisi dirimu:</p>
         <ul>
           <li>menjaga pola tidur dan makan,</li>
           <li>mengurangi tekanan yang terlalu berat,</li>
           <li>beristirahat ketika lelah,</li>
           <li>dan tetap terhubung dengan orang-orang yang membuatmu merasa aman dan didengar.</li>
         </ul>
-
-        <p>
-          Jika perasaan ini mulai mengganggu kegiatan sehari-hari,
-          sekolah, hubungan dengan orang lain, atau membuatmu semakin merasa terpuruk,
-          sangat disarankan untuk mulai mencari bantuan dan dukungan.
-        </p>
-
-        <p>
-          Kamu bisa berbicara dengan orang tua, wali, guru BK,
-          konselor sekolah, atau tenaga profesional seperti psikolog dan konselor.
-        </p>
-
-        <p>
-          Tidak apa-apa untuk meminta bantuan. Justru itu adalah langkah berani
-          untuk menjaga diri sendiri.
-        </p>
-
-        <p>
-          Percayalah bahwa kondisi ini bisa dilalui sedikit demi sedikit.
-          Kamu tidak sendirian, dan selalu ada orang yang siap membantu.
-        </p>
+        <p>Jika perasaan ini mulai mengganggu kegiatan sehari-hari, sekolah, hubungan dengan orang lain, atau membuatmu semakin merasa terpuruk, sangat disarankan untuk mulai mencari bantuan dan dukungan.</p>
+        <p>Kamu bisa berbicara dengan orang tua, wali, guru BK, konselor sekolah, atau tenaga profesional seperti psikolog dan konselor.</p>
+        <p>Tidak apa-apa untuk meminta bantuan. Justru itu adalah langkah berani untuk menjaga diri sendiri.</p>
+        <p>Percayalah bahwa kondisi ini bisa dilalui sedikit demi sedikit. Kamu tidak sendirian, dan selalu ada orang yang siap membantu.</p>
       `,
       nextStep: "Salam hangat,<br/>Tim Pendamping Asesmen Tilik Diri",
     };
@@ -129,42 +65,13 @@ function getSeverityEmailMeta(severityCode) {
       title: "Depresi Berat / Sangat Berat",
       message: `
         <p>Halo Sobat,</p>
-
-        <p>
-          Terima kasih karena sudah berani dan jujur mengisi Asesmen Tilik Diri.
-          Kami memahami bahwa mungkin ada banyak hal yang sedang terasa sangat berat
-          untuk kamu hadapi akhir-akhir ini.
-        </p>
-
-        <p>
-          Berdasarkan hasil asesmen, saat ini terdeteksi adanya gejala depresi
-          pada tingkat berat/sangat berat.
-        </p>
-
-        <p>
-          Kondisi ini menunjukkan bahwa kamu mungkin sedang mengalami tekanan emosional
-          yang cukup besar dan membutuhkan perhatian serta dukungan lebih lanjut.
-        </p>
-
-        <p>
-          Pertama-tama, penting untuk kamu tahu bahwa apa yang kamu rasakan saat ini
-          bukan tanda bahwa kamu lemah, gagal, atau tidak berharga.
-        </p>
-
-        <p>
-          Ketika seseorang menghadapi tekanan, kesedihan, kelelahan emosional,
-          atau masalah yang berlangsung cukup lama, kondisi mentalnya memang bisa
-          sangat terdampak.
-        </p>
-
-        <p>
-          Kamu juga tidak harus melewati fase ini sendirian.
-        </p>
-
-        <p>
-          Kami sangat menyarankan agar kamu segera mencari dukungan dari:
-        </p>
-
+        <p>Terima kasih karena sudah berani dan jujur mengisi Asesmen Tilik Diri. Kami memahami bahwa mungkin ada banyak hal yang sedang terasa sangat berat untuk kamu hadapi akhir-akhir ini.</p>
+        <p>Berdasarkan hasil asesmen, saat ini terdeteksi adanya gejala depresi pada tingkat berat/sangat berat.</p>
+        <p>Kondisi ini menunjukkan bahwa kamu mungkin sedang mengalami tekanan emosional yang cukup besar dan membutuhkan perhatian serta dukungan lebih lanjut.</p>
+        <p>Pertama-tama, penting untuk kamu tahu bahwa apa yang kamu rasakan saat ini bukan tanda bahwa kamu lemah, gagal, atau tidak berharga.</p>
+        <p>Ketika seseorang menghadapi tekanan, kesedihan, kelelahan emosional, atau masalah yang berlangsung cukup lama, kondisi mentalnya memang bisa sangat terdampak.</p>
+        <p>Kamu juga tidak harus melewati fase ini sendirian.</p>
+        <p>Kami sangat menyarankan agar kamu segera mencari dukungan dari:</p>
         <ul>
           <li>orang tua atau keluarga,</li>
           <li>guru atau wali kelas,</li>
@@ -172,23 +79,9 @@ function getSeverityEmailMeta(severityCode) {
           <li>psikolog,</li>
           <li>atau tenaga profesional lainnya.</li>
         </ul>
-
-        <p>
-          Jika kamu merasa sangat kewalahan, kehilangan harapan,
-          atau memiliki pikiran untuk menyakiti diri sendiri,
-          mohon jangan memendamnya sendirian.
-        </p>
-
-        <p>
-          Percayalah bahwa kondisi ini tidak akan selalu terasa seperti sekarang.
-          Fase yang berat ini bisa dilalui perlahan dengan dukungan,
-          bantuan, dan waktu.
-        </p>
-
-        <p>
-          Kamu berharga, dan perasaanmu penting.
-          Terima kasih sudah bertahan sejauh ini.
-        </p>
+        <p>Jika kamu merasa sangat kewalahan, kehilangan harapan, atau memiliki pikiran untuk menyakiti diri sendiri, mohon jangan memendamnya sendirian.</p>
+        <p>Percayalah bahwa kondisi ini tidak akan selalu terasa seperti sekarang. Fase yang berat ini bisa dilalui perlahan dengan dukungan, bantuan, dan waktu.</p>
+        <p>Kamu berharga, dan perasaanmu penting. Terima kasih sudah bertahan sejauh ini.</p>
       `,
       nextStep: "Salam hangat,<br/>Tim Pendamping Asesmen Tilik Diri",
     };
@@ -199,67 +92,27 @@ function getSeverityEmailMeta(severityCode) {
     title: "Tidak Terdeteksi Adanya Depresi",
     message: `
       <p>Halo Sobat,</p>
-
-      <p>
-        Terima kasih sudah meluangkan waktu untuk mengisi Asesmen Tilik Diri
-        dengan jujur.
-      </p>
-
-      <p>
-        Berdasarkan hasil asesmen yang kamu isi, saat ini tidak terdeteksi
-        adanya gejala depresi yang signifikan dalam dirimu.
-      </p>
-
-      <p>
-        Ini adalah hal yang baik dan patut diapresiasi.
-        Artinya, secara umum kamu masih mampu menjalani aktivitas sehari-hari
-        dan menghadapi tantangan yang ada dengan cukup baik.
-      </p>
-
-      <p>
-        Namun demikian, menjaga kesehatan mental tetap penting dilakukan,
-        sama seperti menjaga kesehatan fisik.
-      </p>
-
-      <p>
-        Tetaplah memberikan ruang untuk dirimu beristirahat,
-        melakukan hal-hal yang kamu sukai, menjaga hubungan baik
-        dengan orang-orang terdekat, serta berbicara dengan orang
-        yang dipercaya ketika sedang merasa lelah atau memiliki masalah.
-      </p>
-
-      <p>
-        Ingat bahwa setiap orang bisa mengalami masa sulit dalam hidupnya,
-        dan meminta bantuan bukanlah tanda kelemahan.
-      </p>
-
-      <p>
-        Semoga kamu terus tumbuh menjadi pribadi yang sehat, kuat,
-        dan mampu menjaga dirimu dengan baik.
-      </p>
-
-      <p>
-        Terima kasih sudah peduli terhadap kondisi dirimu sendiri.
-      </p>
+      <p>Terima kasih sudah meluangkan waktu untuk mengisi Asesmen Tilik Diri dengan jujur.</p>
+      <p>Berdasarkan hasil asesmen yang kamu isi, saat ini tidak terdeteksi adanya gejala depresi yang signifikan dalam dirimu.</p>
+      <p>Ini adalah hal yang baik dan patut diapresiasi. Artinya, secara umum kamu masih mampu menjalani aktivitas sehari-hari dan menghadapi tantangan yang ada dengan cukup baik.</p>
+      <p>Namun demikian, menjaga kesehatan mental tetap penting dilakukan, sama seperti menjaga kesehatan fisik.</p>
+      <p>Tetaplah memberikan ruang untuk dirimu beristirahat, melakukan hal-hal yang kamu sukai, menjaga hubungan baik dengan orang-orang terdekat, serta berbicara dengan orang yang dipercaya ketika sedang merasa lelah atau memiliki masalah.</p>
+      <p>Ingat bahwa setiap orang bisa mengalami masa sulit dalam hidupnya, dan meminta bantuan bukanlah tanda kelemahan.</p>
+      <p>Semoga kamu terus tumbuh menjadi pribadi yang sehat, kuat, dan mampu menjaga dirimu dengan baik.</p>
+      <p>Terima kasih sudah peduli terhadap kondisi dirimu sendiri.</p>
     `,
     nextStep: "Salam hangat,<br/>Tim Pendamping Asesmen Tilik Diri",
   };
 }
 
-
-function buildTilikDiriEmailHtml({
-  name,
-  score,
-  severity,
-  needsUrgentAttention,
-}) {
+function buildTilikDiriEmailHtml({ name, score, severity, needsUrgentAttention }) {
   const meta = getSeverityEmailMeta(severity.code);
   const severityLabel = severity.level;
   const dashboardUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
   return `<!DOCTYPE html>
 <html lang="id">
-  <body style="margin:0;padding:0;background:#f3f4f6;font-family:Inter, Arial, sans-serif;color:#334155;">
+  <body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial, sans-serif;color:#334155;">
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
       <tr>
         <td align="center" style="padding:24px;">
@@ -276,13 +129,11 @@ function buildTilikDiriEmailHtml({
                   <p style="margin:0;font-size:14px;color:#64748b;">Skor Asesmen</p>
                   <p style="margin:8px 0 0;font-size:28px;font-weight:800;color:#0f172a;">${score} / 30</p>
                 </div>
-
                 <div style="margin:24px 0 0;padding:22px;border-radius:20px;background:${meta.color}10;border:1px solid ${meta.color};">
                   <p style="margin:0;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:${meta.color};font-weight:700;">${severityLabel}</p>
                   <h2 style="margin:12px 0 0;font-size:20px;color:#0f172a;">${meta.title}</h2>
-                  <p style="margin:12px 0 0;font-size:15px;line-height:1.7;color:#475569;">${meta.message}</p>
+                  <div style="margin:12px 0 0;font-size:15px;line-height:1.7;color:#475569;">${meta.message}</div>
                 </div>
-
                 <div style="margin:24px 0 0;padding:22px;border-radius:20px;background:#f8fafc;border:1px solid #e2e8f0;">
                   <p style="margin:0 0 12px;font-size:14px;font-weight:700;color:#334155;">Rekomendasi</p>
                   <p style="margin:0;font-size:15px;line-height:1.7;color:#475569;">${meta.nextStep}</p>
@@ -309,106 +160,51 @@ function buildTilikDiriEmailHtml({
 </html>`;
 }
 
-// ─── Severity Classification ────────────────────────────────────────────────
-// Total score range: 0–30 (10 questions × max 3)
-//
-//  Ringan       0 – 10   → monitor mandiri, edukasi
-//  Sedang      11 – 16   → sesi konseling terjadwal
-//  Berat       17 – 20   → konseling segera
-//  Sangat Berat 21 – 30  → rujukan / penanganan mendesak
-
 function classifySeverity(score) {
-  // 0–4
   if (score <= 4) {
-    return {
-      level: "Tidak Terdeteksi",
-      code: "normal",
-      action: "self_care",
-      color: "bg-emerald-300",
-    };
+    return { level: "Tidak Terdeteksi", code: "normal", action: "self_care", color: "#10b981" };
   }
-
-  // 5–9
   if (score <= 9) {
-    return {
-      level: "Depresi Ringan",
-      code: "mild",
-      action: "monitor",
-      color: "bg-emerald-500",
-    };
+    return { level: "Depresi Ringan", code: "mild", action: "monitor", color: "#22c55e" };
   }
-
-  // 10–14
   if (score <= 14) {
-    return {
-      level: "Depresi Sedang",
-      code: "moderate",
-      action: "counseling_scheduled",
-      color: "bg-sky-500",
-    };
+    return { level: "Depresi Sedang", code: "moderate", action: "counseling_scheduled", color: "#0284c7" };
   }
-
-  // 15–30
-  return {
-    level: "Depresi Berat / Sangat Berat",
-    code: "severe",
-    action: "immediate_support",
-    color: "bg-red-500",
-  };
+  return { level: "Depresi Berat / Sangat Berat", code: "severe", action: "immediate_support", color: "#ef4444" };
 }
-
-// ─── POST /api/student/tilik-diri/submit ────────────────────────────────────
 
 export async function POST(request) {
   const client = new MongoClient(uri);
   try {
-    // ── Auth
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 },
-      );
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
     const { answers, openEnded } = await request.json();
 
-    // ── Basic validation
     if (!Array.isArray(answers) || answers.length !== 10) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "Data tidak lengkap. Pastikan semua pertanyaan terjawab.",
-        },
-        { status: 400 },
+        { success: false, message: "Data tidak lengkap. Pastikan semua pertanyaan terjawab." },
+        { status: 400 }
       );
     }
 
     const userId = new ObjectId(session.user.id);
-
-    // ── Score
-    const totalScore = answers.reduce(
-      (sum, a) => sum + (Number(a.score) || 0),
-      0,
-    );
+    const totalScore = answers.reduce((sum, a) => sum + (Number(a.score) || 0), 0);
     const severity = classifySeverity(totalScore);
 
-    // ── Sensitive flag: Q9 (self-harm) or Q10 (harm others) answered ≥ 2
     const needsUrgentAttention =
-      answers.some(
-        (a) => (a.questionId === 9 || a.questionId === 10) && a.score >= 2,
-      ) ||
+      answers.some((a) => (a.questionId === 9 || a.questionId === 10) && a.score >= 2) ||
       severity.code === "severe" ||
       severity.code === "very_severe";
 
-    // ── Per-question detail for counselor view
     const breakdown = answers.map((a) => ({
       questionId: a.questionId,
       score: a.score,
       isSensitive: a.questionId === 9 || a.questionId === 10,
     }));
 
-    // ── Document
     const assessmentDoc = {
       student_id: userId,
       type: "tilik_diri",
@@ -434,16 +230,12 @@ export async function POST(request) {
     await client.connect();
     const db = client.db();
 
-    // ── Upsert asesmen (satu dokumen per siswa, dapat diperbarui)
-    await db
-      .collection("student_tilik_diri")
-      .updateOne(
-        { student_id: userId },
-        { $set: assessmentDoc },
-        { upsert: true },
-      );
+    await db.collection("student_tilik_diri").updateOne(
+      { student_id: userId },
+      { $set: assessmentDoc },
+      { upsert: true }
+    );
 
-    // ── Update student_stats untuk widget dashboard
     await db.collection("student_stats").updateOne(
       { student_id: userId },
       {
@@ -456,16 +248,17 @@ export async function POST(request) {
           needs_counselor_attention: needsUrgentAttention,
         },
       },
-      { upsert: true },
+      { upsert: true }
     );
 
-    // ── Kirim email hasil asesmen ke akun siswa
+    // ── PROSES PENGIRIMAN EMAIL SINKRON ──
     try {
       const studentEmail = session.user.email;
       const studentName = session.user.name || "Sahabat";
+      
       if (studentEmail) {
         await mailTransporter.sendMail({
-          from: process.env.EMAIL_FROM || process.env.EMAIL_USERNAME,
+          from: `"EduMind Support" <${process.env.EMAIL_USERNAME || "edumind.educourse@gmail.com"}>`,
           to: studentEmail,
           subject: `Hasil Asesmen Tilik Diri — ${severity.level}`,
           html: buildTilikDiriEmailHtml({
@@ -477,10 +270,9 @@ export async function POST(request) {
         });
       }
     } catch (emailError) {
-      console.error("[tilik-diri/email]", emailError);
+      console.error("❌ [TILIK_DIRI_EMAIL_INTERNAL_ERROR]:", emailError);
     }
 
-    // ── Buat alert untuk dashboard konselor jika mendesak
     if (needsUrgentAttention) {
       await db.collection("counselor_alerts").updateOne(
         { student_id: userId, type: "tilik_diri_urgent" },
@@ -495,7 +287,7 @@ export async function POST(request) {
             resolved: false,
           },
         },
-        { upsert: true },
+        { upsert: true }
       );
     }
 
@@ -506,10 +298,7 @@ export async function POST(request) {
     });
   } catch (error) {
     console.error("[tilik-diri/submit]", error);
-    return NextResponse.json(
-      { success: false, message: error.message },
-      { status: 500 },
-    );
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   } finally {
     await client.close();
   }
