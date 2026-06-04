@@ -88,14 +88,14 @@ export default function LoginPage() {
               className="md:w-[70px] md:h-[70px] group-hover:scale-105 transition-transform duration-500"
             />
             <div className="flex flex-col">
-              <span className="text-2xl md:text-3xl font-black text-[#00adb5] leading-none tracking-tighter uppercase text-primary">EduMind</span>
+              <span className="text-xl md:text-2xl font-black text-[#00adb5] leading-none tracking-tighter uppercase text-primary">EduMind</span>
               <span className="text-[10px] md:text-xs font-bold text-slate-400">by Educourse</span>
             </div>
           </Link>
 
           <div className="space-y-2 md:space-y-3 text-center lg:text-left">
             <h1 className="text-3xl md:text-4xl font-black text-slate-800 tracking-tight leading-none">Selamat Datang</h1>
-            <p className="text-slate-400 font-medium italic text-sm md:text-lg italic">Silakan pilih peran Anda untuk masuk ke sistem.</p>
+            <p className="text-slate-400 font-medium italic text-sm md:text-lg">Silakan pilih peran Anda untuk masuk ke sistem.</p>
           </div>
 
           {/* Alert Error Jika Login Gagal */}
@@ -105,25 +105,6 @@ export default function LoginPage() {
               <p className="text-xs font-bold text-red-600">{error}</p>
             </div>
           )}
-
-          {/* Role Selector */}
-          {/* <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 md:gap-3">
-            {roles.map((r) => (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => setRole(r.id)}
-                className={`py-3 md:py-4 rounded-2xl md:rounded-[25px] flex flex-col items-center gap-1 transition-all border-2 duration-300 ${
-                  role === r.id 
-                    ? 'border-[#00adb5] bg-[#00adb5]/5 scale-105 shadow-lg shadow-[#00adb5]/10' 
-                    : 'border-slate-50 bg-slate-50 text-slate-400 hover:border-[#00adb5]/20'
-                }`}
-              >
-                <span className="text-xl md:text-2xl">{r.emoji}</span>
-                <span className="text-[10px] font-bold">{r.label}</span>
-              </button>
-            ))}
-          </div> */}
 
           <form onSubmit={handleLogin} className="space-y-5 md:space-y-6 w-full max-w-md mx-auto lg:mx-0">
             <div className="space-y-2">
@@ -144,7 +125,8 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex justify-between items-center px-2">
                 <label className="text-xs md:text-sm font-bold text-slate-600">Kata Sandi</label>
-                <Link href="#" className="text-[10px] md:text-xs font-bold text-[#00adb5] hover:text-[#fbcd2b] transition-colors">Lupa Password?</Link>
+                {/* UPDATE: Mengarahkan rute anchor secara presisi ke /forgot-password */}
+                <Link href="/forgot-password" className="text-[10px] md:text-xs font-bold text-[#00adb5] hover:text-[#fbcd2b] transition-colors">Lupa Password?</Link>
               </div>
               <div className="relative group">
                 <Lock className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#00adb5] transition-colors" size={20} />
