@@ -19,6 +19,30 @@ function formatMessageTime(message) {
   });
 }
 
+function getWhatsAppDayLabel(dateString) {
+  try {
+    const today = new Date();
+    const targetDate = new Date(dateString);
+
+    const todayZero = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const targetZero = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+
+    const diffTime = todayZero - targetZero;
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Hari Ini";
+    if (diffDays === 1) return "Kemarin";
+
+    return targetDate.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch (err) {
+    return "";
+  }
+}
+
 export default function PsychologistChatPage() {
   const { data: session } = useSession();
   const [requestedRoomId, setRequestedRoomId] = useState(null);
@@ -32,10 +56,18 @@ export default function PsychologistChatPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  
   const messagesEndRef = useRef(null);
   const didMountSearchRef = useRef(false);
   const didOpenRequestedRoomRef = useRef(false);
+  
   const selectedRoomId = selectedRoom?.roomId || selectedRoom?.id || selectedRoom?._id;
+
+  // Ref penampung room aktif untuk dibaca di dalam event listener stream secara dinamis
+  const activeRoomIdRef = useRef(null);
+  useEffect(() => {
+    activeRoomIdRef.current = selectedRoomId;
+  }, [selectedRoomId]);
 
   useEffect(() => {
     setRequestedRoomId(new URLSearchParams(window.location.search).get("roomId"));
@@ -117,6 +149,7 @@ export default function PsychologistChatPage() {
     openRequestedRoom();
   }, [requestedRoomId, loading, rooms, selectedRoomId]);
 
+  // 2. Mengambil Data Pesan Lawas Saat Memilih Room Pasien
   useEffect(() => {
     const roomId = selectedRoom?.roomId || selectedRoom?.id || selectedRoom?._id;
     if (!roomId) return;
@@ -126,6 +159,7 @@ export default function PsychologistChatPage() {
       try {
         const response = await fetchInstance(`/api/psychologist/chat/messages?roomId=${roomId}`);
         setMessages(response?.data || []);
+        
         setRooms((previous) => previous.map((room) => (
           String(room.roomId || room.id) === String(roomId)
             ? { ...room, unread: 0 }
@@ -140,6 +174,64 @@ export default function PsychologistChatPage() {
 
     fetchMessages();
   }, [selectedRoom]);
+
+  // 3. ── FIX UPDATE LOGIKA: Pipa Global Stream Pemicu Indikator Chat Masuk Room Lain ──
+  useEffect(() => {
+    let eventSource;
+
+    if (session?.user?.id) {
+      eventSource = new EventSource("/api/psychologist/chat/stream");
+
+      eventSource.addEventListener("globalMessage", (event) => {
+        try {
+          const newMsg = JSON.parse(event.data);
+          const targetRoomId = String(newMsg.room_id || newMsg.roomId);
+          const currentActiveRoomId = String(activeRoomIdRef.current || "");
+
+          // KONDISI A: Jika chat baru masuk ke dalam room yang sedangan AKTIF dibuka oleh psikolog
+          if (targetRoomId === currentActiveRoomId) {
+            setMessages((previous) => {
+              const isExist = previous.some((m) => String(m._id) === String(newMsg._id));
+              if (isExist) return previous;
+              return [...previous, newMsg];
+            });
+          }
+
+          // KONDISI B: Mutasikan data counter sidebar kiri untuk seluruh kondisi masuk (baik room aktif maupun room lain)
+          setRooms((previous) => {
+            return previous.map((room) => {
+              const checkingRoomId = String(room.roomId || room.id || room._id);
+              
+              if (checkingRoomId === targetRoomId) {
+                const isCurrentActive = checkingRoomId === currentActiveRoomId;
+                return {
+                  ...room,
+                  lastMsg: newMsg.text,
+                  time: newMsg.createdAt || newMsg.timestamp,
+                  // Jika room sedang tidak dibuka dan pengirimnya bukan psikolog itu sendiri, tambahkan unread + 1
+                  unread: isCurrentActive || String(newMsg.sender_id) === String(session.user.id)
+                    ? 0 
+                    : (room.unread || 0) + 1
+                };
+              }
+              return room;
+            });
+          });
+
+        } catch (err) {
+          console.error("Gagal memproses payload global stream:", err);
+        }
+      });
+
+      eventSource.onerror = (err) => {
+        console.error("Koneksi global stream terputus, mengupayakan reconnect...", err);
+      };
+    }
+
+    return () => {
+      if (eventSource) eventSource.close();
+    };
+  }, [session?.user?.id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -157,8 +249,9 @@ export default function PsychologistChatPage() {
     const text = inputMsg.trim();
     if (!text || !roomId || !session?.user?.id) return;
 
+    const tempId = Date.now().toString();
     const tempMsg = {
-      _id: Date.now().toString(),
+      _id: tempId,
       sender_id: session.user.id,
       text,
       createdAt: new Date().toISOString(),
@@ -190,6 +283,8 @@ export default function PsychologistChatPage() {
       console.error("Failed to send psychologist message", error);
     }
   };
+
+  let lastDisplayedDateLabel = "";
 
   return (
     <div className="flex h-[calc(100vh-160px)] bg-white rounded-[35px] shadow-sm border border-slate-200 overflow-hidden text-slate-700">
@@ -286,25 +381,32 @@ export default function PsychologistChatPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
-              {msgLoading ? (
-                <div className="h-full flex items-center justify-center">
-                  <Loader2 className="animate-spin text-[#00adb5]" size={34} />
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-slate-300">
-                  <MessageSquare size={54} />
-                  <p className="mt-4 text-xs font-black uppercase">Belum ada pesan</p>
-                </div>
-              ) : (
-                messages.map((message, index) => {
-                  const myId = session?.user?.id?.toString();
-                  const senderId = message.sender_id?.toString();
-                  const receiverId = message.receiver_id?.toString();
-                  let isMe = senderId === myId;
-                  if (!senderId && receiverId && receiverId !== myId) isMe = true;
+              {messages.map((message, index) => {
+                const myId = session?.user?.id?.toString();
+                const senderId = message.sender_id?.toString();
+                const receiverId = message.receiver_id?.toString();
+                let isMe = senderId === myId;
+                if (!senderId && receiverId && receiverId !== myId) isMe = true;
 
-                  return (
-                    <div key={message._id || index} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                const currentMessageDateLabel = getWhatsAppDayLabel(message.createdAt || message.timestamp);
+                let showDateSeparator = false;
+
+                if (currentMessageDateLabel !== lastDisplayedDateLabel) {
+                  showDateSeparator = true;
+                  lastDisplayedDateLabel = currentMessageDateLabel;
+                }
+
+                return (
+                  <React.Fragment key={message._id || index}>
+                    {showDateSeparator && (
+                      <div className="flex justify-center my-4 animate-in fade-in duration-300">
+                        <span className="bg-slate-100/80 backdrop-blur-sm text-slate-500 text-[11px] font-bold px-4 py-1.5 rounded-full shadow-sm border border-slate-200/50 tracking-wide">
+                          {currentMessageDateLabel}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
                       <div className={`max-w-[75%] flex flex-col ${isMe ? "items-end" : "items-start"} space-y-1`}>
                         <div className={`p-4 rounded-[22px] shadow-sm text-sm font-semibold ${
                           isMe
@@ -318,9 +420,9 @@ export default function PsychologistChatPage() {
                         </span>
                       </div>
                     </div>
-                  );
-                })
-              )}
+                  </React.Fragment>
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
 

@@ -5,6 +5,33 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import MarkdownContent from "@/components/MarkdownContent";
 
+// Helper internal untuk memformat teks pembatas tanggal ala WhatsApp
+function getWhatsAppDayLabel(dateString) {
+  try {
+    const today = new Date();
+    const targetDate = new Date(dateString);
+
+    // Normalisasi jam ke 00:00:00 untuk perbandingan tanggal murni
+    const todayZero = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const targetZero = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+
+    const diffTime = todayZero - targetZero;
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Hari Ini";
+    if (diffDays === 1) return "Kemarin";
+
+    // Jika lewat dari kemarin, tampilkan format tanggal Indonesia formal
+    return targetDate.toLocaleDateString("id-ID", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch (err) {
+    return "";
+  }
+}
+
 export default function StudentChatToPsychologistPage({ params }) {
   const { data: session } = useSession();
   const [psychologist, setPsychologist] = useState(null);
@@ -37,20 +64,17 @@ export default function StudentChatToPsychologistPage({ params }) {
     }
   }, [params.id, session?.user?.id]);
 
-  // 2. UPDATE LOGIKA: Mengganti polling lama dengan EventSource (HTTP Real-time Stream)
+  // 2. Real-time EventSource Stream Connection
   useEffect(() => {
     let eventSource;
 
     if (session?.user?.id && roomId) {
-      // Membuka jalur pipa stream real-time khusus room terkait
       eventSource = new EventSource(`/api/student/chat/stream?roomId=${roomId}`);
 
-      // Menangkap event suntikan pesan baru dari database
       eventSource.addEventListener("newMessage", (event) => {
         try {
           const newMsg = JSON.parse(event.data);
           
-          // Filter validasi: Masukkan pesan jika belum ada di layar (menghindari duplikasi optimistic update)
           setMessages((prev) => {
             const isExist = prev.some((m) => String(m._id) === String(newMsg._id));
             if (isExist) return prev;
@@ -66,7 +90,6 @@ export default function StudentChatToPsychologistPage({ params }) {
       };
     }
 
-    // Bersihkan jalur pipa stream saat siswa berpindah halaman
     return () => {
       if (eventSource) {
         eventSource.close();
@@ -87,7 +110,6 @@ export default function StudentChatToPsychologistPage({ params }) {
     const currentText = input;
     const tempId = Date.now().toString();
     
-    // Optimistic Update (Tampilkan di layar dulu demi kelancaran UX)
     const tempMsg = {
       _id: tempId,
       sender_id: session.user.id,
@@ -126,6 +148,9 @@ export default function StudentChatToPsychologistPage({ params }) {
       </div>
     );
 
+  // Variabel bantu penanda perubahan hari saat looping render berjalan
+  let lastDisplayedDateLabel = "";
+
   return (
     <div className="flex flex-col h-[calc(100vh-160px)] bg-white rounded-[40px] shadow-sm border border-slate-200 overflow-hidden">
       {/* HEADER */}
@@ -149,21 +174,44 @@ export default function StudentChatToPsychologistPage({ params }) {
       <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-[#fcfdfe]">
         {messages.map((m, index) => {
           const isMe = String(m.sender_id) === String(session?.user?.id);
+          
+          // Kalkulasi label hari untuk pesan saat ini
+          const currentMessageDateLabel = getWhatsAppDayLabel(m.createdAt);
+          let showDateSeparator = false;
+
+          // Jika label hari berbeda dengan pesan sebelumnya, tampilkan pembatas baru
+          if (currentMessageDateLabel !== lastDisplayedDateLabel) {
+            showDateSeparator = true;
+            lastDisplayedDateLabel = currentMessageDateLabel;
+          }
+
           return (
-            <div key={m._id || index} className={`flex ${isMe ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2`}>
-              <div className={`max-w-[75%] p-5 rounded-[25px] shadow-sm ${
-                isMe 
-                ? "bg-[#00adb5] text-white rounded-br-none" 
-                : "bg-white border border-slate-100 text-slate-700 rounded-bl-none"
-              }`}>
-                <MarkdownContent className="text-sm md:text-base font-bold leading-relaxed">
-                  {m.text}
-                </MarkdownContent>
-                <p className={`text-[9px] mt-2 font-black uppercase opacity-50 ${isMe ? "text-right" : "text-left"}`}>
-                  {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
+            <React.Fragment key={m._id || index}>
+              {/* ── UPDATE: KOMPONEN PEMBATAS TANGGAL ALA WHATSAPP ── */}
+              {showDateSeparator && (
+                <div className="flex justify-center my-4 animate-in fade-in duration-300">
+                  <span className="bg-slate-100/80 backdrop-blur-sm text-slate-500 text-[11px] font-bold px-4 py-1.5 rounded-full shadow-sm border border-slate-200/50 tracking-wide">
+                    {currentMessageDateLabel}
+                  </span>
+                </div>
+              )}
+
+              {/* BUBBLE CHAT UTAMA */}
+              <div className={`flex ${isMe ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2`}>
+                <div className={`max-w-[75%] p-5 rounded-[25px] shadow-sm ${
+                  isMe 
+                  ? "bg-[#00adb5] text-white rounded-br-none" 
+                  : "bg-white border border-slate-100 text-slate-700 rounded-bl-none"
+                }`}>
+                  <MarkdownContent className="text-sm md:text-base font-bold leading-relaxed">
+                    {m.text}
+                  </MarkdownContent>
+                  <p className={`text-[9px] mt-2 font-black uppercase opacity-50 ${isMe ? "text-right" : "text-left"}`}>
+                    {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
               </div>
-            </div>
+            </React.Fragment>
           );
         })}
         <div ref={scrollRef} />
