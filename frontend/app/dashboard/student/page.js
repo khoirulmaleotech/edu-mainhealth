@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   Users,
   X,
- Check,
+  Check,
   Bell,
   ChevronRight,
   RefreshCw,
@@ -235,7 +235,7 @@ function ParentRequestsSection({ studentId }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Mood Check-in
+// Mood Check-in (LOGIKA UPDATE PER HARI & BISA GANTI)
 // ─────────────────────────────────────────────────────────────
 
 function MoodCheckIn({ sessionId }) {
@@ -260,7 +260,17 @@ function MoodCheckIn({ sessionId }) {
       .then((r) => r.json())
       .then((data) => {
         if (data.success && data.logs?.length > 0) {
-          setLastMood(data.logs[0]);
+          const latestLog = data.logs[0];
+          
+          // Filter ketat membandingkan tanggal log terakhir dengan tanggal lokal hari ini
+          const todayStr = new Date().toLocaleDateString('en-CA'); // Format: YYYY-MM-DD
+          const logDateStr = new Date(latestLog.createdAt).toLocaleDateString('en-CA');
+
+          if (todayStr === logDateStr) {
+            setLastMood(latestLog); // Jika hari ini sudah isi, tampilkan rangkumannya
+          } else {
+            setLastMood(null); // Jika sudah ganti hari esoknya, buka form baru otomatis
+          }
         }
       })
       .catch(console.error);
@@ -289,6 +299,7 @@ function MoodCheckIn({ sessionId }) {
           mood: selectedMood.emoji,
           label: selectedMood.label,
           note,
+          createdAt: new Date().toISOString() // Simpan timestamp lokal untuk pembacaan state
         });
 
         setSelectedMood(null);
@@ -316,7 +327,7 @@ function MoodCheckIn({ sessionId }) {
       </div>
 
       {lastMood ? (
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 animate-in fade-in duration-300">
           <div className="flex items-center gap-3 min-w-0">
             <div className="text-3xl">{lastMood.mood}</div>
 
@@ -334,15 +345,20 @@ function MoodCheckIn({ sessionId }) {
             </div>
           </div>
 
+          {/* Mengembalikan ke penampung input isian agar bisa update mood di hari yang sama */}
           <button
-            onClick={() => setLastMood(null)}
-            className="text-[10px] font-bold text-slate-400 hover:text-[#00adb5]"
+            onClick={() => {
+              setSelectedMood(moodEmojis.find(m => m.emoji === lastMood.mood) || null);
+              setNote(lastMood.note || "");
+              setLastMood(null); 
+            }}
+            className="text-[10px] font-bold text-slate-400 hover:text-[#00adb5] shrink-0"
           >
             Ganti
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-in fade-in duration-300">
           {/* Emoji */}
           <div className="flex gap-2 flex-wrap">
             {moodEmojis.map((m, i) => (
