@@ -12,19 +12,24 @@ import {
   CheckCircle2, 
   Sparkles,
   FileCheck,
-  ChevronRight
+  ClipboardCheck,
+  HelpCircle,
+  RefreshCcw,
+  X
 } from "lucide-react";
 
-export default function FamilyAiAgreementPage() {
+export default function FamilyAiAgreementAllInOnePage() {
   const router = useRouter();
 
-  const [isSubmitted, setIsSuccessSubmitted] = useState(false);
+  const [showPopup, setShowPopup] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [parentName, setParentName] = useState("");
   const [childName, setChildName] = useState("");
   const [agreementDate, setAgreementDate] = useState("");
-  const [agreements, setAgreements] = useState({
+
+  const [assessmentScores, setAssessmentScores] = useState({});
+  const [agreementSigns, setAgreementSigns] = useState({
     point1: false,
     point2: false,
     point3: false,
@@ -33,6 +38,37 @@ export default function FamilyAiAgreementPage() {
     point6: false,
     point7: false,
   });
+
+  const assessmentQuestions = [
+    { id: 1, text: "Saya mengetahui aplikasi AI yang digunakan anak saya." },
+    { id: 2, text: "Saya berdiskusi dengan anak tentang apa yang mereka lihat di internet." },
+    { id: 3, text: "Saya memberi contoh penggunaan gadget yang sehat." },
+    { id: 4, text: "Saya memiliki aturan penggunaan gadget di rumah." },
+    { id: 5, text: "Saya makan bersama keluarga tanpa gadget." },
+    { id: 6, text: "Saya mengetahui akun media sosial yang digunakan anak." },
+    { id: 7, text: "Saya lebih sering berdialog daripada memarahi terkait gadget." },
+    { id: 8, text: "Saya memahami manfaat dan risiko AI bagi anak." },
+    { id: 9, text: "Saya meluangkan waktu khusus berbicara dengan anak setiap hari." },
+    { id: 10, text: "Saya mengajarkan etika dan tanggung jawab digital kepada anak." }
+  ];
+
+  const scaleOptions = [
+    { value: 1, label: "Tidak Pernah" },
+    { value: 2, label: "Jarang" },
+    { value: 3, label: "Kadang-kadang" },
+    { value: 4, label: "Sering" },
+    { value: 5, label: "Selalu" }
+  ];
+
+  const agreementPoints = [
+    { id: "point1", text: "Teknologi adalah alat, bukan tujuan hidup." },
+    { id: "point2", text: "AI digunakan untuk belajar dan berkembang." },
+    { id: "point3", text: "AI tidak digunakan untuk menyontek." },
+    { id: "point4", text: "Kami akan berdiskusi terbuka tentang penggunaan teknologi." },
+    { id: "point5", text: "Kami memiliki waktu khusus tanpa gadget." },
+    { id: "point6", text: "Kami menjaga sopan santun dan etika digital." },
+    { id: "point7", text: "Kami menghormati privasi dan keamanan data." }
+  ];
 
   useEffect(() => {
     const today = new Date();
@@ -43,11 +79,13 @@ export default function FamilyAiAgreementPage() {
     if (typeof window !== "undefined") {
       const savedParent = localStorage.getItem("fa_parent_name");
       const savedChild = localStorage.getItem("fa_child_name");
-      const savedAgreements = localStorage.getItem("fa_agreements");
+      const savedScores = localStorage.getItem("fa_assessment_scores");
+      const savedAgreements = localStorage.getItem("fa_agreement_signs");
 
       if (savedParent) setParentName(savedParent);
       if (savedChild) setChildName(savedChild);
-      if (savedAgreements) setAgreements(JSON.parse(savedAgreements));
+      if (savedScores) setAssessmentScores(JSON.parse(savedScores));
+      if (savedAgreements) setAgreementSigns(JSON.parse(savedAgreements));
     }
   }, []);
 
@@ -60,48 +98,81 @@ export default function FamilyAiAgreementPage() {
   }, [childName]);
 
   useEffect(() => {
-    localStorage.setItem("fa_agreements", JSON.stringify(agreements));
-  }, [agreements]);
+    localStorage.setItem("fa_assessment_scores", JSON.stringify(assessmentScores));
+  }, [assessmentScores]);
 
-  const agreementPoints = [
-    { id: "point1", text: "Teknologi adalah alat, bukan tujuan hidup." },
-    { id: "point2", text: "AI digunakan untuk belajar dan berkembang." },
-    { id: "point3", text: "AI tidak digunakan untuk menyontek." },
-    { id: "point4", text: "Kami akan berdiskusi terbuka tentang penggunaan teknologi." },
-    { id: "point5", text: "Kami memiliki waktu khusus tanpa gadget." },
-    { id: "point6", text: "Kami menjaga sopan santun dan etika digital." },
-    { id: "point7", text: "Kami menghormati privasi dan keamanan data." }
-  ];
+  useEffect(() => {
+    localStorage.setItem("fa_agreement_signs", JSON.stringify(agreementSigns));
+  }, [agreementSigns]);
 
-  const handleCheckboxChange = (pointId) => {
-    setAgreements((prev) => ({
-      ...prev,
-      [pointId]: !prev[pointId]
-    }));
+  const handleScoreChange = (qId, value) => {
+    setAssessmentScores((prev) => ({ ...prev, [qId]: value }));
+  };
+
+  const handleAgreementToggle = (pointId) => {
+    setAgreementSigns((prev) => ({ ...prev, [pointId]: !prev[pointId] }));
+  };
+
+  const resetAllFields = () => {
+    setAssessmentScores({});
+    setAgreementSigns({
+      point1: false, point2: false, point3: false, point4: false, point5: false, point6: false, point7: false
+    });
+    localStorage.removeItem("fa_assessment_scores");
+    localStorage.removeItem("fa_agreement_signs");
   };
 
   const clearLocalStorageCache = () => {
     localStorage.removeItem("fa_parent_name");
     localStorage.removeItem("fa_child_name");
-    localStorage.removeItem("fa_agreements");
+    localStorage.removeItem("fa_assessment_scores");
+    localStorage.removeItem("fa_agreement_signs");
   };
+
+  const totalAnswered = Object.keys(assessmentScores).length;
+  const isAssessmentComplete = totalAnswered === assessmentQuestions.length;
+  const totalScore = Object.values(assessmentScores).reduce((sum, val) => sum + val, 0);
+
+  const getInterpretation = (score) => {
+    if (!isAssessmentComplete) return null;
+    if (score >= 41) {
+      return { color: "bg-emerald-50 border-emerald-200 text-emerald-800", title: "🟢 Orang Tua Adaptif Digital", desc: "Luar biasa! Anda sudah cukup siap menjadi pendamping anak di era AI." };
+    }
+    if (score >= 31) {
+      return { color: "bg-amber-50 border-amber-200 text-amber-800", title: "🟡 Orang Tua Berkembang", desc: "Kerja bagus! Anda sudah berada di jalur yang baik, namun masih perlu konsistensi." };
+    }
+    if (score >= 20) {
+      return { color: "bg-orange-50 border-orange-200 text-orange-800", title: "🟠 Orang Tua Waspada", desc: "Perhatian. Anda perlu mulai membangun komunikasi aktif dan merancang aturan digital keluarga." };
+    }
+    return { color: "bg-rose-50 border-rose-200 text-rose-800", title: "🔴 Orang Tua Berisiko Tertinggal", desc: "Gawat! Saatnya Anda mulai terlibat lebih aktif dalam kehidupan perkembangan digital anak." };
+  };
+
+  const interpretation = getInterpretation(totalScore);
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    
-    const allChecked = Object.values(agreements).every((val) => val === true);
-    if (!allChecked) {
-      alert("Mohon diskusikan dan setujui seluruh poin kesepakatan keluarga cerdas AI terlebih dahulu.");
+
+    if (!isAssessmentComplete) {
+      alert("Mohon selesaikan lembar Self-Assessment terlebih dahulu.");
+      return;
+    }
+
+    const allAgreed = Object.values(agreementSigns).every((val) => val === true);
+    if (!allAgreed) {
+      alert("Mohon diskusikan dan centang seluruh poin Kesepakatan Keluarga Cerdas AI.");
       return;
     }
 
     setSubmitting(true);
 
     const payload = {
-      parent_name: parentName.toUpperCase().trim(),
-      child_name: childName.toUpperCase().trim(),
-      agreement_date: agreementDate,
-      agreements_signed: agreements,
+      metadata: {
+        parent_name: parentName.toUpperCase().trim(),
+        child_name: childName.toUpperCase().trim(),
+        agreement_date: agreementDate
+      },
+      assessment_scores: assessmentScores,
+      agreement_signed: agreementSigns
     };
 
     try {
@@ -112,7 +183,7 @@ export default function FamilyAiAgreementPage() {
       });
       await new Promise((resolve) => setTimeout(resolve, 1500));
       clearLocalStorageCache();
-      setIsSuccessSubmitted(true);
+      setShowPopup(true);
     } catch (err) {
       console.error(err);
       alert("Terjadi kesalahan jaringan.");
@@ -121,31 +192,6 @@ export default function FamilyAiAgreementPage() {
     }
   };
 
-  if (isSubmitted) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans selection:bg-[#00adb5] selection:text-white">
-        <div className="bg-white p-8 md:p-14 rounded-[35px] md:rounded-[45px] max-w-xl w-full shadow-2xl text-center border border-slate-100 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-2 bg-emerald-500"></div>
-          <div className="w-20 h-20 md:w-24 md:h-24 bg-emerald-50 text-emerald-500 rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-6 md:mb-8 border border-emerald-100">
-            <CheckCircle2 className="w-10 h-10 md:w-12 md:h-12" />
-          </div>
-          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">Komitmen Keluarga Berhasil Disimpan!</h2>
-          <p className="text-slate-500 font-bold text-sm mt-4 leading-relaxed text-emerald-600 bg-emerald-50/50 py-3 px-5 rounded-2xl border border-emerald-100/40">
-            Kesepakatan Keluarga Cerdas AI berhasil disimpan ke database.
-          </p>
-          <p className="text-slate-400 font-medium text-xs mt-3 leading-relaxed italic">
-            Terima kasih telah membangun ekosistem digital yang sehat, aman, dan kolaboratif di lingkungan keluarga. Langkah kecil ini berdampak besar bagi masa depan anak.
-          </p>
-          <div className="mt-8 md:mt-10">
-            <button onClick={() => router.push("/")} className="w-full h-14 bg-[#0b0e14] text-white rounded-[20px] font-bold text-xs uppercase tracking-widest hover:bg-[#00adb5] transition-all shadow-xl">
-              Selesai & Kembali
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-[#00adb5] selection:text-white pb-24">
       <nav className="fixed w-full bg-white/80 backdrop-blur-xl z-50 border-b border-slate-100 px-4 md:px-6 py-4 flex justify-between items-center h-16">
@@ -153,7 +199,7 @@ export default function FamilyAiAgreementPage() {
           <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={38} height={38} />
           <div className="flex flex-col">
             <span className="text-base md:text-lg font-black text-[#00adb5] leading-none tracking-tighter uppercase">EduMind</span>
-            <span className="text-[8px] md:text-[9px] font-bold text-slate-400 tracking-[0.2em] uppercase">Family AI Agreement</span>
+            <span className="text-[8px] md:text-[9px] font-bold text-slate-400 tracking-[0.2em] uppercase">Parenting & Family Modul</span>
           </div>
         </div>
       </nav>
@@ -163,32 +209,22 @@ export default function FamilyAiAgreementPage() {
           <div className="absolute top-0 left-0 right-0 h-2 bg-[#00adb5]"></div>
           <div className="space-y-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-[#00adb5]/10 text-[#00adb5]">
-              Family AI Agreement Sheet
+              Integrated Parenting Modul
             </span>
-            <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">Kesepakatan Keluarga Cerdas AI</h1>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">Evaluasi & Komitmen Keluarga Cerdas AI</h1>
             <p className="text-xs text-slate-400 leading-relaxed font-medium italic">
-              Komitmen bersama antara orang tua dan anak dalam mewujudkan pemanfaatan kecerdasan buatan (AI) secara produktif, beretika, aman, dan seimbang.
-            </p>
-          </div>
-
-          <div className="mt-5 p-4 md:p-5 bg-gradient-to-br from-slate-50 to-slate-100/50 border border-slate-200/60 rounded-2xl">
-            <div className="flex items-center gap-2 text-[#00adb5] mb-2">
-              <Sparkles size={15} className="animate-pulse" />
-              <h4 className="text-xs font-black uppercase tracking-widest">Kami Sepakat Bahwa:</h4>
-            </div>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-              Teknologi dan kecerdasan buatan (AI) adalah fasilitas penunjang masa depan. Diskusikan setiap poin di bawah ini bersama seluruh anggota keluarga sebelum menandatangani komitmen resmi.
+              Satu halaman terintegrasi untuk mengukur kesiapan pengasuhan era digital sekaligus merumuskan komitmen kesepakatan bersama antara orang tua dan anak.
             </p>
           </div>
         </header>
 
         <form onSubmit={handleFormSubmit} className="space-y-6">
           
-          {/* ── SEKTOR TANDA TANGAN / IDENTITAS PINDAH KE ATAS SEBELUM BUTIR PERTANYAAN ── */}
+          {/* SEKTOR 1: LEMBAR PENANDATANGANAN IDENTITAS UTAMA */}
           <div className="bg-white border border-slate-100 rounded-[28px] md:rounded-[35px] p-6 md:p-8 shadow-sm space-y-5">
             <div className="flex items-center gap-1.5 text-slate-800 border-b border-slate-50 pb-2">
               <FileCheck size={16} className="text-[#00adb5]" />
-              <h3 className="text-sm font-black uppercase tracking-wider">Lembar Penandatanganan Komitmen</h3>
+              <h3 className="text-sm font-black uppercase tracking-wider">1. Lembar Penandatanganan Komitmen</h3>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -223,7 +259,7 @@ export default function FamilyAiAgreementPage() {
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
-                <label className="text-[11px] font-black text-slate-500 uppercase ml-1">Tanggal Kesepakatan</label>
+                <label className="text-[11px] font-black text-slate-500 uppercase ml-1">Tanggal Pengisian</label>
                 <div className="relative">
                   <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
                   <input
@@ -238,11 +274,22 @@ export default function FamilyAiAgreementPage() {
             </div>
           </div>
 
-          {/* Sektor Butir Kesepakatan Bersama */}
+          {/* SEKTOR 2: INSTRUMEN SELF-ASSESSMENT KESIAPAN ORANG TUA */}
           <div className="bg-white border border-slate-100 rounded-[28px] md:rounded-[35px] overflow-hidden shadow-sm">
-            <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between text-[10px] md:text-[11px] font-black uppercase tracking-wider text-slate-400">
-              <span>Butir Kesepakatan Bersama</span>
-              <span className="text-[#00adb5] bg-[#00adb5]/10 px-2.5 py-1 rounded-md">[WAJIB DISETUJUI]</span>
+            <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col gap-4">
+              <div className="flex items-center justify-between text-[10px] md:text-[11px] font-black uppercase tracking-wider text-slate-400">
+                <span className="text-slate-800 font-black">2. Self Assessment: Seberapa Siap Kita Menjadi Orang Tua di Era AI?</span>
+                <span className="text-[#00adb5] font-black bg-[#00adb5]/10 px-2.5 py-1 rounded-md shrink-0">Progres: {totalAnswered}/10</span>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[9px] md:text-[10px] font-black uppercase tracking-wider text-slate-400 text-center pt-1 border-t border-slate-100/70">
+                {scaleOptions.map((opt) => (
+                  <div key={opt.value} className="bg-white border border-slate-200/50 p-2 rounded-xl shadow-inner flex items-center justify-center gap-1.5 sm:flex-col sm:gap-0.5">
+                    <span className="text-[#00adb5] text-xs font-black">{opt.value} =</span>
+                    <span className="text-slate-500 font-bold truncate">{opt.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Desktop Table View */}
@@ -251,7 +298,98 @@ export default function FamilyAiAgreementPage() {
                 <thead>
                   <tr className="bg-slate-50/30 border-b border-slate-100 text-xs font-black uppercase tracking-wider text-slate-400">
                     <th className="py-4 px-6 w-12 text-center">No</th>
-                    <th className="py-4 px-6">Pernyataan Komitmen Keluarga</th>
+                    <th className="py-4 px-6">Pernyataan Sikap & Kebiasaan Mandiri</th>
+                    <th className="py-4 px-6 text-center w-64">Skala Skor (1 - 5)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {assessmentQuestions.map((q, idx) => (
+                    <tr key={q.id} className="hover:bg-slate-50/40 transition-colors">
+                      <td className="py-5 px-6 text-sm font-black text-slate-400 text-center">{idx + 1}</td>
+                      <td className="py-5 px-6 text-sm font-bold text-slate-700 leading-relaxed">{q.text}</td>
+                      <td className="py-5 px-6">
+                        <div className="flex justify-between items-center gap-1 max-w-[220px] mx-auto">
+                          {[1, 2, 3, 4, 5].map((num) => {
+                            const isSelected = assessmentScores[q.id] === num;
+                            return (
+                              <button
+                                key={num}
+                                type="button"
+                                onClick={() => handleScoreChange(q.id, num)}
+                                className={`w-9 h-9 rounded-xl text-xs font-black transition-all border ${isSelected ? "bg-[#00adb5] text-white border-transparent scale-110 shadow-md" : "bg-white text-slate-400 border-slate-200 hover:border-[#00adb5]/30"}`}
+                              >
+                                {num}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Vertical View (Standard Size - Non Gepeng) */}
+            <div className="block md:hidden px-4 divide-y divide-slate-100">
+              {assessmentQuestions.map((q, idx) => (
+                <div key={q.id} className="py-5 space-y-3">
+                  <div className="flex gap-2 items-start">
+                    <span className="text-xs font-black text-[#00adb5] bg-[#00adb5]/10 w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
+                    <p className="text-sm font-bold text-slate-700 leading-relaxed">{q.text}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                    {[1, 2, 3, 4, 5].map((num) => {
+                      const isSelected = assessmentScores[q.id] === num;
+                      return (
+                        <button
+                          key={num}
+                          type="button"
+                          onClick={() => handleScoreChange(q.id, num)}
+                          className={`w-11 h-11 rounded-xl text-xs font-black transition-all border flex items-center justify-center shrink-0 ${isSelected ? "bg-[#00adb5] text-white border-transparent scale-105 shadow-md" : "bg-slate-50/80 text-slate-500 border-slate-200"}`}
+                        >
+                          {num}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* MONITOR ANALISIS SKOR REAL-TIME ASESSMENT */}
+          {isAssessmentComplete && (
+            <div className={`p-6 border rounded-[24px] animate-in fade-in duration-300 ${interpretation.color}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <span className="text-xs font-black uppercase tracking-widest opacity-60">Hasil Penilaian Kesiapan Anda:</span>
+                  <h4 className="text-xl font-black tracking-tight">{interpretation.title}</h4>
+                  <p className="text-xs font-semibold leading-relaxed mt-1 opacity-90">{interpretation.desc}</p>
+                </div>
+                <div className="shrink-0 bg-white/60 backdrop-blur border border-current/10 px-5 py-3 rounded-xl text-center min-w-[100px]">
+                  <span className="block text-[9px] font-black uppercase tracking-wider opacity-60">Total Skor</span>
+                  <span className="block text-2xl font-black text-slate-800 mt-0.5">{totalScore}</span>
+                  <span className="block text-[8px] opacity-60 font-bold mt-0.5">Maksimal 50</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SEKTOR 3: INSTRUMEN FAMILY AI AGREEMENT SHEET */}
+          <div className="bg-white border border-slate-100 rounded-[28px] md:rounded-[35px] overflow-hidden shadow-sm">
+            <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between text-[10px] md:text-[11px] font-black uppercase tracking-wider text-slate-400">
+              <span className="text-slate-800 font-black">3. Family AI Agreement Sheet (Kesepakatan Keluarga Cerdas AI)</span>
+              <span className="text-[#00adb5] bg-[#00adb5]/10 px-2.5 py-1 rounded-md shrink-0">[WAJIB CHECKED]</span>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full border-collapse text-left min-w-[500px]">
+                <thead>
+                  <tr className="bg-slate-50/30 border-b border-slate-100 text-xs font-black uppercase tracking-wider text-slate-400">
+                    <th className="py-4 px-6 w-12 text-center">No</th>
+                    <th className="py-4 px-6">Butir Pernyataan Komitmen Kesepakatan Bersama</th>
                     <th className="py-4 px-6 text-center w-36">Konfirmasi</th>
                   </tr>
                 </thead>
@@ -263,10 +401,10 @@ export default function FamilyAiAgreementPage() {
                       <td className="py-5 px-6 text-center">
                         <button
                           type="button"
-                          onClick={() => handleCheckboxChange(item.id)}
-                          className={`h-10 px-5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${agreements[item.id] ? "bg-[#00adb5] text-white border-transparent shadow-md shadow-[#00adb5]/10" : "bg-white text-slate-400 border-slate-200 hover:border-[#00adb5]/30 hover:text-slate-600"}`}
+                          onClick={() => handleAgreementToggle(item.id)}
+                          className={`h-10 px-5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${agreementSigns[item.id] ? "bg-[#00adb5] text-white border-transparent shadow-md" : "bg-white text-slate-400 border-slate-200 hover:border-[#00adb5]/30"}`}
                         >
-                          {agreements[item.id] ? "✓ Setuju" : "Setuju"}
+                          {agreementSigns[item.id] ? "✓ Setuju" : "Setuju"}
                         </button>
                       </td>
                     </tr>
@@ -275,7 +413,7 @@ export default function FamilyAiAgreementPage() {
               </table>
             </div>
 
-            {/* Mobile Vertical View (Standard Rounded Buttons - Non Gepeng) */}
+            {/* Mobile Vertical View (Standard Size - Non Gepeng) */}
             <div className="block md:hidden px-4 divide-y divide-slate-100">
               {agreementPoints.map((item, idx) => (
                 <div key={item.id} className="py-5 space-y-3.5">
@@ -286,10 +424,10 @@ export default function FamilyAiAgreementPage() {
                   <div className="pt-0.5">
                     <button
                       type="button"
-                      onClick={() => handleCheckboxChange(item.id)}
-                      className={`h-11 px-6 rounded-xl text-xs font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-2 ${agreements[item.id] ? "bg-[#00adb5] text-white border-transparent shadow-md w-full" : "bg-slate-50/80 text-slate-500 border-slate-200 w-full"}`}
+                      onClick={() => handleAgreementToggle(item.id)}
+                      className={`h-11 px-6 rounded-xl text-xs font-black uppercase tracking-widest transition-all border flex items-center justify-center gap-2 ${agreementSigns[item.id] ? "bg-[#00adb5] text-white border-transparent shadow-md w-full" : "bg-slate-50/80 text-slate-500 border-slate-200 w-full"}`}
                     >
-                      <span>{agreements[item.id] ? "✓ Berhasil Disetujui" : "Konfirmasi Setuju"}</span>
+                      <span>{agreementSigns[item.id] ? "✓ Berhasil Disetujui" : "Konfirmasi Setuju"}</span>
                     </button>
                   </div>
                 </div>
@@ -297,20 +435,31 @@ export default function FamilyAiAgreementPage() {
             </div>
           </div>
 
-          <div className="flex justify-end pt-2">
+          {/* ACTION BUTTON CONSOLE */}
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2">
+            {totalAnswered > 0 && (
+              <button
+                type="button"
+                onClick={resetAllFields}
+                className="w-full sm:w-auto h-14 px-6 bg-white border border-slate-200 text-slate-400 hover:text-rose-500 font-bold text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-1.5 transition-all bg-transparent cursor-pointer shrink-0"
+              >
+                <RefreshCcw size={13} /> Reset Form Isian
+              </button>
+            )}
+            
             <button
               type="submit"
               disabled={submitting}
-              className="w-full sm:w-auto h-14 px-10 bg-[#0b0e14] hover:bg-[#00adb5] text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl hover:shadow-[#00adb5]/10 disabled:opacity-50 transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
+              className="w-full sm:w-auto sm:ml-auto h-14 px-10 bg-[#0b0e14] hover:bg-[#00adb5] text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl disabled:opacity-50 transition-all flex items-center justify-center gap-2 border-none cursor-pointer"
             >
               {submitting ? (
                 <>
                   <Loader2 className="animate-spin" size={16} />
-                  <span>Merekam Komitmen Keluarga...</span>
+                  <span>Mengunci Komitmen Keluarga...</span>
                 </>
               ) : (
                 <>
-                  <span>Kirim Lembar Kesepakatan</span>
+                  <span>Kirim Seluruh Berkas Paket</span>
                   <Send size={13} />
                 </>
               )}
@@ -318,6 +467,47 @@ export default function FamilyAiAgreementPage() {
           </div>
         </form>
       </div>
+
+      {/* POPUP MODAL REAL-TIME OVERLAY */}
+      {showPopup && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-in fade-in duration-300">
+          <div className="bg-white rounded-[35px] md:rounded-[40px] max-w-md w-full p-8 text-center border border-slate-100 shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="absolute top-0 left-0 right-0 h-2 bg-[#00adb5]"></div>
+            
+            <button 
+              type="button" 
+              onClick={() => { setShowPopup(false); router.push("/"); }}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors p-1 bg-slate-50 rounded-lg border border-slate-100"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-emerald-100/50">
+              <CheckCircle2 size={42} />
+            </div>
+
+            <h3 className="text-2xl font-black text-slate-800 tracking-tight leading-tight">Paket Komitmen Terkirim!</h3>
+            
+            <div className="mt-4 p-4 bg-emerald-50/60 border border-emerald-100/40 rounded-2xl text-emerald-700 font-bold text-xs leading-relaxed">
+              Seluruh riwayat isian dan lembar kesepakatan cerdas AI Anda berhasil direkam dengan aman ke dalam sistem database pusat.
+            </div>
+
+            <p className="text-slate-400 font-medium text-xs mt-4 leading-relaxed italic">
+              Terima kasih telah membangun ekosistem digital yang sehat, aman, dan kolaboratif di lingkungan keluarga. Langkah kecil ini berdampak besar bagi masa depan anak.
+            </p>
+
+            <div className="mt-8">
+              <button 
+                type="button"
+                onClick={() => { setShowPopup(false); router.push("/"); }}
+                className="w-full h-13 bg-[#0b0e14] text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-[#00adb5] transition-all shadow-lg"
+              >
+                Kembali ke Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
