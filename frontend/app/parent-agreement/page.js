@@ -463,7 +463,7 @@ export default function FamilyAiAgreementAllInOnePage() {
               <button 
                 type="button"
                 onClick={() => { setShowPopup(false); router.push("/"); }}
-                className="w-full h-13 bg-[#0b0e14] text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-[#00adb5] transition-all shadow-lg"
+                className="w-full h-14 bg-[#0b0e14] text-white rounded-xl font-bold text-sm uppercase tracking-widest hover:bg-[#00adb5] transition-all shadow-lg flex items-center justify-center border-none cursor-pointer"
               >
                 Kembali ke Dashboard
               </button>
