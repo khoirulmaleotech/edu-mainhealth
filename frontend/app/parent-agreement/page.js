@@ -12,8 +12,6 @@ import {
   CheckCircle2, 
   Sparkles,
   FileCheck,
-  ClipboardCheck,
-  HelpCircle,
   RefreshCcw,
   X
 } from "lucide-react";
@@ -131,23 +129,6 @@ export default function FamilyAiAgreementAllInOnePage() {
 
   const totalAnswered = Object.keys(assessmentScores).length;
   const isAssessmentComplete = totalAnswered === assessmentQuestions.length;
-  const totalScore = Object.values(assessmentScores).reduce((sum, val) => sum + val, 0);
-
-  const getInterpretation = (score) => {
-    if (!isAssessmentComplete) return null;
-    if (score >= 41) {
-      return { color: "bg-emerald-50 border-emerald-200 text-emerald-800", title: "🟢 Orang Tua Adaptif Digital", desc: "Luar biasa! Anda sudah cukup siap menjadi pendamping anak di era AI." };
-    }
-    if (score >= 31) {
-      return { color: "bg-amber-50 border-amber-200 text-amber-800", title: "🟡 Orang Tua Berkembang", desc: "Kerja bagus! Anda sudah berada di jalur yang baik, namun masih perlu konsistensi." };
-    }
-    if (score >= 20) {
-      return { color: "bg-orange-50 border-orange-200 text-orange-800", title: "🟠 Orang Tua Waspada", desc: "Perhatian. Anda perlu mulai membangun komunikasi aktif dan merancang aturan digital keluarga." };
-    }
-    return { color: "bg-rose-50 border-rose-200 text-rose-800", title: "🔴 Orang Tua Berisiko Tertinggal", desc: "Gawat! Saatnya Anda mulai terlibat lebih aktif dalam kehidupan perkembangan digital anak." };
-  };
-
-  const interpretation = getInterpretation(totalScore);
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -357,24 +338,6 @@ export default function FamilyAiAgreementAllInOnePage() {
               ))}
             </div>
           </div>
-
-          {/* MONITOR ANALISIS SKOR REAL-TIME ASESSMENT */}
-          {isAssessmentComplete && (
-            <div className={`p-6 border rounded-[24px] animate-in fade-in duration-300 ${interpretation.color}`}>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <span className="text-xs font-black uppercase tracking-widest opacity-60">Hasil Penilaian Kesiapan Anda:</span>
-                  <h4 className="text-xl font-black tracking-tight">{interpretation.title}</h4>
-                  <p className="text-xs font-semibold leading-relaxed mt-1 opacity-90">{interpretation.desc}</p>
-                </div>
-                <div className="shrink-0 bg-white/60 backdrop-blur border border-current/10 px-5 py-3 rounded-xl text-center min-w-[100px]">
-                  <span className="block text-[9px] font-black uppercase tracking-wider opacity-60">Total Skor</span>
-                  <span className="block text-2xl font-black text-slate-800 mt-0.5">{totalScore}</span>
-                  <span className="block text-[8px] opacity-60 font-bold mt-0.5">Maksimal 50</span>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* SEKTOR 3: INSTRUMEN FAMILY AI AGREEMENT SHEET */}
           <div className="bg-white border border-slate-100 rounded-[28px] md:rounded-[35px] overflow-hidden shadow-sm">
