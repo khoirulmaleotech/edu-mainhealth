@@ -38,9 +38,9 @@ export default function MentimeterRespondentPage() {
         <h1 className="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 mb-4 drop-shadow-sm leading-tight">
           Apa yang paling sering membuat remaja seusiamu merasa tertekan??
         </h1>
-        <p className="text-gray-400 text-lg md:text-xl">
+        {/* <p className="text-gray-400 text-lg md:text-xl">
           Buka <span className="text-white font-semibold">/mentimeter</span> untuk ikut berpartisipasi
-        </p>
+        </p> */}
       </div>
 
       {/* Results Container */}
@@ -75,10 +75,10 @@ export default function MentimeterRespondentPage() {
                   key={item._id || index}
                   className={`animate-fade-in-up px-6 py-4 rounded-full border border-opacity-50 shadow-lg backdrop-blur-sm transform hover:scale-105 transition-transform duration-300 ${colorClass}`}
                   style={{
-                    animationDelay: \`\${(index % 10) * 0.1}s\`,
+                    animationDelay: `${(index % 10) * 0.1}s`,
                   }}
                 >
-                  <span className={\`font-medium \${sizeClass}\`}>
+                  <span className={`font-medium ${sizeClass}`}>
                     {item.answer}
                   </span>
                 </div>
@@ -92,7 +92,7 @@ export default function MentimeterRespondentPage() {
       <div className="fixed top-[-10%] left-[-10%] w-96 h-96 bg-teal-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-20"></div>
       <div className="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-20"></div>
 
-      <style jsx global>{\`
+      <style jsx global>{`
         @keyframes fadeInUp {
           from {
             opacity: 0;
@@ -107,7 +107,7 @@ export default function MentimeterRespondentPage() {
           animation: fadeInUp 0.6s ease-out forwards;
           opacity: 0;
         }
-      \`}</style>
+      `}</style>
     </div>
   );
 }
