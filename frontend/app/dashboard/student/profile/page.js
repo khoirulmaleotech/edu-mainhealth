@@ -61,6 +61,7 @@ export default function StudentProfilePage() {
       const formData = new FormData();
       formData.append("fullname", user.fullname);
       formData.append("phone", user.phone || "");
+      formData.append("email", user.email);
       if (file) formData.append("file", file);
 
       const res = await fetch("/api/student/profile", {
@@ -229,20 +230,23 @@ export default function StudentProfilePage() {
               </div>
             </div>
 
-            {/* Input Email (ReadOnly) */}
-            <div className="space-y-3 opacity-70">
+            {/* Input Email */}
+            <div className="space-y-3">
               <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] ml-1">
-                Alamat Email (Akun)
+                Alamat Email (Akun) <span className="text-rose-500 font-bold">*</span>
               </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300">
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#00adb5] transition-colors">
                   <Mail size={20} />
                 </div>
                 <input
                   type="email"
+                  required
                   value={user.email || ""}
-                  disabled
-                  className="w-full pl-12 pr-4 py-4 bg-slate-100 border border-transparent rounded-2xl text-slate-400 font-bold cursor-not-allowed"
+                  onChange={(e) =>
+                    setUser({ ...user, email: e.target.value })
+                  }
+                  className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent focus:border-[#00adb5]/20 focus:bg-white rounded-2xl outline-none font-bold text-slate-700 transition-all"
                 />
               </div>
             </div>
