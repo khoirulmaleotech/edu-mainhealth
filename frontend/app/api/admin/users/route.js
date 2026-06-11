@@ -92,6 +92,8 @@ export async function GET(request) {
                   fullname: 1,
                   role: 1,
                   email: 1,
+                  school_id: 1,
+                  institution_id: 1,
                   school_name: { 
                     $ifNull: [
                       { $arrayElemAt: ["$school_data.name", 0] }, 

@@ -29,6 +29,7 @@ export default function ManageUsersPage() {
   const [schools, setSchools] = useState([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [modalConfig, setModalConfig] = useState(null);
+  const [editingCell, setEditingCell] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
@@ -163,31 +164,71 @@ export default function ManageUsersPage() {
     });
   };
 
-  const handleUpdateEmail = async (userId, currentEmail) => {
-    showPrompt("Edit Email", "Masukkan email baru untuk pengguna ini:", currentEmail || "", async (newEmail) => {
-      if (!newEmail || newEmail === currentEmail) return;
-      
-      setIsUpdating(true);
-      try {
-        const res = await fetchInstance(`/api/admin/users/${userId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "update_email", email: newEmail })
+  const handleUpdateEmail = async (userId, newEmail) => {
+    if (!newEmail || newEmail === selectedUser?.email) {
+      setSelectedUser({ ...selectedUser, isEditingEmail: false });
+      return;
+    }
+    
+    setIsUpdating(true);
+    try {
+      const res = await fetchInstance(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_email", email: newEmail })
+      });
+      if (res.success) {
+        showAlertWithAction("Berhasil", "Email berhasil diperbarui", () => {
+          setSelectedUser(null);
+          fetchData({ page: currentPage, search: debouncedSearchTerm, role: roleFilter, school: schoolFilter });
         });
-        if (res.success) {
-          showAlertWithAction("Berhasil", "Email berhasil diperbarui", () => {
-            setSelectedUser(null);
-            fetchData({ page: currentPage, search: debouncedSearchTerm, role: roleFilter, school: schoolFilter });
-          });
-        } else {
-          showAlert("Gagal", res.message || "Gagal memperbarui email");
-        }
-      } catch (err) {
-        showAlert("Error", "Terjadi kesalahan sistem");
-      } finally {
-        setIsUpdating(false);
+      } else {
+        showAlert("Gagal", res.message || "Gagal memperbarui email");
       }
-    });
+    } catch (err) {
+      showAlert("Error", "Terjadi kesalahan sistem");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleSaveInlineEdit = async () => {
+    if (!editingCell) return;
+    const { userId, field, value } = editingCell;
+    const userToEdit = users.find(u => u._id === userId);
+    
+    // Fallback for school_id comparison since we use school_id || institution_id
+    const originalValue = field === 'school_id' ? (userToEdit?.school_id || userToEdit?.institution_id) : userToEdit?.[field];
+
+    if (!value || value === originalValue) {
+      setEditingCell(null);
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      let bodyData = {};
+      if (field === 'fullname') bodyData = { action: "update_fullname", fullname: value };
+      else if (field === 'role') bodyData = { action: "update_role", role: value };
+      else if (field === 'school_id') bodyData = { action: "update_school", school_id: value };
+      else if (field === 'email') bodyData = { action: "update_email", email: value };
+
+      const res = await fetchInstance(`/api/admin/users/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyData)
+      });
+      if (res.success) {
+        setEditingCell(null);
+        fetchData({ page: currentPage, search: debouncedSearchTerm, role: roleFilter, school: schoolFilter });
+      } else {
+        showAlert("Gagal", res.message || `Gagal memperbarui data`);
+      }
+    } catch (err) {
+      showAlert("Error", "Terjadi kesalahan sistem");
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleDeleteAccount = async (userId) => {
@@ -302,22 +343,50 @@ export default function ManageUsersPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative group">
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 col-span-2 md:col-span-1 group">
                     <div className="flex items-center gap-2 mb-2 text-[#00adb5]">
                       <Mail size={14} />
                       <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Email Utama</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <p className="text-xs font-bold text-slate-700 break-all">{selectedUser.email}</p>
-                      <button 
-                        onClick={() => handleUpdateEmail(selectedUser._id, selectedUser.email)}
-                        className="p-1.5 bg-slate-200 text-slate-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#00adb5] hover:text-white"
-                        title="Edit Email"
-                        disabled={isUpdating}
-                      >
-                        <Pencil size={12} />
-                      </button>
-                    </div>
+                    {selectedUser.isEditingEmail ? (
+                      <div className="flex flex-col gap-2">
+                        <input
+                          type="email"
+                          className="w-full bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-3 py-2 outline-none"
+                          value={selectedUser.updateEmail !== undefined ? selectedUser.updateEmail : selectedUser.email}
+                          onChange={(e) => setSelectedUser({ ...selectedUser, updateEmail: e.target.value })}
+                          disabled={isUpdating}
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setSelectedUser({ ...selectedUser, isEditingEmail: false, updateEmail: selectedUser.email })}
+                            className="px-3 py-2 bg-slate-200 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-300 transition-all disabled:opacity-50 flex-1"
+                            disabled={isUpdating}
+                          >
+                            Batal
+                          </button>
+                          <button
+                            onClick={() => handleUpdateEmail(selectedUser._id, selectedUser.updateEmail !== undefined ? selectedUser.updateEmail : selectedUser.email)}
+                            className="px-3 py-2 bg-[#00adb5] text-white rounded-xl font-bold text-xs hover:bg-[#009299] transition-all disabled:opacity-50 flex-1"
+                            disabled={isUpdating}
+                          >
+                            {isUpdating ? "Menyimpan..." : "Simpan Email"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs font-bold text-slate-700 break-all">{selectedUser.email}</p>
+                        <button 
+                          onClick={() => setSelectedUser({ ...selectedUser, isEditingEmail: true, updateEmail: selectedUser.email })}
+                          className="p-1.5 bg-slate-200 text-slate-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#00adb5] hover:text-white"
+                          title="Edit Email"
+                          disabled={isUpdating}
+                        >
+                          <Pencil size={12} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <DetailItem label="Status Akun" value={selectedUser.is_verified ? "Terverifikasi" : "Pending"} icon={<ShieldCheck size={14} />} />
                   <DetailItem label="Bergabung Pada" value={selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"} icon={<Calendar size={14} />} />
@@ -433,12 +502,127 @@ export default function ManageUsersPage() {
               ) : users.map((user, index) => (
                 <tr key={user._id} className="hover:bg-slate-50/50 transition-all">
                   <td className="px-6 py-6 border border-slate-200 text-center text-xs font-black text-slate-300">{((pagination?.currentPage || currentPage) - 1) * pageSize + index + 1}</td>
-                  <td className="px-6 py-6 border border-slate-200 font-black text-slate-800 text-sm">{user.fullname}</td>
-                  <td className="px-6 py-6 border border-slate-200">
-                    <div className="flex justify-center">{getRoleBadge(user.role)}</div>
+                  <td 
+                    className="px-6 py-6 border border-slate-200 font-black text-slate-800 text-sm cursor-pointer hover:bg-slate-50 transition-colors relative"
+                    onDoubleClick={() => setEditingCell({ userId: user._id, field: 'fullname', value: user.fullname })}
+                    title="Klik dua kali untuk edit nama"
+                  >
+                    {editingCell?.userId === user._id && editingCell?.field === 'fullname' ? (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          autoFocus
+                          className="w-full min-w-[150px] bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2 py-1 outline-none focus:border-[#00adb5]"
+                          value={editingCell.value}
+                          onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveInlineEdit();
+                            if (e.key === 'Escape') setEditingCell(null);
+                          }}
+                          disabled={isUpdating}
+                        />
+                        <button onClick={handleSaveInlineEdit} disabled={isUpdating} className="p-1 bg-[#00adb5] text-white rounded-lg hover:bg-[#009299]"><Pencil size={12} /></button>
+                        <button onClick={() => setEditingCell(null)} disabled={isUpdating} className="p-1 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300"><X size={12} /></button>
+                      </div>
+                    ) : (
+                      user.fullname
+                    )}
                   </td>
-                  <td className="px-6 py-6 border border-slate-200 text-xs font-bold text-slate-600">{user.school_name || "-"}</td>
-                  <td className="px-6 py-6 border border-slate-200 text-xs font-bold text-slate-500">{user.email}</td>
+                  <td 
+                    className="px-6 py-6 border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors relative"
+                    onDoubleClick={() => setEditingCell({ userId: user._id, field: 'role', value: user.role })}
+                    title="Klik dua kali untuk edit role"
+                  >
+                    {editingCell?.userId === user._id && editingCell?.field === 'role' ? (
+                      <div className="flex gap-2">
+                        <select
+                          autoFocus
+                          className="w-full min-w-[120px] bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2 py-1 outline-none focus:border-[#00adb5]"
+                          value={editingCell.value}
+                          onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveInlineEdit();
+                            if (e.key === 'Escape') setEditingCell(null);
+                          }}
+                          disabled={isUpdating}
+                        >
+                          {roleOptions.filter(r => r.value !== 'all').map(r => (
+                            <option key={r.value} value={r.value}>{r.label}</option>
+                          ))}
+                        </select>
+                        <button onClick={handleSaveInlineEdit} disabled={isUpdating} className="p-1 bg-[#00adb5] text-white rounded-lg hover:bg-[#009299]"><Pencil size={12} /></button>
+                        <button onClick={() => setEditingCell(null)} disabled={isUpdating} className="p-1 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300"><X size={12} /></button>
+                      </div>
+                    ) : (
+                      <div className="flex justify-center">{getRoleBadge(user.role)}</div>
+                    )}
+                  </td>
+                  <td 
+                    className="px-6 py-6 border border-slate-200 text-xs font-bold text-slate-600 cursor-pointer hover:bg-slate-50 transition-colors relative"
+                    onDoubleClick={() => setEditingCell({ userId: user._id, field: 'school_id', value: user.school_id || user.institution_id || '' })}
+                    title="Klik dua kali untuk edit sekolah"
+                  >
+                    {editingCell?.userId === user._id && editingCell?.field === 'school_id' ? (
+                      <div className="flex gap-2">
+                        <select
+                          autoFocus
+                          className="w-full min-w-[150px] bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2 py-1 outline-none focus:border-[#00adb5]"
+                          value={editingCell.value}
+                          onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveInlineEdit();
+                            if (e.key === 'Escape') setEditingCell(null);
+                          }}
+                          disabled={isUpdating}
+                        >
+                          <option value="">Pilih Sekolah</option>
+                          {schools.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                        </select>
+                        <button onClick={handleSaveInlineEdit} disabled={isUpdating} className="p-1 bg-[#00adb5] text-white rounded-lg hover:bg-[#009299]"><Pencil size={12} /></button>
+                        <button onClick={() => setEditingCell(null)} disabled={isUpdating} className="p-1 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300"><X size={12} /></button>
+                      </div>
+                    ) : (
+                      user.school_name || "-"
+                    )}
+                  </td>
+                  <td 
+                    className="px-6 py-6 border border-slate-200 text-xs font-bold text-slate-500 cursor-pointer hover:bg-slate-50 transition-colors relative"
+                    onDoubleClick={() => setEditingCell({ userId: user._id, field: 'email', value: user.email })}
+                    title="Klik dua kali untuk edit email"
+                  >
+                    {editingCell?.userId === user._id && editingCell?.field === 'email' ? (
+                      <div className="flex gap-2">
+                        <input
+                          type="email"
+                          autoFocus
+                          className="w-full min-w-[150px] bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg px-2 py-1 outline-none focus:border-[#00adb5]"
+                          value={editingCell.value}
+                          onChange={(e) => setEditingCell({ ...editingCell, value: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveInlineEdit();
+                            if (e.key === 'Escape') setEditingCell(null);
+                          }}
+                          disabled={isUpdating}
+                        />
+                        <button 
+                          onClick={handleSaveInlineEdit}
+                          disabled={isUpdating}
+                          className="p-1 bg-[#00adb5] text-white rounded-lg hover:bg-[#009299]"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button 
+                          onClick={() => setEditingCell(null)}
+                          disabled={isUpdating}
+                          className="p-1 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ) : (
+                      user.email
+                    )}
+                  </td>
                   <td className="px-6 py-6 border border-slate-200 text-right">
                     <div className="flex justify-end gap-2">
                       <button

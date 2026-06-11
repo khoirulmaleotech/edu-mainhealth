@@ -86,8 +86,20 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ success: false, message: "ID user tidak valid" }, { status: 400 });
     }
 
-    const { action, school_id, password, email } = await request.json();
+    const { action, school_id, password, email, fullname, role } = await request.json();
     const db = (await connectDB()).db();
+
+    if (action === "update_fullname") {
+      if (!fullname) return NextResponse.json({ success: false, message: "Nama diperlukan" }, { status: 400 });
+      await db.collection("users").updateOne({ _id: userId }, { $set: { fullname } });
+      return NextResponse.json({ success: true, message: "Nama berhasil diperbarui" });
+    }
+
+    if (action === "update_role") {
+      if (!role) return NextResponse.json({ success: false, message: "Role diperlukan" }, { status: 400 });
+      await db.collection("users").updateOne({ _id: userId }, { $set: { role } });
+      return NextResponse.json({ success: true, message: "Role berhasil diperbarui" });
+    }
 
     if (action === "update_email") {
       if (!email) {
