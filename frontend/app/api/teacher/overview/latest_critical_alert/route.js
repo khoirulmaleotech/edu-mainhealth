@@ -15,9 +15,14 @@ export async function GET() {
 
     const db = client.db();
 
-    const teacherId = new ObjectId(
-      session.user.id
-    );
+    const teacherId = new ObjectId(session.user.id);
+    const teacher = await db.collection("users").findOne({ _id: teacherId }, { projection: { school_id: 1 } });
+
+    if (!teacher || !teacher.school_id) {
+      return NextResponse.json({ success: true, data: null });
+    }
+
+    const schoolId = teacher.school_id;
 
     const latestCriticalAlert = await db
       .collection("critical_chat_logs")
@@ -27,7 +32,6 @@ export async function GET() {
             is_critical: true,
           },
         },
-
         {
           $lookup: {
             from: "users",
@@ -36,16 +40,13 @@ export async function GET() {
             as: "student",
           },
         },
-
         {
           $unwind: "$student",
         },
-
         {
           $match: {
             "student.role": "student",
-            "student.homeroom_teacher_id":
-              teacherId,
+            $or: [{ "student.school_id": schoolId }, { "student.school_id": schoolId.toString() }],
           },
         },
 

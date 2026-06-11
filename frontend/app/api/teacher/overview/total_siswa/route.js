@@ -15,12 +15,20 @@ export async function GET() {
 
     const db = client.db();
 
+    const teacherId = new ObjectId(session.user.id);
+    const teacher = await db.collection("users").findOne({ _id: teacherId }, { projection: { school_id: 1 } });
+    
+    if (!teacher || !teacher.school_id) {
+      return NextResponse.json({ success: true, totalStudents: 0 });
+    }
+
+    const schoolId = teacher.school_id;
+
     const totalStudents = await db
       .collection("users")
       .countDocuments({
         role: "student",
-        homeroom_teacher_id:
-          new ObjectId(session.user.id),
+        $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }]
       });
 
     return NextResponse.json({

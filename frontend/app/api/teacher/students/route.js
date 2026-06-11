@@ -23,9 +23,18 @@ export async function GET(request) {
 
     const database = client.db();
 
-    const teacherId = new ObjectId(
-      session.user.id
-    );
+    const teacherId = new ObjectId(session.user.id);
+    const teacher = await database.collection("users").findOne({ _id: teacherId }, { projection: { school_id: 1 } });
+    
+    if (!teacher || !teacher.school_id) {
+      return NextResponse.json({
+        success: true,
+        data: [],
+        pagination: { currentPage: 1, pageSize: 10, totalData: 0, totalPages: 1, hasNextPage: false, hasPreviousPage: false }
+      });
+    }
+
+    const schoolId = teacher.school_id;
 
     const { searchParams } = new URL(
       request.url
@@ -59,9 +68,7 @@ export async function GET(request) {
 
     const baseMatchFilter = {
       role: "student",
-
-      homeroom_teacher_id:
-        teacherId,
+      $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }],
 
       ...searchFilter,
     };

@@ -15,7 +15,18 @@ export async function GET(request) {
     const database = client.db();
 
     const teacherId = new ObjectId(session.user.id);
-    console.log(teacherId)
+    const teacher = await database.collection("users").findOne({ _id: teacherId }, { projection: { school_id: 1 } });
+
+    if (!teacher || !teacher.school_id) {
+      return NextResponse.json({
+        success: true,
+        data: [],
+        summary: { total: 0, status: [], severity: [] },
+        pagination: { currentPage: 1, pageSize: 10, totalData: 0, totalPages: 1, hasNextPage: false, hasPreviousPage: false }
+      });
+    }
+
+    const schoolId = teacher.school_id;
 
     const { searchParams } = new URL(request.url);
 
@@ -64,7 +75,7 @@ export async function GET(request) {
       {
         $match: {
           "student.role": "student",
-          "student.homeroom_teacher_id": teacherId,
+          $or: [{ "student.school_id": schoolId }, { "student.school_id": schoolId.toString() }],
           ...searchFilter,
         },
       },
@@ -239,6 +250,13 @@ export async function PATCH(request) {
     const database = client.db();
 
     const teacherId = new ObjectId(session.user.id);
+    const teacher = await database.collection("users").findOne({ _id: teacherId }, { projection: { school_id: 1 } });
+    
+    if (!teacher || !teacher.school_id) {
+      return NextResponse.json({ success: false, message: "Akses ditolak" }, { status: 403 });
+    }
+
+    const schoolId = teacher.school_id;
     const alertId = new ObjectId(id);
 
     const alert = await database.collection("critical_chat_logs").findOne({
@@ -263,7 +281,7 @@ export async function PATCH(request) {
           ? alert.student_id
           : new ObjectId(alert.student_id),
       role: "student",
-      homeroom_teacher_id: teacherId,
+      $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }],
     });
 
     if (!student) {

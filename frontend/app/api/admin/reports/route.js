@@ -28,14 +28,15 @@ function getPositiveInteger(value, fallback, max) {
   return Math.min(parsed, max);
 }
 
-function buildListPipeline({ currentPage, pageSize, search, status }) {
+function buildListPipeline({ currentPage, pageSize, search, status, reporterMatch = {} }) {
   const skipData = (currentPage - 1) * pageSize;
   const statusMatch = getStatusMatch(status);
+  const combinedMatch = { ...statusMatch, ...reporterMatch };
   const normalizedSearch = search.trim();
 
   if (!normalizedSearch) {
     return [
-      { $match: statusMatch },
+      { $match: combinedMatch },
       {
         $facet: {
           data: [
@@ -65,7 +66,7 @@ function buildListPipeline({ currentPage, pageSize, search, status }) {
   const searchRegex = getEscapedRegex(normalizedSearch);
 
   return [
-    { $match: statusMatch },
+    { $match: combinedMatch },
     {
       $project: {
         ...pageProjection,
@@ -125,9 +126,30 @@ export async function GET(request) {
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "all";
 
+    let reporterMatch = {};
+    if (session.user.role === "school_admin") {
+      const adminObjectId = toObjectId(session.user.id);
+      const school = await db
+        .collection("schools")
+        .findOne({ admin_id: adminObjectId }, { projection: { _id: 1 } });
+        
+      if (school) {
+        const students = await db
+          .collection("users")
+          .find({ role: "student", school_id: school._id })
+          .project({ _id: 1 })
+          .toArray();
+        const studentIds = students.map(s => s._id);
+        reporterMatch = { reporter_id: { $in: studentIds } };
+      } else {
+        // Jika school admin tidak memiliki sekolah, jangan tampilkan laporan apa pun
+        reporterMatch = { reporter_id: null };
+      }
+    }
+
     const [payload = { data: [], totalData: [] }] = await db
       .collection("incident_reports")
-      .aggregate(buildListPipeline({ currentPage, pageSize, search, status }), {
+      .aggregate(buildListPipeline({ currentPage, pageSize, search, status, reporterMatch }), {
         allowDiskUse: false,
       })
       .toArray();

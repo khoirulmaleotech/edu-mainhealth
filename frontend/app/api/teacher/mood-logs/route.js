@@ -22,13 +22,19 @@ export async function GET(request) {
     const db = client.db();
 
     const teacherId = session.user.id;
+    const teacher = await db.collection("users").findOne({ _id: new ObjectId(teacherId) }, { projection: { school_id: 1 } });
+    if (!teacher || !teacher.school_id) {
+       return NextResponse.json({ success: true, students: [], logs: [] });
+    }
+    const schoolId = teacher.school_id;
+
     const { searchParams } = new URL(request.url);
     const studentId = searchParams.get("studentId");
 
     const students = await db
       .collection("users")
      //  .find({ role: "student"})
-      .find({ role: "student", homeroom_teacher_id: teacherId })
+      .find({ role: "student", $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }] })
       .project({ fullname: 1, class_name: 1 })
       .toArray();
 

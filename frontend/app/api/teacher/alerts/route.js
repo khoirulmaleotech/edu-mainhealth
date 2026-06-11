@@ -21,11 +21,24 @@ export async function GET() {
     await client.connect();
     const db = client.db();
     const teacherId = session.user.id;
+    
+    const teacher = await db.collection("users").findOne({ _id: new ObjectId(teacherId) }, { projection: { school_id: 1 } });
+    if (!teacher || !teacher.school_id) {
+      return NextResponse.json({
+        success: true,
+        teacherId,
+        students: [],
+        alerts: [],
+        summary: { totalAlerts: 0, pendingReview: 0, totalStudents: 0 },
+      });
+    }
+    
+    const schoolId = teacher.school_id;
 
     const students = await db
       .collection("users")
       //.find({ role: "student" })
-      .find({ role: "student", homeroom_teacher_id: new ObjectId(teacherId) })
+      .find({ role: "student", $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }] })
       .project({ fullname: 1, class_name: 1 })
       .toArray();
 

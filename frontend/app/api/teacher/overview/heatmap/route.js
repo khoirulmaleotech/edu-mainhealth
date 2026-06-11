@@ -14,6 +14,13 @@ export async function GET() {
     const db = client.db();
 
     const teacherId = new ObjectId(session.user.id);
+    const teacher = await db.collection("users").findOne({ _id: teacherId }, { projection: { school_id: 1 } });
+
+    if (!teacher || !teacher.school_id) {
+      return NextResponse.json({ success: true, data: [] });
+    }
+
+    const schoolId = teacher.school_id;
 
     const studentsMood = await db
       .collection("users")
@@ -21,7 +28,7 @@ export async function GET() {
         {
           $match: {
             role: "student",
-            homeroom_teacher_id: teacherId,
+            $or: [{ school_id: schoolId }, { school_id: schoolId.toString() }],
           },
         },
         {
