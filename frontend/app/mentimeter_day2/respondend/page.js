@@ -3,13 +3,13 @@
 import React, { useEffect, useState } from "react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
-// Dictionary kategori psikologis
+// Dictionary kategori pemikiran tentang AI
 const categoryKeywords = {
-  "Perundungan (Bullying)": ["bully", "tindas", "ejek", "caci", "hina", "palak", "jauhi", "kucil", "olok", "cyberbully"],
-  "Tekanan Akademik": ["tugas", "ujian", "sekolah", "nilai", "guru", "belajar", "pr", "rapor", "prestasi", "rangking", "kuliah"],
-  "Ekspektasi Keluarga": ["orang tua", "keluarga", "ayah", "ibu", "rumah", "kelahi", "ekspektasi", "tuntutan", "dibanding", "mama", "papa"],
-  "Dinamika Sosial": ["teman", "sahabat", "pacar", "sosmed", "circle", "pergaulan", "kesepian", "asing", "ditinggal"],
-  "Krisis Citra Diri": ["insecure", "fisik", "penampilan", "muka", "gendut", "kurus", "jelek", "jerawat", "overthinking", "body shaming"],
+  "Masa Depan & Teknologi": ["masa depan", "teknologi", "canggih", "modern", "futuristik", "maju", "zaman", "era"],
+  "Kecerdasan & AI Tools": ["pintar", "cerdas", "otak", "jenius", "chatgpt", "gemini", "copilot", "mikir", "pintar", "kecerdasan"],
+  "Robot & Mesin": ["robot", "scifi", "sci-fi", "mesin", "terminator", "skynet", "program", "komputer", "coding"],
+  "Pekerjaan & Kemudahan": ["kerja", "tugas", "bantu", "mudah", "cepat", "efisien", "pr", "nugas", "gampang", "solusi"],
+  "Ancaman & Ketakutan": ["takut", "bahaya", "ancam", "ganti", "phk", "seram", "ngeri", "curang", "ngambil", "rebut", "malas"],
 };
 
 export default function MentimeterRespondentPage() {
@@ -21,7 +21,7 @@ export default function MentimeterRespondentPage() {
   useEffect(() => {
     const fetchResponses = async () => {
       try {
-        const res = await fetch("/api/mentimeter");
+        const res = await fetch("/api/mentimeter_day2");
         const data = await res.json();
         if (data.success) {
           setResponses(data.data);
@@ -44,11 +44,11 @@ export default function MentimeterRespondentPage() {
 
   // Process data for chart
   const counts = {
-    "Perundungan (Bullying)": 0,
-    "Tekanan Akademik": 0,
-    "Ekspektasi Keluarga": 0,
-    "Dinamika Sosial": 0,
-    "Krisis Citra Diri": 0,
+    "Masa Depan & Teknologi": 0,
+    "Kecerdasan & AI Tools": 0,
+    "Robot & Mesin": 0,
+    "Pekerjaan & Kemudahan": 0,
+    "Ancaman & Ketakutan": 0,
     "Lainnya": 0,
   };
 
@@ -77,11 +77,11 @@ export default function MentimeterRespondentPage() {
   const COLORS = ['#0ea5e9', '#14b8a6', '#f59e0b', '#f43f5e', '#8b5cf6', '#64748b'];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-teal-50 to-white flex flex-col p-8 md:p-12 overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-white flex flex-col p-8 md:p-12 overflow-x-hidden font-sans">
       {/* Header / Question */}
       <div className="mb-8 text-center relative z-10">
-        <h1 className="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-blue-700 mb-4 drop-shadow-sm leading-tight">
-          Apa yang paling sering membuat remaja seusiamu merasa tertekan??
+        <h1 className="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-fuchsia-600 mb-4 drop-shadow-sm leading-tight">
+          Apa SATU kata yang langsung muncul di kepalamu saat dengar kata 'AI'?
         </h1>
       </div>
 
@@ -91,7 +91,7 @@ export default function MentimeterRespondentPage() {
           <button
             onClick={() => setViewMode("bubble")}
             className={`px-6 py-2 rounded-full font-semibold transition-all ${
-              viewMode === "bubble" ? "bg-teal-500 text-white shadow-md" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              viewMode === "bubble" ? "bg-fuchsia-500 text-white shadow-md" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
             }`}
           >
             Gelembung Teks
@@ -99,7 +99,7 @@ export default function MentimeterRespondentPage() {
           <button
             onClick={() => setViewMode("chart")}
             className={`px-6 py-2 rounded-full font-semibold transition-all ${
-              viewMode === "chart" ? "bg-blue-500 text-white shadow-md" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              viewMode === "chart" ? "bg-violet-500 text-white shadow-md" : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
             }`}
           >
             Grafik Analisis
@@ -111,7 +111,7 @@ export default function MentimeterRespondentPage() {
       <div className="flex-1 w-full max-w-7xl mx-auto relative z-10">
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-teal-500"></div>
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-violet-500"></div>
           </div>
         ) : responses.length === 0 ? (
           <div className="flex justify-center items-center h-64">
@@ -181,9 +181,9 @@ export default function MentimeterRespondentPage() {
               </ResponsiveContainer>
             </div>
             <div className="w-full lg:w-1/2 flex flex-col justify-center px-4">
-              <h3 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Analisis Tema (Konsep Psikologis)</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Analisis Tema (Konsep AI)</h3>
               <p className="text-gray-600 mb-6 leading-relaxed">
-                Grafik ini menggunakan teknik <strong>Natural Language Processing (NLP) ringan berbasis Keyword Matching</strong> untuk mengelompokkan jawaban yang maknanya saling berkaitan. Misalnya, kata kunci seperti <span className="italic">"bully"</span>, <span className="italic">"ditindas"</span>, atau <span className="italic">"diejek"</span> otomatis digabungkan dalam satu kategori psikologis: <span className="font-semibold text-blue-600">Perundungan (Bullying)</span>.
+                Grafik ini menggunakan teknik <strong>Natural Language Processing (NLP) ringan berbasis Keyword Matching</strong> untuk mengelompokkan jawaban yang maknanya saling berkaitan. Misalnya, kata kunci seperti <span className="italic">"robot"</span>, <span className="italic">"scifi"</span>, atau <span className="italic">"mesin"</span> otomatis digabungkan dalam satu kategori persepsi: <span className="font-semibold text-violet-600">Robot & Mesin</span>.
               </p>
               <div className="space-y-4">
                 {chartData.map((item, index) => {
@@ -204,8 +204,8 @@ export default function MentimeterRespondentPage() {
       </div>
 
       {/* Decorative background elements */}
-      <div className="fixed top-[-10%] left-[-10%] w-96 h-96 bg-teal-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-40"></div>
-      <div className="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-40"></div>
+      <div className="fixed top-[-10%] left-[-10%] w-96 h-96 bg-fuchsia-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-40"></div>
+      <div className="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-violet-600 rounded-full mix-blend-multiply filter blur-[128px] opacity-40"></div>
 
       <style jsx global>{`
         @keyframes fadeInUp {
