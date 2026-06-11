@@ -23,18 +23,36 @@ export async function GET(request) {
     const pageSize = getPositiveInteger(searchParams.get("pageSize"), 20, 100);
     const search = (searchParams.get("search") || "").trim();
     const role = searchParams.get("role") || "all";
+    const school = searchParams.get("school") || "all";
     const skipData = (currentPage - 1) * pageSize;
     const matchFilter = {
       role: role && role !== "all" ? role : { $ne: "admin" },
     };
 
+    if (school && school !== "all") {
+      const schoolObjId = ObjectId.isValid(school) ? new ObjectId(school) : school;
+      matchFilter.$or = [
+        { school_id: schoolObjId },
+        { school_id: school },
+        { institution_id: schoolObjId },
+        { institution_id: school }
+      ];
+    }
+
     if (search) {
       const searchRegex = getEscapedRegex(search);
-      matchFilter.$or = [
+      const searchOr = [
         { fullname: { $regex: searchRegex, $options: "i" } },
         { email: { $regex: searchRegex, $options: "i" } },
         { role: { $regex: searchRegex, $options: "i" } },
       ];
+      
+      if (matchFilter.$or) {
+        matchFilter.$and = [{ $or: matchFilter.$or }, { $or: searchOr }];
+        delete matchFilter.$or;
+      } else {
+        matchFilter.$or = searchOr;
+      }
     }
 
     const [payload = { data: [], totalData: [] }] = await db
@@ -48,11 +66,38 @@ export async function GET(request) {
               { $skip: skipData },
               { $limit: pageSize },
               {
+                $addFields: {
+                  converted_school_id: {
+                    $convert: {
+                      input: { $ifNull: ["$school_id", "$institution_id"] },
+                      to: "objectId",
+                      onError: null,
+                      onNull: null
+                    }
+                  }
+                }
+              },
+              {
+                $lookup: {
+                  from: "schools",
+                  localField: "converted_school_id",
+                  foreignField: "_id",
+                  pipeline: [{ $project: { _id: 0, name: 1 } }],
+                  as: "school_data",
+                },
+              },
+              {
                 $project: {
                   _id: 1,
                   fullname: 1,
                   role: 1,
                   email: 1,
+                  school_name: { 
+                    $ifNull: [
+                      { $arrayElemAt: ["$school_data.name", 0] }, 
+                      { $ifNull: ["$school_name", "$institution_name"] }
+                    ] 
+                  },
                 },
               },
             ],

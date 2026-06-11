@@ -23,14 +23,18 @@ export default function ManageUsersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [schoolFilter, setSchoolFilter] = useState("all");
   const [selectedUser, setSelectedUser] = useState(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [schools, setSchools] = useState([]);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [modalConfig, setModalConfig] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const pageSize = 10;
 
-  const fetchData = async ({ page = 1, search = "", role = "all" } = {}) => {
+  const fetchData = async ({ page = 1, search = "", role = "all", school = "all" } = {}) => {
     setLoading(true);
     try {
       const queryParams = new URLSearchParams({
@@ -38,6 +42,7 @@ export default function ManageUsersPage() {
         pageSize: String(pageSize),
         search,
         role,
+        school,
       });
       const json = await fetchInstance(`/api/admin/users?${queryParams.toString()}`);
       setUsers(json.data || []);
@@ -64,13 +69,104 @@ export default function ManageUsersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-    fetchData({ page: 1, search: debouncedSearchTerm, role: roleFilter });
-  }, [debouncedSearchTerm, roleFilter]);
+    fetchData({ page: 1, search: debouncedSearchTerm, role: roleFilter, school: schoolFilter });
+  }, [debouncedSearchTerm, roleFilter, schoolFilter]);
+
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        const res = await fetchInstance("/api/admin/schools");
+        if (res.success) {
+          setSchools(res.data);
+        }
+      } catch (err) {}
+    };
+    fetchSchools();
+  }, []);
+
+  const showAlert = (title, message) => {
+    setModalConfig({ type: 'alert', title, message, inputValue: '', onConfirm: () => setModalConfig(null) });
+  };
+
+  const showAlertWithAction = (title, message, action) => {
+    setModalConfig({ type: 'alert', title, message, inputValue: '', onConfirm: () => {
+      setModalConfig(null);
+      if (action) action();
+    }});
+  };
+
+  const showConfirm = (title, message, onConfirm) => {
+    setModalConfig({ type: 'confirm', title, message, inputValue: '', onConfirm: () => {
+      setModalConfig(null);
+      onConfirm();
+    }});
+  };
+
+  const showPrompt = (title, message, defaultValue, onConfirm) => {
+    setModalConfig({ type: 'prompt', title, message, inputValue: defaultValue, onConfirm: (val) => {
+      setModalConfig(null);
+      onConfirm(val);
+    }});
+  };
+
+  const handleUpdateSchool = async (userId, schoolId) => {
+    if (!schoolId) return showAlert("Peringatan", "Pilih sekolah terlebih dahulu");
+    
+    showConfirm("Konfirmasi Perubahan", "Apakah Anda yakin ingin mengubah instansi/sekolah pengguna ini?", async () => {
+      setIsUpdating(true);
+      try {
+        const res = await fetchInstance(`/api/admin/users/${userId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "update_school", school_id: schoolId })
+        });
+        if (res.success) {
+          showAlertWithAction("Berhasil", "Sekolah berhasil diperbarui", () => {
+            setSelectedUser(null);
+            fetchData({ page: currentPage, search: debouncedSearchTerm, role: roleFilter, school: schoolFilter });
+          });
+        } else {
+          showAlert("Gagal", res.message || "Gagal memperbarui sekolah");
+        }
+      } catch (err) {
+        showAlert("Error", "Terjadi kesalahan sistem");
+      } finally {
+        setIsUpdating(false);
+      }
+    });
+  };
+
+  const handleResetPassword = async (userId) => {
+    showPrompt("Reset Password", "Masukkan password baru untuk pengguna ini:", "123456", async (newPassword) => {
+      if (!newPassword) return;
+      
+      setIsUpdating(true);
+      try {
+        const res = await fetchInstance(`/api/admin/users/${userId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "reset_password", password: newPassword })
+        });
+        if (res.success) {
+          showAlertWithAction("Berhasil", "Password berhasil di-reset", () => {
+            setSelectedUser(null);
+            fetchData({ page: currentPage, search: debouncedSearchTerm, role: roleFilter, school: schoolFilter });
+          });
+        } else {
+          showAlert("Gagal", res.message || "Gagal reset password");
+        }
+      } catch (err) {
+        showAlert("Error", "Terjadi kesalahan sistem");
+      } finally {
+        setIsUpdating(false);
+      }
+    });
+  };
 
   const handlePageChange = (page) => {
     if (page < 1 || page > (pagination?.totalPages || 1) || page === currentPage) return;
     setCurrentPage(page);
-    fetchData({ page, search: debouncedSearchTerm, role: roleFilter });
+    fetchData({ page, search: debouncedSearchTerm, role: roleFilter, school: schoolFilter });
   };
 
   const getRoleBadge = (role) => {
@@ -90,6 +186,43 @@ export default function ManageUsersPage() {
 
   return (
     <div className="p-4 md:p-8 space-y-8 text-slate-700">
+
+      {/* GLOBAL CUSTOM MODAL */}
+      {modalConfig && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100 p-6">
+            <h3 className="font-black text-slate-800 text-lg mb-2">{modalConfig.title}</h3>
+            <p className="text-sm font-bold text-slate-500 mb-6">{modalConfig.message}</p>
+            
+            {modalConfig.type === 'prompt' && (
+              <input 
+                type="text" 
+                className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm font-bold rounded-xl px-4 py-3 outline-none mb-6 focus:border-[#00adb5] transition-colors"
+                value={modalConfig.inputValue}
+                onChange={(e) => setModalConfig({ ...modalConfig, inputValue: e.target.value })}
+                placeholder="Masukkan nilai..."
+              />
+            )}
+
+            <div className="flex gap-3 justify-end">
+              {modalConfig.type !== 'alert' && (
+                <button 
+                  onClick={() => setModalConfig(null)}
+                  className="px-5 py-2.5 bg-slate-100 text-slate-500 rounded-xl font-black text-xs hover:bg-slate-200 transition-all uppercase tracking-widest"
+                >
+                  Batal
+                </button>
+              )}
+              <button 
+                onClick={() => modalConfig.onConfirm(modalConfig.inputValue)}
+                className="px-5 py-2.5 bg-[#00adb5] text-white rounded-xl font-black text-xs hover:bg-[#009299] transition-all uppercase tracking-widest shadow-lg shadow-[#00adb5]/20"
+              >
+                {modalConfig.type === 'alert' ? 'Tutup' : 'Konfirmasi'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL DETAIL USER */}
       {selectedUser && (
@@ -120,17 +253,47 @@ export default function ManageUsersPage() {
                   <DetailItem label="Email Utama" value={selectedUser.email} icon={<Mail size={14} />} />
                   <DetailItem label="Status Akun" value={selectedUser.is_verified ? "Terverifikasi" : "Pending"} icon={<ShieldCheck size={14} />} />
                   <DetailItem label="Bergabung Pada" value={selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"} icon={<Calendar size={14} />} />
-                  <DetailItem
-                    label="Instansi"
-                    value={selectedUser.role === 'psychologist' ? (selectedUser.institution_name || '-') : (selectedUser.school_name || '-')}
-                    icon={<Building2 size={14} />}
-                  />
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 col-span-2 md:col-span-1">
+                    <div className="flex items-center gap-2 mb-2 text-[#00adb5]">
+                      <Building2 size={14} />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Instansi / Sekolah</span>
+                    </div>
+                    {['student', 'teacher', 'school_admin'].includes(selectedUser.role) ? (
+                      <div className="flex flex-col gap-2">
+                        <select 
+                          className="w-full bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-3 py-2 outline-none"
+                          value={selectedUser.updateSchoolId !== undefined ? selectedUser.updateSchoolId : (selectedUser.institution_id || selectedUser.school_id || "")}
+                          onChange={(e) => setSelectedUser({...selectedUser, updateSchoolId: e.target.value})}
+                          disabled={isUpdating}
+                        >
+                          <option value="">Pilih Sekolah</option>
+                          {schools.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                        </select>
+                        <button 
+                          onClick={() => handleUpdateSchool(selectedUser._id, selectedUser.updateSchoolId || selectedUser.institution_id || selectedUser.school_id)}
+                          className="px-3 py-2 bg-[#00adb5] text-white rounded-xl font-bold text-xs hover:bg-[#009299] transition-all disabled:opacity-50"
+                          disabled={isUpdating}
+                        >
+                          {isUpdating ? "Menyimpan..." : "Simpan Sekolah"}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs font-bold text-slate-700 break-words">{selectedUser.institution_name || selectedUser.school_name || '-'}</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="p-8 bg-slate-50/50 flex gap-3">
-              <button className="px-6 py-4 bg-white text-red-500 border border-red-100 rounded-2xl font-black text-[11px] uppercase hover:bg-red-50 transition-all">
+            <div className="p-8 bg-slate-50/50 flex gap-3 flex-wrap">
+              <button 
+                onClick={() => handleResetPassword(selectedUser._id)}
+                disabled={isUpdating}
+                className="px-6 py-4 bg-white text-orange-500 border border-orange-100 rounded-2xl font-black text-[11px] uppercase hover:bg-orange-50 transition-all disabled:opacity-50"
+              >
+                Reset Password
+              </button>
+              <button className="px-6 py-4 bg-white text-red-500 border border-red-100 rounded-2xl font-black text-[11px] uppercase hover:bg-red-50 transition-all disabled:opacity-50">
                 Hapus Akun
               </button>
             </div>
@@ -142,7 +305,7 @@ export default function ManageUsersPage() {
       <div className="flex flex-col lg:flex-row justify-between items-center gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tighter">Database Pengguna</h1>
-          <p className="text-slate-400 text-[10px] font-black uppercase mt-1 tracking-widest">EduMind Master User Control</p>
+          <p className="text-slate-400 text-[10px] font-black uppercase mt-1 tracking-widest">EduMind Master User Control • {pagination ? pagination.totalData : 0} Pengguna</p>
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
@@ -151,7 +314,7 @@ export default function ManageUsersPage() {
             <input
               type="text"
               placeholder="Cari user..."
-              className="bg-transparent outline-none text-xs font-bold w-full md:w-60"
+              className="bg-transparent outline-none text-xs font-bold w-full md:w-48"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -161,7 +324,17 @@ export default function ManageUsersPage() {
             onChange={setRoleFilter}
             options={roleOptions}
             placeholder="Pilih Role"
-            className="md:w-56"
+            className="md:w-40"
+          />
+          <CustomSelect
+            value={schoolFilter}
+            onChange={setSchoolFilter}
+            options={[
+              { value: "all", label: "Semua Sekolah" },
+              ...schools.map(s => ({ value: s._id, label: s.name }))
+            ]}
+            placeholder="Pilih Sekolah"
+            className="md:w-48"
           />
         </div>
       </div>
@@ -175,6 +348,7 @@ export default function ManageUsersPage() {
                 <th className="px-6 py-5 border border-slate-200 text-center w-16">No.</th>
                 <th className="px-6 py-5 border border-slate-200">Nama Lengkap</th>
                 <th className="px-6 py-5 border border-slate-200 text-center">Role</th>
+                <th className="px-6 py-5 border border-slate-200">Sekolah</th>
                 <th className="px-6 py-5 border border-slate-200">Email</th>
                 <th className="px-6 py-5 border border-slate-200 text-right">Opsi</th>
               </tr>
@@ -191,6 +365,7 @@ export default function ManageUsersPage() {
                   <td className="px-6 py-6 border border-slate-200">
                     <div className="flex justify-center">{getRoleBadge(user.role)}</div>
                   </td>
+                  <td className="px-6 py-6 border border-slate-200 text-xs font-bold text-slate-600">{user.school_name || "-"}</td>
                   <td className="px-6 py-6 border border-slate-200 text-xs font-bold text-slate-500">{user.email}</td>
                   <td className="px-6 py-6 border border-slate-200 text-right">
                     <div className="flex justify-end gap-2">
@@ -234,6 +409,9 @@ export default function ManageUsersPage() {
                     <h4 className="font-black text-slate-800 text-sm truncate">
                       {user.fullname || "-"}
                     </h4>
+                    <p className="text-xs text-slate-500 font-bold mt-1 truncate">
+                      {user.school_name || "-"}
+                    </p>
                     <p className="text-xs text-slate-400 font-semibold mt-1 truncate">
                       {user.email || "-"}
                     </p>

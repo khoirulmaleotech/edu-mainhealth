@@ -54,6 +54,8 @@ export async function GET(_request, { params }) {
             email: 1,
             is_verified: 1,
             createdAt: 1,
+            school_id: 1,
+            institution_id: 1,
             institution_name: 1,
             school_name: { $arrayElemAt: ["$school_data.name", 0] },
           },
@@ -71,6 +73,54 @@ export async function GET(_request, { params }) {
     return NextResponse.json({ success: true, data: user });
   } catch (error) {
     console.error("ADMIN_USER_DETAIL_ERROR:", error);
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}
+
+import { hash } from "bcryptjs";
+
+export async function PATCH(request, { params }) {
+  try {
+    const userId = ObjectId.isValid(params.id) ? new ObjectId(params.id) : null;
+    if (!userId) {
+      return NextResponse.json({ success: false, message: "ID user tidak valid" }, { status: 400 });
+    }
+
+    const { action, school_id, password } = await request.json();
+    const db = (await connectDB()).db();
+
+    if (action === "update_school") {
+      if (!school_id) {
+        return NextResponse.json({ success: false, message: "School ID diperlukan" }, { status: 400 });
+      }
+      
+      const schoolObjectId = ObjectId.isValid(school_id) ? new ObjectId(school_id) : school_id;
+      
+      await db.collection("users").updateOne(
+        { _id: userId },
+        { $set: { school_id: schoolObjectId, institution_id: school_id } }
+      );
+      
+      return NextResponse.json({ success: true, message: "Sekolah berhasil diperbarui" });
+    }
+    
+    if (action === "reset_password") {
+      if (!password) {
+        return NextResponse.json({ success: false, message: "Password diperlukan" }, { status: 400 });
+      }
+      
+      const hashedPassword = await hash(password, 10);
+      await db.collection("users").updateOne(
+        { _id: userId },
+        { $set: { password: hashedPassword } }
+      );
+      
+      return NextResponse.json({ success: true, message: "Password berhasil di-reset" });
+    }
+
+    return NextResponse.json({ success: false, message: "Aksi tidak valid" }, { status: 400 });
+  } catch (error) {
+    console.error("ADMIN_USER_UPDATE_ERROR:", error);
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
