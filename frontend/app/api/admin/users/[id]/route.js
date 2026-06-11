@@ -86,8 +86,26 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ success: false, message: "ID user tidak valid" }, { status: 400 });
     }
 
-    const { action, school_id, password } = await request.json();
+    const { action, school_id, password, email } = await request.json();
     const db = (await connectDB()).db();
+
+    if (action === "update_email") {
+      if (!email) {
+        return NextResponse.json({ success: false, message: "Email diperlukan" }, { status: 400 });
+      }
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return NextResponse.json({ success: false, message: "Format email tidak valid" }, { status: 400 });
+      }
+
+      await db.collection("users").updateOne(
+        { _id: userId },
+        { $set: { email } }
+      );
+      
+      return NextResponse.json({ success: true, message: "Email berhasil diperbarui" });
+    }
 
     if (action === "update_school") {
       if (!school_id) {

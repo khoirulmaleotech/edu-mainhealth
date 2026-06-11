@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Loader2, Mail, Trash2, X,
-  Eye, Calendar,
+  Eye, Calendar, Pencil,
   Building2, GraduationCap, School, HeartPulse, Home, ShieldCheck
 } from 'lucide-react';
 import AdminPagination from "@/components/AdminPagination";
@@ -163,6 +163,58 @@ export default function ManageUsersPage() {
     });
   };
 
+  const handleUpdateEmail = async (userId, currentEmail) => {
+    showPrompt("Edit Email", "Masukkan email baru untuk pengguna ini:", currentEmail || "", async (newEmail) => {
+      if (!newEmail || newEmail === currentEmail) return;
+      
+      setIsUpdating(true);
+      try {
+        const res = await fetchInstance(`/api/admin/users/${userId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "update_email", email: newEmail })
+        });
+        if (res.success) {
+          showAlertWithAction("Berhasil", "Email berhasil diperbarui", () => {
+            setSelectedUser(null);
+            fetchData({ page: currentPage, search: debouncedSearchTerm, role: roleFilter, school: schoolFilter });
+          });
+        } else {
+          showAlert("Gagal", res.message || "Gagal memperbarui email");
+        }
+      } catch (err) {
+        showAlert("Error", "Terjadi kesalahan sistem");
+      } finally {
+        setIsUpdating(false);
+      }
+    });
+  };
+
+  const handleDeleteAccount = async (userId) => {
+    showConfirm("Konfirmasi Hapus Akun", "Apakah Anda yakin ingin menghapus akun ini secara permanen? Data yang telah dihapus tidak dapat dikembalikan.", async () => {
+      setIsUpdating(true);
+      try {
+        const res = await fetchInstance(`/api/admin/users`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: userId, action: "delete" })
+        });
+        if (res.success) {
+          showAlertWithAction("Berhasil", "Akun berhasil dihapus", () => {
+            setSelectedUser(null);
+            fetchData({ page: currentPage, search: debouncedSearchTerm, role: roleFilter, school: schoolFilter });
+          });
+        } else {
+          showAlert("Gagal", res.message || "Gagal menghapus akun");
+        }
+      } catch (err) {
+        showAlert("Error", "Terjadi kesalahan sistem");
+      } finally {
+        setIsUpdating(false);
+      }
+    });
+  };
+
   const handlePageChange = (page) => {
     if (page < 1 || page > (pagination?.totalPages || 1) || page === currentPage) return;
     setCurrentPage(page);
@@ -250,7 +302,23 @@ export default function ManageUsersPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 gap-4">
-                  <DetailItem label="Email Utama" value={selectedUser.email} icon={<Mail size={14} />} />
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 relative group">
+                    <div className="flex items-center gap-2 mb-2 text-[#00adb5]">
+                      <Mail size={14} />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Email Utama</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <p className="text-xs font-bold text-slate-700 break-all">{selectedUser.email}</p>
+                      <button 
+                        onClick={() => handleUpdateEmail(selectedUser._id, selectedUser.email)}
+                        className="p-1.5 bg-slate-200 text-slate-500 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[#00adb5] hover:text-white"
+                        title="Edit Email"
+                        disabled={isUpdating}
+                      >
+                        <Pencil size={12} />
+                      </button>
+                    </div>
+                  </div>
                   <DetailItem label="Status Akun" value={selectedUser.is_verified ? "Terverifikasi" : "Pending"} icon={<ShieldCheck size={14} />} />
                   <DetailItem label="Bergabung Pada" value={selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : "-"} icon={<Calendar size={14} />} />
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 col-span-2 md:col-span-1">
@@ -293,7 +361,11 @@ export default function ManageUsersPage() {
               >
                 Reset Password
               </button>
-              <button className="px-6 py-4 bg-white text-red-500 border border-red-100 rounded-2xl font-black text-[11px] uppercase hover:bg-red-50 transition-all disabled:opacity-50">
+              <button 
+                onClick={() => handleDeleteAccount(selectedUser._id)}
+                disabled={isUpdating}
+                className="px-6 py-4 bg-white text-red-500 border border-red-100 rounded-2xl font-black text-[11px] uppercase hover:bg-red-50 transition-all disabled:opacity-50"
+              >
                 Hapus Akun
               </button>
             </div>
@@ -375,7 +447,10 @@ export default function ManageUsersPage() {
                       >
                         <Eye size={18} />
                       </button>
-                      <button className="p-3 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm">
+                      <button 
+                        onClick={() => handleDeleteAccount(user._id)}
+                        className="p-3 bg-red-50 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                      >
                         <Trash2 size={18} />
                       </button>
                     </div>
