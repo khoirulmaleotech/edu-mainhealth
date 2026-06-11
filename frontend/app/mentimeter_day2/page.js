@@ -42,7 +42,7 @@ export default function MentimeterPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 max-w-lg w-full text-center shadow-2xl border border-white/20">
           <div className="w-20 h-20 bg-green-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -53,7 +53,7 @@ export default function MentimeterPage() {
           <p className="text-white/90 text-lg mb-8">Terima kasih atas jawaban Anda yang sangat berharga.</p>
           <button 
             onClick={() => setSuccess(false)}
-            className="px-6 py-3 bg-white text-blue-600 font-semibold rounded-full hover:bg-blue-50 transition-colors shadow-md"
+            className="px-6 py-3 bg-white text-violet-700 font-semibold rounded-full hover:bg-violet-50 transition-colors shadow-md"
           >
             Kirim Jawaban Lain
           </button>
@@ -63,10 +63,10 @@ export default function MentimeterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-500 to-blue-600 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center p-4">
       <div className="max-w-2xl w-full">
         {/* Question Card */}
-        <div className="bg-gradient-to-r from-cyan-600 to-blue-700 rounded-[2rem] p-8 md:p-12 mb-8 shadow-2xl text-center border border-white/10 transform transition-all hover:scale-[1.02]">
+        <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-[2rem] p-8 md:p-12 mb-8 shadow-2xl text-center border border-white/10 transform transition-all hover:scale-[1.02]">
           <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight">
             Tanpa mikir panjang — apa SATU kata yang langsung muncul di kepalamu saat dengar kata 'AI'?
           </h1>
@@ -81,8 +81,8 @@ export default function MentimeterPage() {
             <textarea
               id="answer"
               rows={4}
-              className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:border-blue-500 focus:ring focus:ring-blue-200 transition-all text-lg resize-none"
-              placeholder="Contoh: Tugas sekolah, ekspektasi orang tua..."
+              className="w-full px-5 py-4 border-2 border-gray-200 rounded-2xl focus:border-violet-500 focus:ring focus:ring-violet-200 transition-all text-lg resize-none"
+              placeholder="Contoh: Robot, canggih, masa depan..."
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               disabled={loading}
@@ -94,7 +94,7 @@ export default function MentimeterPage() {
             className={`w-full py-4 rounded-full text-white font-bold text-lg shadow-lg transition-all ${
               loading 
                 ? "bg-gray-400 cursor-not-allowed" 
-                : "bg-gradient-to-r from-blue-600 to-teal-500 hover:from-blue-700 hover:to-teal-600 hover:shadow-xl transform hover:-translate-y-1"
+                : "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 hover:shadow-xl transform hover:-translate-y-1"
             }`}
           >
             {loading ? "Mengirim..." : "Kirim Jawaban"}
