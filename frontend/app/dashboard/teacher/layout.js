@@ -11,6 +11,7 @@ import {
   Menu,
   MessagesSquare,
   Users,
+  ClipboardList,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
@@ -45,6 +46,11 @@ export default function TeacherLayout({ children }) {
       name: "Konsultasi Chat",
       icon: <MessagesSquare size={20} />,
       path: "/dashboard/teacher/chat",
+    },
+    {
+      name: "Hasil Tilik Diri",
+      icon: <ClipboardList size={20} />,
+      path: "/dashboard/teacher/tilik-diri",
     },
   ];
 
