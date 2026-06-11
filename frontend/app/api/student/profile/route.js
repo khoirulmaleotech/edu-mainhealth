@@ -64,6 +64,7 @@ export async function PATCH(request) {
     const data = await request.formData();
     const fullname = data.get('fullname');
     const phone = data.get('phone');
+    const email = data.get('email');
     const file = data.get('file'); // Berupa objek File/Blob dari input frontend
 
     const updateData = { 
@@ -73,6 +74,7 @@ export async function PATCH(request) {
     // Hanya petakan field yang dikirim dari form agar tidak menimpa data yang sudah ada dengan null
     if (fullname !== null && fullname !== undefined) updateData.fullname = fullname;
     if (phone !== null && phone !== undefined) updateData.phone = phone;
+    if (email !== null && email !== undefined) updateData.email = email;
 
     // 3. Logika Upload ke DigitalOcean Spaces jika ada berkas file foto baru
     if (file && file.size > 0) {
