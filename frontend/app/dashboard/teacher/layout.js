@@ -47,11 +47,11 @@ export default function TeacherLayout({ children }) {
       icon: <MessagesSquare size={20} />,
       path: "/dashboard/teacher/chat",
     },
-    {
-      name: "Hasil Tilik Diri",
-      icon: <ClipboardList size={20} />,
-      path: "/dashboard/teacher/tilik-diri",
-    },
+    // {
+    //   name: "Hasil Tilik Diri",
+    //   icon: <ClipboardList size={20} />,
+    //   path: "/dashboard/teacher/tilik-diri",
+    // },
   ];
 
   return (
