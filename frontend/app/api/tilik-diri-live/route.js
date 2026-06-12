@@ -1,23 +1,62 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const schoolFilter = searchParams.get("school") || "";
+
     const client = await connectDB();
     const db = client.db("edumind");
 
+    const matchSchoolStage = schoolFilter ? [{ $match: { "school_data.name": schoolFilter } }] : [];
+
     const pipeline = [
       {
+        $lookup: {
+          from: "users",
+          localField: "student_id",
+          foreignField: "_id",
+          as: "student_data",
+        },
+      },
+      { $unwind: { path: "$student_data", preserveNullAndEmptyArrays: false } },
+      {
+        $lookup: {
+          from: "schools",
+          localField: "student_data.school_id",
+          foreignField: "_id",
+          as: "school_data",
+        },
+      },
+      { $unwind: { path: "$school_data", preserveNullAndEmptyArrays: false } },
+      {
         $facet: {
-          totalCount: [{ $count: "count" }],
+          totalCount: [
+            ...matchSchoolStage,
+            { $count: "count" }
+          ],
           severityDistribution: [
+            ...matchSchoolStage,
             { $group: { _id: "$severity.level", count: { $sum: 1 } } }
           ],
           recentFeelings: [
+            ...matchSchoolStage,
             { $match: { "openEnded.feelings": { $exists: true, $ne: "" }, "openEnded.feelings": { $ne: null } } },
             { $sort: { completedAt: -1 } },
             { $limit: 30 },
             { $project: { _id: 1, feeling: "$openEnded.feelings" } }
+          ],
+          schoolDistribution: [
+            {
+              $group: {
+                _id: "$school_data.name",
+                count: { $sum: 1 }
+              }
+            },
+            { $sort: { count: -1 } }
           ]
         }
       }
@@ -63,7 +102,8 @@ export async function GET(request) {
       data: {
         totalRespondents: totalCount,
         severityChart: formattedSeverity,
-        recentFeelings: data.recentFeelings
+        recentFeelings: data.recentFeelings,
+        schoolDistribution: data.schoolDistribution.map(item => ({ name: item._id || "Unknown", count: item.count }))
       }
     });
   } catch (error) {

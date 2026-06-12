@@ -8,10 +8,12 @@ export default function TilikDiriLivePage() {
   const [data, setData] = useState({
     totalRespondents: 0,
     severityChart: [],
-    recentFeelings: []
+    recentFeelings: [],
+    schoolDistribution: []
   });
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState("chart"); // "chart" | "bubble"
+  const [selectedSchool, setSelectedSchool] = useState("");
   
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
@@ -31,7 +33,14 @@ export default function TilikDiriLivePage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/tilik-diri-live");
+        const query = selectedSchool ? `?school=${encodeURIComponent(selectedSchool)}` : "";
+        const res = await fetch(`/api/tilik-diri-live${query}`, {
+          cache: "no-store",
+          headers: {
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
+          }
+        });
         const json = await res.json();
         if (json.success) {
           setData(json.data);
@@ -48,7 +57,7 @@ export default function TilikDiriLivePage() {
       const intervalId = setInterval(fetchData, 3000); // Poll every 3 seconds
       return () => clearInterval(intervalId);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, selectedSchool]);
 
   const SEVERITY_COLORS = {
     "Tidak Terdeteksi": "#10b981", // emerald-500
@@ -108,6 +117,11 @@ export default function TilikDiriLivePage() {
         <h1 className="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 mb-6 drop-shadow-lg leading-tight">
           Hasil Tilik Diri Siswa
         </h1>
+        {selectedSchool && (
+          <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-bold px-6 py-2 rounded-full mb-2 animate-in fade-in slide-in-from-top-4 duration-300 cursor-pointer hover:bg-emerald-500/30 transition-all" onClick={() => setSelectedSchool("")}>
+            Filter: {selectedSchool} ✕
+          </div>
+        )}
         
         {/* Total Counter */}
         <div className="flex flex-col items-center mt-4">
@@ -153,37 +167,67 @@ export default function TilikDiriLivePage() {
             <p className="text-slate-500 text-2xl italic font-medium">Belum ada data Tilik Diri...</p>
           </div>
         ) : viewMode === "chart" ? (
-          <div className="bg-slate-800/40 border border-slate-700/50 backdrop-blur-xl rounded-[40px] p-8 md:p-12 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
-            <h3 className="text-center text-xl font-bold text-slate-300 mb-8 uppercase tracking-widest">Tingkat Keparahan (Severity)</h3>
-            <div className="h-[400px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={data.severityChart}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={100}
-                    outerRadius={160}
-                    paddingAngle={5}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {data.severityChart.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={getChartColors(entry.name)} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '16px', border: 'none', backgroundColor: 'rgba(15, 23, 42, 0.9)', color: '#fff', fontWeight: 'bold' }}
-                    itemStyle={{ color: '#fff' }}
-                  />
-                  <Legend 
-                    verticalAlign="bottom" 
-                    height={36} 
-                    iconType="circle"
-                    formatter={(value) => <span className="text-slate-300 font-bold ml-2">{value}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in zoom-in-95 duration-500">
+            <div className="bg-slate-800/40 border border-slate-700/50 backdrop-blur-xl rounded-[40px] p-8 md:p-12 shadow-2xl">
+              <h3 className="text-center text-xl font-bold text-slate-300 mb-8 uppercase tracking-widest">Tingkat Keparahan (Severity)</h3>
+              <div className="h-[350px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={data.severityChart}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={80}
+                      outerRadius={130}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {data.severityChart.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={getChartColors(entry.name)} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '16px', border: 'none', backgroundColor: 'rgba(15, 23, 42, 0.9)', color: '#fff', fontWeight: 'bold' }}
+                      itemStyle={{ color: '#fff' }}
+                    />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36} 
+                      iconType="circle"
+                      formatter={(value) => <span className="text-slate-300 font-bold ml-2">{value}</span>}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-slate-800/40 border border-slate-700/50 backdrop-blur-xl rounded-[40px] p-8 md:p-12 shadow-2xl flex flex-col">
+              <h3 className="text-center text-xl font-bold text-slate-300 mb-8 uppercase tracking-widest">Jumlah Responden per Sekolah</h3>
+              <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+                {(!data.schoolDistribution || data.schoolDistribution.length === 0) ? (
+                  <p className="text-slate-500 text-center italic mt-10">Belum ada data sekolah...</p>
+                ) : (
+                  data.schoolDistribution.map((item, index) => (
+                    <div 
+                      key={index} 
+                      onClick={() => setSelectedSchool(selectedSchool === item.name ? "" : item.name)}
+                      className={`cursor-pointer border rounded-2xl p-4 flex justify-between items-center transition-all transform hover:scale-[1.02] ${
+                        selectedSchool === item.name 
+                        ? "bg-emerald-500/20 border-emerald-500/50 shadow-lg shadow-emerald-500/10" 
+                        : "bg-slate-900/50 border-slate-700/50 hover:bg-slate-800"
+                      }`}
+                    >
+                      <span className={`font-bold ${selectedSchool === item.name ? "text-emerald-400" : "text-slate-200"}`}>
+                        {item.name}
+                      </span>
+                      <span className={`${selectedSchool === item.name ? "bg-emerald-400 text-slate-900" : "bg-emerald-500 text-white"} font-black px-4 py-1.5 rounded-full text-lg shadow-lg shadow-emerald-500/20 transition-colors`}>
+                        {item.count}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         ) : (
