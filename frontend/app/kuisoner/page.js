@@ -24,7 +24,7 @@ export default function WellBeingCampQuestionnairePage() {
   const { data: session } = useSession();
   const router = useRouter();
 
-  const [testType, setTestType] = useState("pre_test"); 
+  const [testType, setTestType] = useState("post_test"); 
   const [isSubmitted, setIsSuccessSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("A"); 
@@ -51,15 +51,7 @@ export default function WellBeingCampQuestionnairePage() {
     q25: "", q26: "", q27: "", q28_target: "", q28_reason: "", q29: "", q30: ""
   });
 
-  useEffect(() => {
-    const today = new Date();
-    const dateStr = today.toLocaleDateString("en-CA"); 
-    if (dateStr === "2026-06-14") {
-      setTestType("post_test");
-    } else {
-      setTestType("pre_test");
-    }
-  }, []);
+
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -336,17 +328,9 @@ export default function WellBeingCampQuestionnairePage() {
         <div className="bg-slate-100 p-1 rounded-2xl flex gap-1 border border-slate-200 w-full sm:w-auto overflow-x-auto shrink-0">
           <button 
             type="button"
-            onClick={() => setTestType("pre_test")}
-            className={`flex-1 sm:flex-none text-center px-3 md:px-4 py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${testType === "pre_test" ? "bg-[#0b0e14] text-white shadow-md" : "text-slate-400 hover:text-slate-700"}`}
+            className="flex-1 sm:flex-none text-center px-3 md:px-4 py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-[#00adb5] text-white shadow-md cursor-default"
           >
-            📋 Pre-Test (13 Juni)
-          </button>
-          <button 
-            type="button"
-            onClick={() => setTestType("post_test")}
-            className={`flex-1 sm:flex-none text-center px-3 md:px-4 py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${testType === "post_test" ? "bg-[#00adb5] text-white shadow-md" : "text-slate-400 hover:text-slate-700"}`}
-          >
-            🚀 Post-Test (14 Juni)
+            🚀 Post-Test
           </button>
         </div>
       </nav>
