@@ -7,6 +7,8 @@ export async function GET(request) {
     const page = parseInt(searchParams.get("page")) || 1;
     const pageSize = parseInt(searchParams.get("pageSize")) || 10;
     const search = searchParams.get("search") || "";
+    const schoolFilter = searchParams.get("school") || "";
+    const severityFilter = searchParams.get("severity") || "";
     const isExport = searchParams.get("export") === "true";
 
     const client = await connectDB();
@@ -62,6 +64,22 @@ export async function GET(request) {
             { student_email: { $regex: search, $options: "i" } },
             { school_name: { $regex: search, $options: "i" } },
           ],
+        },
+      });
+    }
+
+    if (schoolFilter) {
+      pipeline.push({
+        $match: {
+          school_name: schoolFilter,
+        },
+      });
+    }
+
+    if (severityFilter) {
+      pipeline.push({
+        $match: {
+          "severity.level": severityFilter,
         },
       });
     }

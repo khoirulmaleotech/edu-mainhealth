@@ -22,6 +22,9 @@ export default function AdminTilikDiriPage() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [schools, setSchools] = useState([]);
+  const [schoolFilter, setSchoolFilter] = useState("");
+  const [severityFilter, setSeverityFilter] = useState("");
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageSize: 10,
@@ -37,6 +40,8 @@ export default function AdminTilikDiriPage() {
         page: params.page || pagination.currentPage,
         pageSize: params.pageSize || pagination.pageSize,
         search: params.search !== undefined ? params.search : debouncedSearch,
+        school: params.school !== undefined ? params.school : schoolFilter,
+        severity: params.severity !== undefined ? params.severity : severityFilter,
       });
 
       const res = await fetchInstance(`/api/admin/tilik-diri?${queryParams.toString()}`);
@@ -52,8 +57,18 @@ export default function AdminTilikDiriPage() {
   };
 
   useEffect(() => {
-    fetchData({ page: 1, search: debouncedSearch });
-  }, [debouncedSearch]);
+    const loadSchools = async () => {
+      const res = await fetchInstance("/api/admin/schools");
+      if (res.success) {
+        setSchools(res.data);
+      }
+    };
+    loadSchools();
+  }, []);
+
+  useEffect(() => {
+    fetchData({ page: 1, search: debouncedSearch, school: schoolFilter, severity: severityFilter });
+  }, [debouncedSearch, schoolFilter, severityFilter]);
 
   const handleTableChange = (page, pageSize) => {
     fetchData({ page, pageSize });
@@ -62,7 +77,7 @@ export default function AdminTilikDiriPage() {
   const handleExportExcel = async () => {
     try {
       setLoading(true);
-      const res = await fetchInstance(`/api/admin/tilik-diri?export=true&search=${encodeURIComponent(search)}`);
+      const res = await fetchInstance(`/api/admin/tilik-diri?export=true&search=${encodeURIComponent(search)}&school=${encodeURIComponent(schoolFilter)}&severity=${encodeURIComponent(severityFilter)}`);
       
       if (res.success && res.data) {
         const excelData = res.data.map((item, index) => {
@@ -139,16 +154,42 @@ export default function AdminTilikDiriPage() {
       </div>
 
       <div className="bg-white rounded-[35px] border border-slate-100 shadow-sm overflow-hidden mb-8">
-        <div className="p-6 md:p-8 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-            <input
-              type="text"
-              placeholder="Cari nama, email, atau sekolah..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#00adb5]/20 outline-none"
-            />
+        <div className="p-6 md:p-8 border-b border-slate-50 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-4 w-full xl:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+              <input
+                type="text"
+                placeholder="Cari nama, email..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#00adb5]/20 outline-none"
+              />
+            </div>
+            
+            <select
+              value={schoolFilter}
+              onChange={(e) => setSchoolFilter(e.target.value)}
+              className="px-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-medium text-slate-600 focus:ring-2 focus:ring-[#00adb5]/20 outline-none w-full sm:w-auto"
+            >
+              <option value="">Semua Sekolah</option>
+              {schools.map((school) => (
+                <option key={school._id} value={school.name}>{school.name}</option>
+              ))}
+            </select>
+
+            <select
+              value={severityFilter}
+              onChange={(e) => setSeverityFilter(e.target.value)}
+              className="px-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-medium text-slate-600 focus:ring-2 focus:ring-[#00adb5]/20 outline-none w-full sm:w-auto"
+            >
+              <option value="">Semua Tingkat Keparahan</option>
+              <option value="Tidak Terdeteksi">Tidak Terdeteksi</option>
+              <option value="Depresi Ringan">Depresi Ringan</option>
+              <option value="Depresi Sedang">Depresi Sedang</option>
+              <option value="Depresi Berat">Depresi Berat</option>
+              <option value="Depresi Berat / Sangat Berat">Depresi Berat / Sangat Berat</option>
+            </select>
           </div>
           
           <button
