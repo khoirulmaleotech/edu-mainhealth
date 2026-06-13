@@ -44,8 +44,8 @@ export default function PollsStreamPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-12 font-sans">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen w-full bg-gray-50 p-4 md:p-6 font-sans">
+      <div className="w-full space-y-8">
         
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -85,8 +85,6 @@ export default function PollsStreamPage() {
                   tickLine={false}
                   tick={{ fill: '#6b7280', fontSize: 13, fontWeight: 500 }}
                   interval={0}
-                  angle={-45}
-                  textAnchor="end"
                   dy={10}
                 />
                 <YAxis 
