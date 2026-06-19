@@ -24,6 +24,8 @@ export default function AdminLayout({ children }) {
     { name: 'Manajemen Konten', icon: <Newspaper size={20} />, path: '/dashboard/admin/articles' },
     { name: 'Laporan Insiden', icon: <HeartPulse size={20} />, path: '/dashboard/admin/reports' },
     { name: 'Hasil Tilik Diri', icon: <ClipboardList size={20} />, path: '/dashboard/admin/tilik-diri' },
+    { name: 'Pre-Test Kuesioner', icon: <ClipboardList size={20} />, path: '/dashboard/admin/pretest-summary' },
+    { name: 'Post-Test Kuesioner', icon: <ClipboardList size={20} />, path: '/dashboard/admin/posttest-summary' },
   ];
 
   return (

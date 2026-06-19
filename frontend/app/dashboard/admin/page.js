@@ -18,6 +18,9 @@ import {
   Brain,
   Star,
   Smile,
+  Bell,
+  Clock,
+  AlertTriangle
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -65,6 +68,9 @@ export default function AdminDashboardPage() {
 
   const [moodSchools, setMoodSchools] = useState([]);
   const [isMoodSchoolsLoading, setIsMoodSchoolsLoading] = useState(true);
+
+  const [activities, setActivities] = useState([]);
+  const [isActivitiesLoading, setIsActivitiesLoading] = useState(true);
 
   const fetchTotalStudents = async () => {
     try {
@@ -177,6 +183,18 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const fetchActivities = async () => {
+    try {
+      setIsActivitiesLoading(true);
+      const response = await fetchInstance("/api/admin/overview/activities");
+      setActivities(response?.data || []);
+    } catch (error) {
+      console.error("Failed to fetch activities", error);
+    } finally {
+      setIsActivitiesLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchTotalStudents();
     fetchActiveSchools();
@@ -186,6 +204,7 @@ export default function AdminDashboardPage() {
     fetchCitiesStats();
     fetchFeatureUsage();
     fetchMoodSchools();
+    fetchActivities();
   }, []);
 
   const statisticsCards = [

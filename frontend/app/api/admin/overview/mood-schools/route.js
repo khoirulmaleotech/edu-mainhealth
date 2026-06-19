@@ -30,6 +30,11 @@ export async function GET() {
       },
       { $unwind: "$school" },
       {
+        $match: {
+          "school.is_hide": "false"
+        }
+      },
+      {
         $addFields: {
           score: {
             $switch: {
