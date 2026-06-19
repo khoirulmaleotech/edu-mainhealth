@@ -12,6 +12,12 @@ import {
   Search,
   Loader2,
   MapPin,
+  ClipboardCheck,
+  Lightbulb,
+  Compass,
+  Brain,
+  Star,
+  Smile,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -42,14 +48,11 @@ export default function AdminDashboardPage() {
   const [pendingPsychologists, setPendingPsychologists] = useState(0);
   const [pendingVerifications, setPendingVerifications] = useState(0);
   const [pendingSchools, setPendingSchools] = useState(0);
-  const [verificationQueue, setVerificationQueue] = useState([]);
-  const [searchKeyword, setSearchKeyword] = useState("");
 
   const [isTotalStudentsLoading, setIsTotalStudentsLoading] = useState(true);
   const [isActiveSchoolsLoading, setIsActiveSchoolsLoading] = useState(true);
   const [isVerifiedPsychologistsLoading, setIsVerifiedPsychologistsLoading] = useState(true);
   const [isPendingVerificationsLoading, setIsPendingVerificationsLoading] = useState(true);
-  const [isQueueLoading, setIsQueueLoading] = useState(true);
 
   const [schoolsStats, setSchoolsStats] = useState([]);
   const [isSchoolsStatsLoading, setIsSchoolsStatsLoading] = useState(true);
@@ -57,7 +60,11 @@ export default function AdminDashboardPage() {
   const [citiesStats, setCitiesStats] = useState([]);
   const [isCitiesStatsLoading, setIsCitiesStatsLoading] = useState(true);
 
-  const debouncedSearchKeyword = useDebounce(searchKeyword, 500);
+  const [featureUsage, setFeatureUsage] = useState(null);
+  const [isFeatureUsageLoading, setIsFeatureUsageLoading] = useState(true);
+
+  const [moodSchools, setMoodSchools] = useState([]);
+  const [isMoodSchoolsLoading, setIsMoodSchoolsLoading] = useState(true);
 
   const fetchTotalStudents = async () => {
     try {
@@ -122,28 +129,6 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const fetchVerificationQueue = async (search = "") => {
-    try {
-      setIsQueueLoading(true);
-
-      const queryParams = new URLSearchParams({
-        search,
-        page: "1",
-        pageSize: "8",
-      });
-
-      const response = await fetchInstance(
-        `/api/admin/overview/verification-queue?${queryParams.toString()}`
-      );
-
-      setVerificationQueue(response?.data || []);
-    } catch (error) {
-      console.error("Failed to fetch verification queue", error);
-    } finally {
-      setIsQueueLoading(false);
-    }
-  };
-
   const fetchSchoolsStats = async () => {
     try {
       setIsSchoolsStatsLoading(true);
@@ -168,6 +153,30 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const fetchFeatureUsage = async () => {
+    try {
+      setIsFeatureUsageLoading(true);
+      const response = await fetchInstance("/api/admin/overview/feature-usage");
+      setFeatureUsage(response?.data || null);
+    } catch (error) {
+      console.error("Failed to fetch feature usage", error);
+    } finally {
+      setIsFeatureUsageLoading(false);
+    }
+  };
+
+  const fetchMoodSchools = async () => {
+    try {
+      setIsMoodSchoolsLoading(true);
+      const response = await fetchInstance("/api/admin/overview/mood-schools");
+      setMoodSchools(response?.data || []);
+    } catch (error) {
+      console.error("Failed to fetch mood schools", error);
+    } finally {
+      setIsMoodSchoolsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchTotalStudents();
     fetchActiveSchools();
@@ -175,11 +184,9 @@ export default function AdminDashboardPage() {
     fetchPendingVerifications();
     fetchSchoolsStats();
     fetchCitiesStats();
+    fetchFeatureUsage();
+    fetchMoodSchools();
   }, []);
-
-  useEffect(() => {
-    fetchVerificationQueue(debouncedSearchKeyword);
-  }, [debouncedSearchKeyword]);
 
   const statisticsCards = [
     {
@@ -250,6 +257,104 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
+      {/* PENGGUNAAN FITUR */}
+      <div className="mb-10">
+        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] mb-4">Penggunaan Fitur Siswa</div>
+        {isFeatureUsageLoading ? (
+           <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
+              <Loader2 size={14} className="animate-spin" /> Memuat data penggunaan fitur...
+           </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="bg-white border border-slate-100 rounded-[16px] p-5 shadow-sm flex items-center gap-4">
+               <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center shrink-0">
+                  <ClipboardCheck size={24} />
+               </div>
+               <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tilik Diri</p>
+                  <h4 className="text-xl font-black text-slate-800">{featureUsage?.tilikDiri || 0}</h4>
+               </div>
+            </div>
+
+            <div className="bg-white border border-slate-100 rounded-[16px] p-5 shadow-sm flex items-center gap-4">
+               <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center shrink-0">
+                  <Lightbulb size={24} />
+               </div>
+               <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tes Gaya Belajar</p>
+                  <h4 className="text-xl font-black text-slate-800">{featureUsage?.learningStyle || 0}</h4>
+               </div>
+            </div>
+
+            <div className="bg-white border border-slate-100 rounded-[16px] p-5 shadow-sm flex items-center gap-4">
+               <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center shrink-0">
+                  <Compass size={24} />
+               </div>
+               <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tes Karir (RIASEC)</p>
+                  <h4 className="text-xl font-black text-slate-800">{featureUsage?.riasec || 0}</h4>
+               </div>
+            </div>
+
+            <div className="bg-white border border-slate-100 rounded-[16px] p-5 shadow-sm flex items-center gap-4">
+               <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center shrink-0">
+                  <Brain size={24} />
+               </div>
+               <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Otak Kanan & Kiri</p>
+                  <h4 className="text-xl font-black text-slate-800">{featureUsage?.brainDominance || 0}</h4>
+               </div>
+            </div>
+
+            <div className="bg-white border border-slate-100 rounded-[16px] p-5 shadow-sm flex items-center gap-4">
+               <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center shrink-0">
+                  <Star size={24} />
+               </div>
+               <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">EduMind Talent</p>
+                  <h4 className="text-xl font-black text-slate-800">{featureUsage?.talentMapping || 0}</h4>
+               </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* RATA-RATA MOOD CHECKING */}
+      <div className="mb-10">
+        <div className="flex justify-between items-center mb-4">
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em]">Rata-Rata Mood Checking (5 Sekolah Teratas)</div>
+          <a href="/dashboard/admin/mood-monitoring" className="text-[10px] font-black text-[#00adb5] uppercase tracking-wider hover:underline flex items-center gap-1">Learn More <ArrowUpRight size={12} /></a>
+        </div>
+        {isMoodSchoolsLoading ? (
+           <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
+              <Loader2 size={14} className="animate-spin" /> Memuat data mood...
+           </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {moodSchools.map((item, i) => (
+              <div key={i} className="bg-white border border-slate-100 rounded-[16px] p-5 shadow-sm hover:shadow-md transition-all">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="w-10 h-10 bg-pink-50 text-pink-500 rounded-xl flex items-center justify-center">
+                    <Smile size={20} />
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-black text-slate-800">{item.averageMood}</span>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider -mt-1">Skor Rata-Rata</p>
+                  </div>
+                </div>
+                <h4 className="text-xs font-bold text-slate-800 line-clamp-1">{item.schoolName}</h4>
+                <p className="text-[10px] text-slate-400 font-medium mt-1"><span className="font-bold text-[#00adb5]">{item.totalLogs}</span> Log Masuk</p>
+              </div>
+            ))}
+            {moodSchools.length === 0 && (
+              <div className="col-span-full py-8 text-center text-sm font-bold text-slate-400">
+                 Belum ada data mood checking.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* PER KOTA */}
       <div className="mb-10">
         <div className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] mb-4">Statistik per kota</div>
@@ -274,9 +379,17 @@ export default function AdminDashboardPage() {
                   <span className="text-[10px] text-slate-500">Total Siswa</span>
                   <span className="text-xs font-bold text-slate-800">{cityData.totalStudents}</span>
                 </div>
-                <div className="flex justify-between items-center py-1">
+                <div className="flex justify-between items-center py-1 border-b border-slate-50">
                   <span className="text-[10px] text-slate-500">Total Guru</span>
                   <span className="text-xs font-bold text-[#00adb5]">{cityData.totalTeachers}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                  <span className="text-[10px] text-slate-500">Total Pre-Test</span>
+                  <span className="text-xs font-bold text-emerald-500">{cityData.totalPreTest || 0}</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-[10px] text-slate-500">Total Post-Test</span>
+                  <span className="text-xs font-bold text-indigo-500">{cityData.totalPostTest || 0}</span>
                 </div>
               </div>
             ))}
@@ -305,9 +418,17 @@ export default function AdminDashboardPage() {
                   <span className="text-[10px] text-slate-500">Total Siswa</span>
                   <span className="text-xs font-bold text-slate-800">{schoolData.totalStudents}</span>
                 </div>
-                <div className="flex justify-between items-center py-1">
+                <div className="flex justify-between items-center py-1 border-b border-slate-50">
                   <span className="text-[10px] text-slate-500">Total Guru</span>
                   <span className="text-xs font-bold text-[#00adb5]">{schoolData.totalTeachers}</span>
+                </div>
+                <div className="flex justify-between items-center py-1 border-b border-slate-50">
+                  <span className="text-[10px] text-slate-500">Total Pre-Test</span>
+                  <span className="text-xs font-bold text-emerald-500">{schoolData.totalPreTest || 0}</span>
+                </div>
+                <div className="flex justify-between items-center py-1">
+                  <span className="text-[10px] text-slate-500">Total Post-Test</span>
+                  <span className="text-xs font-bold text-indigo-500">{schoolData.totalPostTest || 0}</span>
                 </div>
               </div>
             ))}
@@ -315,87 +436,6 @@ export default function AdminDashboardPage() {
         )}
       </div>
 
-      <div className="grid gap-8">
-        <div className="lg:col-span-2 bg-white rounded-[35px] border border-slate-100 shadow-sm overflow-hidden">
-          <div className="p-6 md:p-8 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
-                <Clock size={20} />
-              </div>
-              <div>
-                <h3 className="font-black text-slate-800 text-lg">
-                  Antrean Verifikasi
-                </h3>
-                {isQueueLoading && (
-                  <div className="mt-1 flex items-center gap-2 text-slate-400 text-xs font-bold">
-                    <Loader2 size={14} className="animate-spin" />
-                    Memuat data
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="relative w-full md:w-64">
-              <Search
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
-                size={16}
-              />
-              <input
-                type="text"
-                placeholder="Cari institusi..."
-                value={searchKeyword}
-                onChange={(event) => setSearchKeyword(event.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-xs font-medium focus:ring-2 focus:ring-[#00adb5]/20 outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                <tr>
-                  <th className="px-8 py-5">Nama Institusi / Pakar</th>
-                  <th className="px-8 py-5">Kategori</th>
-                  <th className="px-8 py-5">Tanggal Daftar</th>
-                  <th className="px-8 py-5 text-right">Tindakan</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {isQueueLoading ? (
-                  <VerificationTableSkeleton />
-                ) : verificationQueue.length > 0 ? (
-                  verificationQueue.map((item) => (
-                    <VerificationRow
-                      key={`${item.type}-${item._id}`}
-                      name={item.name}
-                      sub={item.sub}
-                      type={item.type}
-                      date={formatDate(item.createdAt)}
-                      onClick={() => router.push(item.href)}
-                    />
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="py-16 text-center text-sm font-semibold text-slate-400"
-                    >
-                      Tidak ada antrean verifikasi
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="p-6 text-center border-t border-slate-50">
-            <button
-              onClick={() => router.push("/dashboard/admin/verification-queue")}
-              className="text-xs font-black text-[#00adb5] hover:underline uppercase tracking-widest"
-            >
-              Lihat Semua Antrean
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -442,64 +482,5 @@ function StatCardSkeleton() {
       <div className="h-9 w-20 bg-slate-200 rounded-xl" />
       <div className="h-5 w-32 bg-slate-100 rounded-lg" />
     </div>
-  );
-}
-
-function VerificationTableSkeleton() {
-  return (
-    <>
-      {[...Array(4)].map((_, index) => (
-        <tr key={index} className="animate-pulse">
-          <td className="px-8 py-5">
-            <div className="h-4 w-44 bg-slate-200 rounded-full" />
-            <div className="h-3 w-32 bg-slate-100 rounded-full mt-2" />
-          </td>
-          <td className="px-8 py-5">
-            <div className="h-6 w-20 bg-slate-100 rounded-full" />
-          </td>
-          <td className="px-8 py-5">
-            <div className="h-4 w-24 bg-slate-100 rounded-full" />
-          </td>
-          <td className="px-8 py-5">
-            <div className="h-10 w-10 bg-slate-100 rounded-xl ml-auto" />
-          </td>
-        </tr>
-      ))}
-    </>
-  );
-}
-
-function VerificationRow({ name, sub, type, date, onClick }) {
-  return (
-    <tr className="hover:bg-slate-50/80 transition-all cursor-pointer group">
-      <td className="px-8 py-5">
-        <p className="font-bold text-slate-800 text-sm">{name}</p>
-        <p className="text-[10px] text-slate-400 font-medium italic line-clamp-1">
-          {sub || "-"}
-        </p>
-      </td>
-      <td className="px-8 py-5">
-        <span
-          className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${type === "Sekolah"
-            ? "bg-blue-50 text-blue-600"
-            : "bg-purple-50 text-purple-600"
-            }`}
-        >
-          {type}
-        </span>
-      </td>
-      <td className="px-8 py-5 text-[11px] font-bold text-slate-500">
-        {date}
-      </td>
-      <td className="px-8 py-5 text-right">
-        <button
-          type="button"
-          onClick={onClick}
-          className="p-2.5 bg-white border border-slate-100 text-slate-400 hover:text-[#00adb5] hover:border-[#00adb5]/20 rounded-xl shadow-sm transition-all group-hover:scale-110"
-        >
-          <ExternalLink size={16} />
-        </button>
-      </td>
-    </tr>
   );
 }

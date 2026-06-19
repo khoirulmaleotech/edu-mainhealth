@@ -43,6 +43,13 @@ export async function GET() {
                 cond: { $eq: ["$$user.role", "teacher"] }
               }
             }
+          },
+          usersDetails: {
+            $map: {
+              input: "$users",
+              as: "u",
+              in: { id: { $toString: "$$u._id" }, email: "$$u.email" }
+            }
           }
         }
       },
@@ -51,7 +58,9 @@ export async function GET() {
           _id: "$city",
           activeSchools: { $sum: 1 },
           totalStudents: { $sum: "$totalStudents" },
-          totalTeachers: { $sum: "$totalTeachers" }
+          totalTeachers: { $sum: "$totalTeachers" },
+          usersDetails: { $push: "$usersDetails" },
+          schoolNames: { $push: "$name" }
         }
       },
       {
@@ -60,7 +69,15 @@ export async function GET() {
           city: "$_id",
           activeSchools: 1,
           totalStudents: 1,
-          totalTeachers: 1
+          totalTeachers: 1,
+          schoolNames: 1,
+          usersDetails: {
+            $reduce: {
+              input: "$usersDetails",
+              initialValue: [],
+              in: { $concatArrays: ["$$value", "$$this"] }
+            }
+          }
         }
       },
       {
@@ -70,10 +87,52 @@ export async function GET() {
 
     const citiesData = await database.collection("schools").aggregate(pipeline).toArray();
 
-    return NextResponse.json({
-      success: true,
-      data: citiesData,
-    });
+    const responses = await database.collection("wellbeing_camp_responses")
+      .find({ assessment_type: { $in: ["pre_test", "post_test"] } })
+      .project({ student_id: 1, assessment_type: 1, metadata: 1 })
+      .toArray();
+
+    for (const city of citiesData) {
+       let pre = 0;
+       let post = 0;
+       
+       const cityEmails = new Set(city.usersDetails ? city.usersDetails.map(u => u.email?.toLowerCase()).filter(Boolean) : []);
+       const cityIds = new Set(city.usersDetails ? city.usersDetails.map(u => u.id) : []);
+       const citySchoolNames = new Set(city.schoolNames ? city.schoolNames.map(n => n?.toUpperCase().trim()).filter(Boolean) : []);
+
+       for (const r of responses) {
+          const rEmail = r.metadata?.email?.toLowerCase() || "";
+          const rSchoolName = r.metadata?.school_name?.toUpperCase().trim() || "";
+          const rStudentId = r.student_id ? r.student_id.toString() : "";
+
+          let isMatch = false;
+          if (rStudentId && cityIds.has(rStudentId)) isMatch = true;
+          else if (rEmail && cityEmails.has(rEmail)) isMatch = true;
+          else if (rSchoolName && citySchoolNames.has(rSchoolName)) isMatch = true;
+
+          if (isMatch) {
+             if (r.assessment_type === "pre_test") pre++;
+             else if (r.assessment_type === "post_test") post++;
+          }
+       }
+       
+       city.totalPreTest = pre;
+       city.totalPostTest = post;
+       delete city.usersDetails;
+       delete city.schoolNames;
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        data: citiesData,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
+    );
   } catch (error) {
     console.error("ADMIN_CITIES_STATS_ERROR:", error);
     return NextResponse.json(
