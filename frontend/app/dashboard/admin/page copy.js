@@ -11,7 +11,6 @@ import {
   ExternalLink,
   Search,
   Loader2,
-  MapPin,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -50,12 +49,6 @@ export default function AdminDashboardPage() {
   const [isVerifiedPsychologistsLoading, setIsVerifiedPsychologistsLoading] = useState(true);
   const [isPendingVerificationsLoading, setIsPendingVerificationsLoading] = useState(true);
   const [isQueueLoading, setIsQueueLoading] = useState(true);
-
-  const [schoolsStats, setSchoolsStats] = useState([]);
-  const [isSchoolsStatsLoading, setIsSchoolsStatsLoading] = useState(true);
-
-  const [citiesStats, setCitiesStats] = useState([]);
-  const [isCitiesStatsLoading, setIsCitiesStatsLoading] = useState(true);
 
   const debouncedSearchKeyword = useDebounce(searchKeyword, 500);
 
@@ -144,37 +137,11 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const fetchSchoolsStats = async () => {
-    try {
-      setIsSchoolsStatsLoading(true);
-      const response = await fetchInstance("/api/admin/overview/schools-stats");
-      setSchoolsStats(response?.data || []);
-    } catch (error) {
-      console.error("Failed to fetch schools stats", error);
-    } finally {
-      setIsSchoolsStatsLoading(false);
-    }
-  };
-
-  const fetchCitiesStats = async () => {
-    try {
-      setIsCitiesStatsLoading(true);
-      const response = await fetchInstance("/api/admin/overview/cities-stats");
-      setCitiesStats(response?.data || []);
-    } catch (error) {
-      console.error("Failed to fetch cities stats", error);
-    } finally {
-      setIsCitiesStatsLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchTotalStudents();
     fetchActiveSchools();
     fetchVerifiedPsychologists();
     fetchPendingVerifications();
-    fetchSchoolsStats();
-    fetchCitiesStats();
   }, []);
 
   useEffect(() => {
@@ -248,71 +215,6 @@ export default function AdminDashboardPage() {
             onClick={() => router.push(statistic.redirect ? statistic.redirect : "")}
           />
         ))}
-      </div>
-
-      {/* PER KOTA */}
-      <div className="mb-10">
-        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] mb-4">Statistik per kota</div>
-        {isCitiesStatsLoading ? (
-           <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
-              <Loader2 size={14} className="animate-spin" /> Memuat data kota...
-           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            {citiesStats.map((cityData, i) => (
-              <div key={i} className="bg-white border border-slate-100 rounded-[10px] p-[14px] shadow-sm hover:shadow-md transition-all">
-                <div className="text-xs font-bold text-slate-800 mb-3 flex items-start gap-1.5 line-clamp-2">
-                  <MapPin size={14} className="text-[#00adb5] flex-shrink-0 mt-0.5" />
-                  {cityData.city}
-                </div>
-                
-                <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                  <span className="text-[10px] text-slate-500">Sekolah Aktif</span>
-                  <span className="text-xs font-bold text-[#00adb5]">{cityData.activeSchools}</span>
-                </div>
-                <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                  <span className="text-[10px] text-slate-500">Total Siswa</span>
-                  <span className="text-xs font-bold text-slate-800">{cityData.totalStudents}</span>
-                </div>
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-[10px] text-slate-500">Total Guru</span>
-                  <span className="text-xs font-bold text-[#00adb5]">{cityData.totalTeachers}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* PER SEKOLAH */}
-      <div className="mb-10">
-        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] mb-4">Statistik per sekolah</div>
-        {isSchoolsStatsLoading ? (
-           <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
-              <Loader2 size={14} className="animate-spin" /> Memuat data sekolah...
-           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            {schoolsStats.map((schoolData, i) => (
-              <div key={i} className="bg-white border border-slate-100 rounded-[10px] p-[14px] shadow-sm hover:shadow-md transition-all">
-                <div className="text-xs font-bold text-slate-800 mb-1 flex items-start gap-1.5">
-                  <MapPin size={14} className="text-[#00adb5] flex-shrink-0 mt-0.5" />
-                  <span className="line-clamp-2">{schoolData.name}</span>
-                </div>
-                <div className="text-[10px] text-slate-400 mb-3 ml-5">{schoolData.city || "Tidak diketahui"}</div>
-                
-                <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                  <span className="text-[10px] text-slate-500">Total Siswa</span>
-                  <span className="text-xs font-bold text-slate-800">{schoolData.totalStudents}</span>
-                </div>
-                <div className="flex justify-between items-center py-1">
-                  <span className="text-[10px] text-slate-500">Total Guru</span>
-                  <span className="text-xs font-bold text-[#00adb5]">{schoolData.totalTeachers}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       <div className="grid gap-8">

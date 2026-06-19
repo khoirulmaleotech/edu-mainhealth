@@ -13,6 +13,7 @@ export async function GET() {
 
     const activeSchools = await database.collection("schools").countDocuments({
       is_verified: true,
+      is_hide: "false",
     });
 
     return NextResponse.json({

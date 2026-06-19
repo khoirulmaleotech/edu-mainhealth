@@ -11,13 +11,23 @@ export async function GET() {
     const client = await connectDB();
     const database = client.db();
 
+    const activeSchools = await database.collection("schools").find({ is_hide: "false" }).project({ _id: 1 }).toArray();
+    const activeSchoolIds = activeSchools.map(s => s._id);
+
     const totalStudents = await database.collection("users").countDocuments({
       role: "student",
+      school_id: { $in: activeSchoolIds }
+    });
+
+    const totalTeachers = await database.collection("users").countDocuments({
+      role: "teacher",
+      school_id: { $in: activeSchoolIds }
     });
 
     return NextResponse.json({
       success: true,
       totalStudents,
+      totalTeachers,
     });
   } catch (error) {
     console.error("ADMIN_TOTAL_STUDENTS_ERROR:", error);
