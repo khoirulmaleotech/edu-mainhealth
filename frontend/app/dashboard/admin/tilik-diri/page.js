@@ -147,6 +147,10 @@ export default function AdminTilikDiriPage() {
             <HeartPulse size={28} />
           </div>
           Hasil Tilik Diri
+          <div className="bg-[#00adb5]/10 text-[#00adb5] px-3 py-1 rounded-xl text-sm font-bold border border-[#00adb5]/20 flex items-center gap-1.5 ml-2">
+            <span>{pagination.totalData}</span>
+            <span className="font-medium text-xs opacity-80">Total Data</span>
+          </div>
         </h1>
         <p className="text-slate-400 font-medium mt-2">
           Pantau semua hasil asesmen Tilik Diri siswa dari seluruh sekolah.

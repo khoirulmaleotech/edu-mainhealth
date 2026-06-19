@@ -13,9 +13,11 @@ import {
   AlertCircle,
   ShieldAlert,
   HelpCircle,
-  ClipboardList
+  ClipboardList,
+  Download
 } from "lucide-react";
 import { fetchInstance } from "@/lib/fetchInstance";
+import * as XLSX from "xlsx";
 
 export default function QuestionnaireResponsesPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -123,6 +125,79 @@ export default function QuestionnaireResponsesPage() {
     return matchesSearch && matchesFilter;
   });
 
+  const handleDownloadExcel = () => {
+    if (!filteredResponses || filteredResponses.length === 0) {
+      alert("Tidak ada data untuk didownload");
+      return;
+    }
+
+    const dataToExport = filteredResponses.map((res, index) => {
+      const getVal = (val) => {
+        if (Array.isArray(val)) return val.join(", ");
+        return val || "-";
+      };
+
+      const totalNilai = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].reduce((sum, qId) => {
+        const val = parseInt(res.part_A?.scaled_metrics?.[qId]);
+        return sum + (isNaN(val) ? 0 : val);
+      }, 0);
+
+      return {
+        "No": index + 1,
+        "Email": res.metadata?.email || "-",
+        "Tipe Asesmen": res.assessment_type === "pre_test" ? "Pre-Test" : "Post-Test",
+        "Sekolah": res.metadata?.school_name || "-",
+        "Kelas": res.metadata?.student_class || "-",
+        "WhatsApp": res.metadata?.whatsapp || "-",
+        "Waktu Submit": new Date(res.timestamp).toLocaleString("id-ID"),
+        
+        // Part A
+        "Q1": res.part_A?.scaled_metrics?.[1] || "-",
+        "Q2": res.part_A?.scaled_metrics?.[2] || "-",
+        "Q3": res.part_A?.scaled_metrics?.[3] || "-",
+        "Q4": res.part_A?.scaled_metrics?.[4] || "-",
+        "Q5": res.part_A?.scaled_metrics?.[5] || "-",
+        "Q6": res.part_A?.scaled_metrics?.[6] || "-",
+        "Q7": res.part_A?.scaled_metrics?.[7] || "-",
+        "Q8": res.part_A?.scaled_metrics?.[8] || "-",
+        "Q9": res.part_A?.scaled_metrics?.[9] || "-",
+        "Q10": res.part_A?.scaled_metrics?.[10] || "-",
+        "Q11": res.part_A?.scaled_metrics?.[11] || "-",
+        "Q12": res.part_A?.scaled_metrics?.[12] || "-",
+        "Q13": res.part_A?.scaled_metrics?.[13] || "-",
+        "Q14": res.part_A?.scaled_metrics?.[14] || "-",
+        "Q15": res.part_A?.scaled_metrics?.[15] || "-",
+        "Total Nilai Kuantitatif": totalNilai,
+        "Teman Bicara": `${getVal(res.part_A?.most_likely_confidant)} ${res.part_A?.most_likely_confidant_others ? `(${res.part_A.most_likely_confidant_others})` : ""}`.trim(),
+        "Tantangan Terbesar": getVal(res.part_A?.biggest_teen_challenge),
+
+        // Part B
+        "Pernah Dibully": getVal(res.part_B?.experienced_bullying),
+        "Pernah Membully": getVal(res.part_B?.perpetrated_bullying),
+        "Bentuk Bullying Dialami": `${getVal(res.part_B?.bullying_types_suffered)} ${res.part_B?.bullying_types_suffered_others ? `(${res.part_B.bullying_types_suffered_others})` : ""}`.trim(),
+        "Frekuensi Sekolah": getVal(res.part_B?.school_bullying_frequency_weekly),
+        "Frekuensi Cyber": getVal(res.part_B?.cyberbullying_frequency_weekly),
+        "Platform Cyber": `${getVal(res.part_B?.cyberbullying_platforms)} ${res.part_B?.cyberbullying_platforms_others ? `(${res.part_B.cyberbullying_platforms_others})` : ""}`.trim(),
+        "Tindakan Korban": getVal(res.part_B?.victim_coping_mechanism),
+
+        // Part C
+        "Definisi Bullying": getVal(res.part_C?.bullying_vs_conflict_definition),
+        "Tanda Teman Stres": getVal(res.part_C?.emotional_distress_signs_bystander),
+        "Tindakan Bystander": getVal(res.part_C?.bystander_intervention_action),
+        "Target Bantuan": getVal(res.part_C?.help_seeking_target),
+        "Alasan Bantuan": getVal(res.part_C?.help_seeking_reason),
+        "Alasan Korban Diam": getVal(res.part_C?.victim_silence_reason),
+        "Rekomendasi Sekolah": getVal(res.part_C?.school_safe_environment_recommendation)
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Data Responden");
+
+    XLSX.writeFile(workbook, `Data_Responden_Kuesioner_${new Date().getTime()}.xlsx`);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 font-sans selection:bg-[#00adb5] selection:text-white">
@@ -209,6 +284,14 @@ export default function QuestionnaireResponsesPage() {
                 Post
               </button>
             </div>
+
+            <button
+               onClick={handleDownloadExcel}
+               className="h-11 w-full bg-[#00adb5] hover:bg-[#009299] text-white rounded-xl font-bold text-xs uppercase tracking-widest transition-all shadow-md flex items-center justify-center gap-2"
+            >
+               <Download size={16} />
+               Download Excel
+            </button>
           </div>
 
           <div className="bg-white border border-slate-100 rounded-[24px] overflow-hidden shadow-sm flex flex-col h-[calc(100vh-320px)]">
