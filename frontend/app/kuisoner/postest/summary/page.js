@@ -5,7 +5,7 @@ import { fetchInstance } from "@/lib/fetchInstance";
 import { Loader2, ArrowLeft, Download, FileSpreadsheet, Lock, AlertCircle, Printer, BarChart3 } from "lucide-react";
 import Link from "next/link";
 import * as XLSX from "xlsx";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from "recharts";
 
 function formatDate(date) {
   if (!date) return "-";
@@ -49,6 +49,12 @@ const allQuestions = [
   { id: 28, text: "Jika Anda ingin melaporkan kasus bullying di sekolah, kepada siapa Anda akan melapor dan mengapa?" },
   { id: 29, text: "Menurut Anda, apa alasan utama seorang korban bullying enggan melapor kepada guru atau orang tua?" },
   { id: 30, text: "Saran apa yang bisa Anda berikan agar sekolah menjadi tempat yang lebih aman dan nyaman dari bullying?" }
+];
+
+const COLORS = [
+  '#00adb5', '#38bdf8', '#818cf8', '#a78bfa', '#e879f9', 
+  '#fb7185', '#f43f5e', '#fb923c', '#facc15', '#a3e635', 
+  '#4ade80', '#2dd4bf', '#0ea5e9', '#6366f1', '#d946ef'
 ];
 
 export default function PostTestSummaryPage() {
@@ -113,6 +119,125 @@ export default function PostTestSummaryPage() {
     }));
   }, [postTestData]);
 
+  const pieChartData = useMemo(() => {
+    if (!postTestData.length) return {};
+    
+    const getLevenshteinDistance = (a, b) => {
+      const matrix = [];
+      for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+      for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+      for (let i = 1; i <= b.length; i++) {
+        for (let j = 1; j <= a.length; j++) {
+          if (b.charAt(i - 1) === a.charAt(j - 1)) {
+            matrix[i][j] = matrix[i - 1][j - 1];
+          } else {
+            matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    };
+
+    const normalizeText = (text) => {
+      if (typeof text !== 'string') return String(text);
+      return text.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().replace(/\s+/g, ' ');
+    };
+
+    const getSimilarity = (s1, s2) => {
+      let longer = s1;
+      let shorter = s2;
+      if (s1.length < s2.length) {
+        longer = s2;
+        shorter = s1;
+      }
+      let longerLength = longer.length;
+      if (longerLength === 0) return 1.0;
+      return (longerLength - getLevenshteinDistance(longer, shorter)) / parseFloat(longerLength);
+    };
+
+    const freqs = {};
+
+    for (let i = 16; i <= 30; i++) {
+      freqs[i] = {};
+    }
+
+    const processSingleAnswer = (qId, answer) => {
+      let finalAnswer = answer;
+      const cleanAns = normalizeText(answer);
+      
+      const existingKeys = Object.keys(freqs[qId]);
+      let foundMatch = false;
+      
+      if (cleanAns === "") {
+        freqs[qId]["Tidak Menjawab"] = (freqs[qId]["Tidak Menjawab"] || 0) + 1;
+        return;
+      }
+
+      for (const key of existingKeys) {
+        if (key === "Tidak Menjawab") continue;
+        const cleanKey = normalizeText(key);
+        // Case exact match or high similarity
+        if (cleanKey === cleanAns || getSimilarity(cleanKey, cleanAns) > 0.75) {
+          finalAnswer = key; // Group into existing key
+          foundMatch = true;
+          break;
+        }
+      }
+      freqs[qId][finalAnswer] = (freqs[qId][finalAnswer] || 0) + 1;
+    };
+
+    const addFreq = (qId, answer) => {
+      if (!answer || answer === "-") {
+        freqs[qId]["Tidak Menjawab"] = (freqs[qId]["Tidak Menjawab"] || 0) + 1;
+        return;
+      }
+      if (Array.isArray(answer)) {
+        if (answer.length === 0) {
+          freqs[qId]["Tidak Menjawab"] = (freqs[qId]["Tidak Menjawab"] || 0) + 1;
+          return;
+        }
+        answer.forEach(a => {
+          processSingleAnswer(qId, a);
+        });
+      } else {
+        processSingleAnswer(qId, answer);
+      }
+    };
+
+    postTestData.forEach(item => {
+      addFreq(16, item.part_A?.most_likely_confidant);
+      addFreq(17, item.part_A?.biggest_teen_challenge);
+      addFreq(18, item.part_B?.experienced_bullying);
+      addFreq(19, item.part_B?.perpetrated_bullying);
+      addFreq(20, item.part_B?.bullying_types_suffered);
+      addFreq(21, item.part_B?.school_bullying_frequency_weekly);
+      addFreq(22, item.part_B?.cyberbullying_frequency_weekly);
+      addFreq(23, item.part_B?.cyberbullying_platforms);
+      addFreq(24, item.part_B?.victim_coping_mechanism);
+      addFreq(25, item.part_C?.bullying_vs_conflict_definition);
+      addFreq(26, item.part_C?.emotional_distress_signs_bystander);
+      addFreq(27, item.part_C?.bystander_intervention_action);
+      addFreq(28, item.part_C?.help_seeking_target);
+      addFreq(29, item.part_C?.victim_silence_reason);
+      addFreq(30, item.part_C?.school_safe_environment_recommendation);
+    });
+
+    const result = {};
+    for (let i = 16; i <= 30; i++) {
+      const entries = Object.entries(freqs[i])
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value);
+      
+      const totalAnswers = entries.reduce((acc, curr) => acc + curr.value, 0);
+      result[i] = {
+        data: entries,
+        totalAnswers
+      };
+    }
+
+    return result;
+  }, [postTestData]);
+
   const getMetrics = (item) => {
     const metrics = item.part_A?.scaled_metrics || {};
     let total = 0;
@@ -125,61 +250,141 @@ export default function PostTestSummaryPage() {
     return { qScores, total };
   };
 
-  const exportExcel = () => {
-    const dataToExport = postTestData.map((item, idx) => {
-      const { qScores, total } = getMetrics(item);
-      const row = {
-        "No": idx + 1,
-        "Email": item.metadata?.email || "-",
-        "WhatsApp": item.metadata?.whatsapp || "-",
-        "Sekolah": item.metadata?.school_name || "-",
-        "Kelas": item.metadata?.student_class || "-",
-        "Tanggal Pengisian": formatDate(item.timestamp),
-        "Total Skor Part A": total,
-      };
+  const [isExporting, setIsExporting] = useState(false);
 
-      // Part A
+  const exportExcel = async () => {
+    setIsExporting(true);
+    try {
+      const ExcelJS = (await import('exceljs')).default;
+      const html2canvas = (await import('html2canvas')).default;
+      const { saveAs } = await import('file-saver');
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Raw Data Post-Test');
+
+      // Define columns
+      const columns = [
+        { header: 'No', key: 'no', width: 5 },
+        { header: 'Email', key: 'email', width: 25 },
+        { header: 'WhatsApp', key: 'whatsapp', width: 15 },
+        { header: 'Sekolah', key: 'sekolah', width: 25 },
+        { header: 'Kelas', key: 'kelas', width: 10 },
+        { header: 'Tanggal Pengisian', key: 'tanggal', width: 20 },
+        { header: 'Total Skor Part A', key: 'total', width: 15 },
+      ];
+
       for (let i = 1; i <= 15; i++) {
-        row[`${allQuestions[i - 1].text}`] = qScores[`Q${i}`];
+        columns.push({ header: allQuestions[i - 1].text, key: `q${i}`, width: 20 });
+      }
+      
+      columns.push({ header: allQuestions[15].text, key: `q16`, width: 30 });
+      columns.push({ header: `${allQuestions[15].text} (Lainnya)`, key: `q16_lain`, width: 20 });
+      columns.push({ header: allQuestions[16].text, key: `q17`, width: 30 });
+
+      columns.push({ header: allQuestions[17].text, key: `q18`, width: 30 });
+      columns.push({ header: allQuestions[18].text, key: `q19`, width: 30 });
+      columns.push({ header: allQuestions[19].text, key: `q20`, width: 30 });
+      columns.push({ header: `${allQuestions[19].text} (Lainnya)`, key: `q20_lain`, width: 20 });
+      columns.push({ header: allQuestions[20].text, key: `q21`, width: 30 });
+      columns.push({ header: allQuestions[21].text, key: `q22`, width: 30 });
+      columns.push({ header: allQuestions[22].text, key: `q23`, width: 30 });
+      columns.push({ header: `${allQuestions[22].text} (Lainnya)`, key: `q23_lain`, width: 20 });
+      columns.push({ header: allQuestions[23].text, key: `q24`, width: 30 });
+
+      columns.push({ header: allQuestions[24].text, key: `q25`, width: 30 });
+      columns.push({ header: allQuestions[25].text, key: `q26`, width: 30 });
+      columns.push({ header: allQuestions[26].text, key: `q27`, width: 30 });
+      columns.push({ header: allQuestions[27].text, key: `q28`, width: 30 });
+      columns.push({ header: allQuestions[28].text, key: `q29`, width: 30 });
+      columns.push({ header: allQuestions[29].text, key: `q30`, width: 30 });
+
+      worksheet.columns = columns;
+
+      postTestData.forEach((item, idx) => {
+        const { qScores, total } = getMetrics(item);
+        const row = {
+          no: idx + 1,
+          email: item.metadata?.email || "-",
+          whatsapp: item.metadata?.whatsapp || "-",
+          sekolah: item.metadata?.school_name || "-",
+          kelas: item.metadata?.student_class || "-",
+          tanggal: formatDate(item.timestamp),
+          total: total,
+        };
+
+        for (let i = 1; i <= 15; i++) {
+          row[`q${i}`] = qScores[`Q${i}`];
+        }
+
+        row.q16 = Array.isArray(item.part_A?.most_likely_confidant) ? item.part_A.most_likely_confidant.join(", ") : (item.part_A?.most_likely_confidant || "-");
+        row.q16_lain = item.part_A?.most_likely_confidant_others || "-";
+        row.q17 = item.part_A?.biggest_teen_challenge || "-";
+
+        row.q18 = item.part_B?.experienced_bullying || "-";
+        row.q19 = item.part_B?.perpetrated_bullying || "-";
+        row.q20 = Array.isArray(item.part_B?.bullying_types_suffered) ? item.part_B.bullying_types_suffered.join(", ") : (item.part_B?.bullying_types_suffered || "-");
+        row.q20_lain = item.part_B?.bullying_types_suffered_others || "-";
+        row.q21 = item.part_B?.school_bullying_frequency_weekly || "-";
+        row.q22 = item.part_B?.cyberbullying_frequency_weekly || "-";
+        row.q23 = Array.isArray(item.part_B?.cyberbullying_platforms) ? item.part_B.cyberbullying_platforms.join(", ") : (item.part_B?.cyberbullying_platforms || "-");
+        row.q23_lain = item.part_B?.cyberbullying_platforms_others || "-";
+        row.q24 = Array.isArray(item.part_B?.victim_coping_mechanism) ? item.part_B.victim_coping_mechanism.join(", ") : (item.part_B?.victim_coping_mechanism || "-");
+
+        row.q25 = item.part_C?.bullying_vs_conflict_definition || "-";
+        row.q26 = item.part_C?.emotional_distress_signs_bystander || "-";
+        row.q27 = item.part_C?.bystander_intervention_action || "-";
+        row.q28 = `Target: ${item.part_C?.help_seeking_target || "-"} | Alasan: ${item.part_C?.help_seeking_reason || "-"}`;
+        row.q29 = item.part_C?.victim_silence_reason || "-";
+        row.q30 = item.part_C?.school_safe_environment_recommendation || "-";
+
+        worksheet.addRow(row);
+      });
+
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+
+      const chartWorksheet = workbook.addWorksheet('Grafik Pie Chart');
+      let currentRow = 2; 
+
+      for (const q of allQuestions.slice(15)) {
+        const el = document.getElementById(`chart-q${q.id}`);
+        if (el) {
+          try {
+            const canvas = await html2canvas(el, { scale: 2, useCORS: true });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const imageId = workbook.addImage({
+              base64: imgData,
+              extension: 'png',
+            });
+
+            chartWorksheet.getCell(`B${currentRow}`).value = `Q${q.id} - ${q.text}`;
+            chartWorksheet.getCell(`B${currentRow}`).font = { bold: true, size: 14 };
+
+            // Ensure width is proportional, max 600px width
+            let targetWidth = 600;
+            let targetHeight = Math.floor((canvas.height * targetWidth) / canvas.width);
+
+            chartWorksheet.addImage(imageId, {
+              tl: { col: 1, row: currentRow + 1 },
+              ext: { width: targetWidth, height: targetHeight }
+            });
+
+            currentRow += Math.ceil(targetHeight / 20) + 4; // Move rows down
+          } catch (e) {
+            console.error("Failed to generate image for", q.id, e);
+          }
+        }
       }
 
-      // Part A (Q16-Q17)
-      row[`${allQuestions[15].text}`] = Array.isArray(item.part_A?.most_likely_confidant) ? item.part_A.most_likely_confidant.join(", ") : (item.part_A?.most_likely_confidant || "-");
-      if (item.part_A?.most_likely_confidant?.includes("Lainnya")) {
-        row[`${allQuestions[15].text} (Lainnya)`] = item.part_A?.most_likely_confidant_others || "-";
-      }
-      row[`${allQuestions[16].text}`] = item.part_A?.biggest_teen_challenge || "-";
-
-      // Part B (Q18-Q24)
-      row[`${allQuestions[17].text}`] = item.part_B?.experienced_bullying || "-";
-      row[`${allQuestions[18].text}`] = item.part_B?.perpetrated_bullying || "-";
-      row[`${allQuestions[19].text}`] = Array.isArray(item.part_B?.bullying_types_suffered) ? item.part_B.bullying_types_suffered.join(", ") : (item.part_B?.bullying_types_suffered || "-");
-      if (item.part_B?.bullying_types_suffered?.includes("Lainnya")) {
-        row[`${allQuestions[19].text} (Lainnya)`] = item.part_B?.bullying_types_suffered_others || "-";
-      }
-      row[`${allQuestions[20].text}`] = item.part_B?.school_bullying_frequency_weekly || "-";
-      row[`${allQuestions[21].text}`] = item.part_B?.cyberbullying_frequency_weekly || "-";
-      row[`${allQuestions[22].text}`] = Array.isArray(item.part_B?.cyberbullying_platforms) ? item.part_B.cyberbullying_platforms.join(", ") : (item.part_B?.cyberbullying_platforms || "-");
-      if (item.part_B?.cyberbullying_platforms?.includes("Lainnya")) {
-        row[`${allQuestions[22].text} (Lainnya)`] = item.part_B?.cyberbullying_platforms_others || "-";
-      }
-      row[`${allQuestions[23].text}`] = Array.isArray(item.part_B?.victim_coping_mechanism) ? item.part_B.victim_coping_mechanism.join(", ") : (item.part_B?.victim_coping_mechanism || "-");
-
-      // Part C (Q25-Q30)
-      row[`${allQuestions[24].text}`] = item.part_C?.bullying_vs_conflict_definition || "-";
-      row[`${allQuestions[25].text}`] = item.part_C?.emotional_distress_signs_bystander || "-";
-      row[`${allQuestions[26].text}`] = item.part_C?.bystander_intervention_action || "-";
-      row[`${allQuestions[27].text}`] = `Target: ${item.part_C?.help_seeking_target || "-"} | Alasan: ${item.part_C?.help_seeking_reason || "-"}`;
-      row[`${allQuestions[28].text}`] = item.part_C?.victim_silence_reason || "-";
-      row[`${allQuestions[29].text}`] = item.part_C?.school_safe_environment_recommendation || "-";
-
-      return row;
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Raw Data Post-Test");
-    XLSX.writeFile(workbook, `Data_Mentah_Post_Test_${new Date().getTime()}.xlsx`);
+      const buffer = await workbook.xlsx.writeBuffer();
+      saveAs(new Blob([buffer]), `Data_Mentah_Post_Test_${new Date().getTime()}.xlsx`);
+    } catch (err) {
+      console.error("Export error:", err);
+      alert("Terjadi kesalahan saat mengexport Excel.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handlePrintPDF = () => {
@@ -271,9 +476,9 @@ export default function PostTestSummaryPage() {
               <Printer size={14} />
               Cetak PDF
             </button>
-            <button onClick={exportExcel} className="h-10 px-4 bg-[#00adb5] hover:bg-[#009299] text-white font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center gap-2">
-              <Download size={14} />
-              Export Excel
+            <button onClick={exportExcel} disabled={isExporting} className={`h-10 px-4 ${isExporting ? "bg-slate-300 cursor-not-allowed" : "bg-[#00adb5] hover:bg-[#009299]"} text-white font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center gap-2`}>
+              {isExporting ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              {isExporting ? "Memproses..." : "Export Excel"}
             </button>
         </div>
       </nav>
@@ -347,6 +552,70 @@ export default function PostTestSummaryPage() {
                  </BarChart>
                </ResponsiveContainer>
              </div>
+          </div>
+        )}
+
+        {/* Pie Charts Section for Q16-Q30 */}
+        {postTestData.length > 0 && Object.keys(pieChartData).length > 0 && (
+          <div className="bg-white border border-slate-100 rounded-[24px] shadow-sm overflow-hidden mb-6 print-shadow-none print:break-inside-avoid">
+            <div className="p-5 bg-slate-50 border-b border-slate-100">
+              <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider">Distribusi Jawaban (Q16 - Q30)</h2>
+              <p className="text-xs text-slate-500 mt-1">Grafik lingkaran yang menunjukkan persentase distribusi jawaban untuk pertanyaan pilihan/isian.</p>
+            </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-white">
+              {allQuestions.slice(15).map(q => {
+                const chartInfo = pieChartData[q.id];
+                if (!chartInfo || chartInfo.data.length === 0) return null;
+                const { data, totalAnswers } = chartInfo;
+                
+                return (
+                  <div key={q.id} id={`chart-q${q.id}`} className="flex flex-col items-center bg-slate-50 border border-slate-100 rounded-[20px] p-5 shadow-sm print-shadow-none">
+                    <h3 className="text-xs font-bold text-slate-700 text-center mb-4 min-h-[40px] flex items-center justify-center w-full px-2">
+                      <span className="text-[#00adb5] mr-1 shrink-0">Q{q.id}:</span> 
+                      <span className="line-clamp-2" title={q.text}>{q.text}</span>
+                    </h3>
+                    <div className="h-[220px] w-full relative">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={data}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={80}
+                            paddingAngle={2}
+                            dataKey="value"
+                            stroke="none"
+                          >
+                            {data.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                            formatter={(value, name) => [`${value} jawaban (${((value / totalAnswers) * 100).toFixed(1)}%)`, name]}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                         <span className="text-xs font-black text-slate-400">Q{q.id}</span>
+                      </div>
+                    </div>
+                    <div className="mt-5 w-full flex flex-col gap-2.5 max-h-[160px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                      {data.map((entry, index) => (
+                        <div key={index} className="flex justify-between items-start text-[10px]">
+                          <div className="flex items-start gap-2 flex-1 min-w-0 pr-2">
+                            <div className="w-2.5 h-2.5 rounded-full shrink-0 mt-[3px]" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                            <span className="text-slate-600 font-medium line-clamp-3" title={entry.name}>{entry.name}</span>
+                          </div>
+                          <span className="font-black text-slate-800 shrink-0">{((entry.value / totalAnswers) * 100).toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
