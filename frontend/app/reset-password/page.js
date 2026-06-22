@@ -150,18 +150,11 @@ export default function ResetPasswordConfirmPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans antialiased selection:bg-[#00adb5] selection:text-white">
       <div className="sm:mx-auto w-full max-w-md text-center space-y-6">
-        <Link href="/" className="inline-flex items-center gap-3 justify-center group">
-          <Image 
-            src="/images/logo-edumind-transparan.png" 
-            alt="Logo" 
-            width={60} 
-            height={60} 
-            className="group-hover:scale-105 transition-transform duration-500"
-          />
-          <div className="flex flex-col text-left">
-            <span className="text-2xl font-black text-[#00adb5] leading-none tracking-tighter uppercase text-primary">EduMind</span>
-            <span className="text-[10px] font-bold text-slate-400">by Educourse</span>
-          </div>
+        <Link href="/" className="inline-flex items-center gap-4 justify-center group">
+          <Image src="/images/telkom-indonesia.png" alt="Telkom Indonesia" width={80} height={40} className="h-8 w-auto group-hover:scale-105 transition-transform duration-500" />
+          <div className="w-px h-6 bg-slate-200"></div>
+          <Image src="/images/tjsl.png" alt="TJSL" width={80} height={40} className="h-8 w-auto group-hover:scale-105 transition-transform duration-500" />
+          <span className="text-2xl font-black text-navy-deep ml-2 uppercase tracking-tighter">EduMind</span>
         </Link>
       </div>
 

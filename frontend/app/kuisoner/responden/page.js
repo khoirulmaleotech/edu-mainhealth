@@ -52,7 +52,7 @@ export default function QuestionnaireResponsesPage() {
 
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
-    if (passwordInput === "edumindeducourse") {
+    if (passwordInput === "edumind") {
       setIsAuthenticated(true);
       setPasswordError(false);
     } else {

@@ -1,242 +1,240 @@
-"use client";
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import {
-  ShieldCheck,
-  MessageCircle,
-  Users,
-  Stethoscope,
-  BarChart3,
-  ArrowRight,
-  ChevronRight,
-  Star,
-  BrainCircuit,
-  Menu,
-  X
-} from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
-export default function HomePage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const ecosystem = [
-    { title: "Student App", desc: "Curhat aman dengan AI Mood Buddy, lapor bullying anonim, dan eksplorasi minat bakat.", icon: <MessageCircle className="text-primary" />, link: "/dashboard/student" },
-    { title: "Parent Portal", desc: "Pantau tren emosional dan bakat anak secara transparan tanpa melanggar privasi chat.", icon: <Star className="text-secondary" />, link: "/dashboard/parent" },
-    { title: "Teacher Dashboard", desc: "Heatmap kesejahteraan kelas dan sistem alert dini untuk intervensi guru yang cepat.", icon: <Users className="text-primary" />, link: "/dashboard/teacher" },
-    { title: "Psychologist Console", desc: "Manajemen kasus klinis mendalam untuk siswa yang membutuhkan penanganan ahli.", icon: <Stethoscope className="text-secondary" />, link: "/dashboard/psychologist" }
-  ];
-
+export default function Home() {
   return (
-    <div className="min-h-screen bg-white font-sans selection:bg-primary selection:text-white">
-      {/* NAVBAR */}
-      <nav className="fixed w-full bg-white/80 backdrop-blur-xl z-50 border-b border-slate-100">
-        <div className="max-w-7xl mx-auto px-5 md:px-8 py-4 md:py-5 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Image src="/images/telkom-indonesia.png" alt="Telkom Indonesia" width={80} height={40} className="h-8 md:h-10 w-auto" />
-              <Image src="/images/tjsl.png" alt="TJSL" width={80} height={40} className="h-8 md:h-10 w-auto" />
-            </div>
-            <div className="flex flex-col ml-1 sm:ml-2 border-l-2 border-slate-200 pl-3 sm:pl-4">
-              <span className="text-xl md:text-2xl font-black text-primary leading-none tracking-tighter uppercase">EduMind</span>
-            </div>
-          </Link>
+    <div className="bg-surface text-on-surface font-sans selection:bg-teal-action/20 min-h-screen">
+      <Navbar activePath="/" />
 
-          <div className="hidden lg:flex space-x-10 text-sm font-black uppercase tracking-widest text-slate-500">
-            <Link href="#ecosystem" className="hover:text-primary transition">Ekosistem</Link>
-            <Link href="#features" className="hover:text-primary transition">Fitur Utama</Link>
-            <Link href="#security" className="hover:text-primary transition">Keamanan</Link>
-            <Link href="/carrier" className="hover:text-primary transition">Karier</Link>
-          </div>
-
-          <Link href="/login" className="hidden sm:inline-flex bg-slate-900 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-primary transition-all shadow-xl shadow-slate-200">
-            Masuk Portal
-          </Link>
-
-          <button
-            type="button"
-            onClick={() => setMobileMenuOpen((open) => !open)}
-            className="lg:hidden p-3 rounded-2xl bg-slate-50 text-slate-700 border border-slate-100"
-            aria-label="Toggle navigation menu"
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+      {/* Hero Section */}
+      <header className="relative pt-40 pb-20 overflow-hidden bg-surface">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-container-max -z-10 pointer-events-none">
+          <div className="decorative-circle absolute -top-40 -left-40 w-[600px] h-[600px]"></div>
+          <div className="decorative-circle absolute top-40 -right-40 w-[500px] h-[500px] opacity-60"></div>
         </div>
-
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-100 bg-white/95 backdrop-blur-xl px-5 py-4 shadow-xl shadow-slate-200/60">
-            <div className="grid gap-2 text-xs font-black uppercase tracking-widest text-slate-500">
-              <Link onClick={() => setMobileMenuOpen(false)} href="#ecosystem" className="rounded-2xl px-4 py-3 hover:bg-primary/10 hover:text-primary transition">Ekosistem</Link>
-              <Link onClick={() => setMobileMenuOpen(false)} href="#features" className="rounded-2xl px-4 py-3 hover:bg-primary/10 hover:text-primary transition">Fitur Utama</Link>
-              <Link onClick={() => setMobileMenuOpen(false)} href="#security" className="rounded-2xl px-4 py-3 hover:bg-primary/10 hover:text-primary transition">Keamanan</Link>
-              <Link onClick={() => setMobileMenuOpen(false)} href="/carrier" className="rounded-2xl px-4 py-3 bg-primary/10 text-primary transition">Karier</Link>
-              <Link onClick={() => setMobileMenuOpen(false)} href="/login" className="mt-2 rounded-2xl bg-slate-900 px-4 py-4 text-center text-white transition hover:bg-primary">Masuk Portal</Link>
+        <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter grid md:grid-cols-2 items-center gap-stack-lg">
+          <div className="flex flex-col gap-stack-md">
+            <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 border border-slate-200 w-fit rounded-full">
+              <span className="w-2 h-2 rounded-full bg-orange-accent animate-pulse"></span>
+              <span className="font-label-caps text-label-caps uppercase text-on-surface-variant">Next-Gen Wellbeing AI</span>
             </div>
-          </div>
-        )}
-      </nav>
-
-      {/* HERO SECTION */}
-      <section className="pt-48 pb-32 px-8 overflow-hidden">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-20 items-center">
-          <div className="space-y-10 text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-              </span>
-              <span className="text-[10px] font-black text-primary uppercase tracking-widest">Next-Gen Wellbeing AI</span>
-            </div>
-            <h1 className="text-6xl lg:text-8xl font-black text-slate-900 leading-[0.95] tracking-tighter">
-              Aman Bercerita, <br />
-              <span className="text-primary italic">Sehat Mentalnya.</span>
+            <h1 className="font-display-lg text-headline-lg-mobile md:text-display-lg leading-tight text-navy-deep">
+              Aman Bercerita,<br/>
+              <span className="text-orange-accent">Sehat Mentalnya.</span>
             </h1>
-            <p className="text-xl text-slate-500 font-medium leading-relaxed max-w-xl mx-auto lg:mx-0">
-              Platform kesehatan mental terpadu yang menghubungkan Siswa, Orang Tua, Guru, dan Psikolog dalam satu ekosistem cerdas.
+            <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
+              Next-Gen Wellbeing AI Platform for Indonesian Schools. Membangun ekosistem pendidikan yang inklusif, transparan, dan proaktif dalam menjaga kesehatan mental siswa.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link href="/login" className="px-10 py-5 bg-primary text-white rounded-[24px] font-black text-sm uppercase tracking-widest shadow-2xl shadow-primary/30 flex items-center justify-center gap-3 hover:scale-105 transition-all">
-                Mulai Curhat Aman <ArrowRight size={18} />
+            <div className="flex flex-wrap gap-stack-md mt-4">
+              <Link href="/signup" className="bg-teal-action text-white px-8 py-4 rounded-xl font-label-caps text-label-caps uppercase flex items-center gap-2 group hover:gap-4 transition-all duration-300 shadow-lg shadow-teal-action/20">
+                Mulai Curhat Aman
+                <span className="material-symbols-outlined">arrow_forward</span>
               </Link>
-              <Link href="#ecosystem" className="px-10 py-5 bg-white text-slate-900 border-2 border-slate-100 rounded-[24px] font-black text-sm uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center">
+              <button className="bg-white border border-slate-200 text-on-surface px-8 py-4 rounded-xl font-label-caps text-label-caps uppercase hover:bg-slate-50 transition-colors">
                 Lihat Ekosistem
-              </Link>
+              </button>
             </div>
           </div>
           <div className="relative flex justify-center">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl"></div>
-            <Image
-              src="/images/logo-edumind-transparan.png"
-              alt="EduMind Mascot"
-              width={450}
-              height={450}
-              className="relative z-10 animate-bounce-slow"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ECOSYSTEM CARDS */}
-      <section id="ecosystem" className="py-32 bg-slate-50 px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20 space-y-4">
-            <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter">Ekosistem EduMind</h2>
-            <p className="text-slate-500 font-medium italic">Satu platform, banyak peran, satu tujuan: Kesejahteraan Siswa.</p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {ecosystem.map((item, i) => (
-              <Link href={item.link} key={i} className="group bg-white p-10 rounded-[40px] border border-slate-100 shadow-sm hover:shadow-2xl hover:border-primary/20 transition-all flex flex-col justify-between">
+            <div className="w-full aspect-square max-w-[500px] rounded-3xl overflow-hidden glass-card p-2 shadow-2xl shadow-slate-200/50">
+              <img alt="Holistic Wellbeing Visual" className="w-full h-full object-cover rounded-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtKn122SdPQ9NrzT4In8gc2_OGuSq0BJEyo6jubdgfmJmD-z_ENxrq-dJK0Oz8GvxXF7QN4Yo6IXEpC4KVQScQTLCN3-0T0H-XwoBohcXjnnnhZttNhmWTBnpa_KbqPDJlap83geY-rqGktAfiUBXVjZxvCRIacJXSuIU-Ny_04K-aX_u9jutzWdwKT1RfRmKX6EQtSEUUiYFlX-QjulOYIrB6jWqIeM8EMc0YMnhdTDRH-m7WYufSp68apKU9iQpYfpvg8LFXQBc"/>
+              <div className="absolute -bottom-8 -right-8 glass-card p-6 rounded-2xl shadow-xl flex items-center gap-4 bg-white border border-slate-100">
+                <div className="w-12 h-12 bg-orange-accent/10 rounded-full flex items-center justify-center">
+                  <span className="material-symbols-outlined text-orange-accent" style={{fontVariationSettings: "'FILL' 1"}}>favorite</span>
+                </div>
                 <div>
-                  <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
-                    {item.icon}
+                  <p className="font-label-caps text-label-caps text-on-surface-variant">Siswa Terpantau</p>
+                  <p className="font-headline-lg text-headline-lg leading-none text-navy-deep">12,450+</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Ecosystem Overview (Bento Grid) */}
+      <section className="py-section-gap bg-surface-container-low">
+        <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
+          <div className="text-center mb-section-gap">
+            <h2 className="font-headline-lg text-headline-lg-mobile md:text-headline-lg mb-4 text-navy-deep">EKOSISTEM EDUMIND</h2>
+            <p className="text-on-surface-variant max-w-2xl mx-auto">Satu platform terpadu yang menghubungkan berbagai peran kunci untuk memastikan kesejahteraan mental dan akademik siswa secara berkelanjutan.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+            {/* Student Portal */}
+            <div className="md:col-span-8 group">
+              <div className="bg-white p-stack-lg rounded-2xl h-full flex flex-col justify-between border border-slate-200 hover:border-teal-action transition-all duration-300 shadow-sm hover:shadow-md">
+                <div>
+                  <div className="inline-block p-3 bg-teal-action/10 text-teal-action rounded-xl mb-stack-md">
+                    <span className="material-symbols-outlined text-3xl">person</span>
                   </div>
-                  <h3 className="text-xl font-black text-slate-800 mb-4">{item.title}</h3>
-                  <p className="text-sm text-slate-500 leading-relaxed font-medium mb-8">{item.desc}</p>
+                  <h3 className="font-headline-md text-headline-md mb-stack-sm text-navy-deep">Student App</h3>
+                  <p className="text-on-surface-variant text-body-md max-w-md">Ruang aman bagi siswa untuk bercerita dengan AI Mood Buddy, melaporkan bullying secara anonim, dan mengeksplorasi minat bakat melalui asesmen AI.</p>
                 </div>
-                <div className="flex items-center gap-2 text-primary font-black text-[10px] uppercase tracking-widest group-hover:gap-4 transition-all">
-                  Masuk Portal <ChevronRight size={14} />
+                <div className="mt-stack-lg flex items-center justify-between">
+                  <Link href="/login" className="text-teal-action font-bold uppercase tracking-wider text-label-caps flex items-center gap-2 group-hover:gap-4 transition-all">MASUK PORTAL <span className="material-symbols-outlined">north_east</span></Link>
+                  <div className="flex -space-x-2">
+                    <div className="w-8 h-8 rounded-full border-2 border-white overflow-hidden bg-slate-300"></div>
+                    <div className="w-8 h-8 rounded-full border-2 border-white overflow-hidden bg-slate-200"></div>
+                    <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center bg-slate-100 text-on-surface-variant text-[10px]">+10k</div>
+                  </div>
                 </div>
-              </Link>
-            ))}
+              </div>
+            </div>
+            {/* Teacher Portal */}
+            <div className="md:col-span-4 group">
+              <div className="bg-white p-stack-lg rounded-2xl h-full flex flex-col justify-between border border-slate-200 hover:border-orange-accent transition-all duration-300 shadow-sm hover:shadow-md">
+                <div>
+                  <div className="inline-block p-3 bg-orange-accent/10 text-orange-accent rounded-xl mb-stack-md">
+                    <span className="material-symbols-outlined text-3xl">school</span>
+                  </div>
+                  <h3 className="font-headline-md text-headline-md mb-stack-sm text-navy-deep">Teacher Dashboard</h3>
+                  <p className="text-on-surface-variant text-body-md">Heatmap kesejahteraan kelas secara real-time untuk intervensi dini yang lebih humanis dan tepat sasaran.</p>
+                </div>
+                <div className="mt-stack-lg">
+                  <Link href="/login" className="text-orange-accent font-bold uppercase tracking-wider text-label-caps flex items-center gap-2 group-hover:gap-4 transition-all">MASUK PORTAL <span className="material-symbols-outlined">north_east</span></Link>
+                </div>
+              </div>
+            </div>
+            {/* Parent Portal */}
+            <div className="md:col-span-4 group">
+              <div className="bg-white p-stack-lg rounded-2xl h-full flex flex-col justify-between border border-slate-200 hover:border-gold-indicator transition-all duration-300 shadow-sm hover:shadow-md">
+                <div>
+                  <div className="inline-block p-3 bg-gold-indicator/10 text-gold-indicator rounded-xl mb-stack-md">
+                    <span className="material-symbols-outlined text-3xl">family_restroom</span>
+                  </div>
+                  <h3 className="font-headline-md text-headline-md mb-stack-sm text-navy-deep">Parent Portal</h3>
+                  <p className="text-on-surface-variant text-body-md">Pantau tren emosional anak secara transparan tanpa melanggar privasi, memperkuat komunikasi antara rumah dan sekolah.</p>
+                </div>
+                <div className="mt-stack-lg">
+                  <Link href="/login" className="text-gold-indicator font-bold uppercase tracking-wider text-label-caps flex items-center gap-2 group-hover:gap-4 transition-all">MASUK PORTAL <span className="material-symbols-outlined">north_east</span></Link>
+                </div>
+              </div>
+            </div>
+            {/* Psychologist Portal */}
+            <div className="md:col-span-8 group">
+              <div className="bg-white p-stack-lg rounded-2xl h-full flex flex-col justify-between border border-slate-200 hover:border-teal-action transition-all duration-300 shadow-sm hover:shadow-md overflow-hidden relative">
+                <div className="relative z-10">
+                  <div className="inline-block p-3 bg-teal-action/10 text-teal-action rounded-xl mb-stack-md">
+                    <span className="material-symbols-outlined text-3xl">psychology</span>
+                  </div>
+                  <h3 className="font-headline-md text-headline-md mb-stack-sm text-navy-deep">Psychologist Console</h3>
+                  <p className="text-on-surface-variant text-body-md max-w-md">Sistem manajemen kasus klinis terenkripsi dengan asisten AI yang membantu merangkum data anamnesa awal secara akurat.</p>
+                </div>
+                <div className="mt-stack-lg relative z-10">
+                  <Link href="/login" className="text-teal-action font-bold uppercase tracking-wider text-label-caps flex items-center gap-2 group-hover:gap-4 transition-all">MASUK PORTAL <span className="material-symbols-outlined">north_east</span></Link>
+                </div>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-teal-action/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* CORE FEATURES */}
-      <section id="features" className="py-32 px-8">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-24 items-center">
-          <div className="order-2 lg:order-1 relative">
-            <div className="bg-slate-900 p-12 rounded-[50px] shadow-2xl relative z-10">
-              <h4 className="text-secondary font-black text-xs uppercase tracking-widest mb-6">Real-time Analytics</h4>
+      {/* Technology Section */}
+      <section className="py-section-gap relative bg-surface">
+        <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter grid md:grid-cols-2 gap-section-gap items-center">
+          <div className="order-2 md:order-1">
+            <div className="bg-navy-deep rounded-3xl p-stack-lg border border-slate-800 relative overflow-hidden shadow-2xl">
+              <div className="flex justify-between items-center mb-8">
+                <div className="flex gap-2">
+                  <div className="w-3 h-3 rounded-full bg-orange-accent/40"></div>
+                  <div className="w-3 h-3 rounded-full bg-teal-action/40"></div>
+                  <div className="w-3 h-3 rounded-full bg-white/20"></div>
+                </div>
+                <span className="text-label-caps text-slate-400/50">SYSTEM_ANALYTICS_v2.0</span>
+              </div>
               <div className="space-y-6">
-                {[1, 2, 3].map((_, i) => (
-                  <div key={i} className="h-4 bg-white/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full transition-all duration-1000" style={{ width: `${30 + (i * 25)}%` }}></div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-end">
+                    <span className="text-slate-300 text-body-md">AI Sentiment Accuracy</span>
+                    <span className="text-teal-action font-metric-num text-xl">94.8%</span>
                   </div>
-                ))}
-              </div>
-              <div className="mt-10 p-6 bg-white/5 rounded-3xl border border-white/10 flex gap-4">
-                <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white"><BarChart3 size={24} /></div>
-                <div>
-                  <p className="text-sm font-bold text-white">AI Early Detection</p>
-                  <p className="text-xs text-slate-400 font-medium mt-1">Mendeteksi risiko kesejahteraan mental secara otomatis.</p>
+                  <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-teal-action w-[94.8%]"></div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-end">
+                    <span className="text-slate-300 text-body-md">Early Risk Detection</span>
+                    <span className="text-orange-accent font-metric-num text-xl">82ms</span>
+                  </div>
+                  <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-orange-accent w-[85%]"></div>
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center gap-4 mt-8">
+                  <div className="w-10 h-10 bg-teal-action rounded-lg flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white" style={{fontVariationSettings: "'FILL' 1"}}>monitoring</span>
+                  </div>
+                  <div>
+                    <p className="text-label-caps text-slate-400">Live Detection Status</p>
+                    <p className="text-body-md text-white">Observing anonymized patterns...</p>
+                  </div>
+                  <div className="ml-auto flex gap-1">
+                    <div className="w-1 h-4 bg-teal-action/40"></div>
+                    <div className="w-1 h-6 bg-teal-action"></div>
+                    <div className="w-1 h-3 bg-teal-action/60"></div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="absolute -top-10 -left-10 w-40 h-40 bg-secondary/20 rounded-full blur-3xl animate-pulse"></div>
           </div>
-          <div className="order-1 lg:order-2 space-y-10">
-            <h2 className="text-5xl font-black text-slate-900 tracking-tighter leading-none">
-              Teknologi Cerdas Untuk <br /> <span className="text-primary italic">Masa Depan Siswa.</span>
+          <div className="order-1 md:order-2 flex flex-col gap-stack-md">
+            <h2 className="font-headline-lg text-headline-lg-mobile md:text-headline-lg leading-tight text-navy-deep">
+              Teknologi Cerdas Untuk<br/>
+              <span className="text-orange-accent">Masa Depan Siswa.</span>
             </h2>
-            <div className="space-y-8">
-              <FeatureItem
-                icon={<BrainCircuit className="text-primary" />}
-                title="AI Mood Buddy 🤖"
-                desc="Chat bot empatik yang ditenagai Gemini AI untuk teman curhat 24/7."
-              />
-              <FeatureItem
-                icon={<ShieldCheck className="text-secondary" />}
-                title="Sistem Lapor Bullying 🔐"
-                desc="Pelaporan anonim dengan enkripsi tinggi untuk melindungi identitas pelapor."
-              />
+            <div className="space-y-stack-lg mt-stack-md">
+              <div className="flex gap-stack-md group">
+                <div className="flex-shrink-0 w-12 h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-teal-action transition-transform group-hover:scale-110 shadow-sm">
+                  <span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>smart_toy</span>
+                </div>
+                <div>
+                  <h4 className="font-headline-md text-headline-md mb-1 text-navy-deep">AI Mood Buddy 🤖</h4>
+                  <p className="text-on-surface-variant text-body-md">Chatbot empatik yang ditenagai oleh model bahasa besar (LLM) khusus, siap mendengarkan 24/7 dan memberikan respon validasi emosional yang terukur secara pedagogis.</p>
+                </div>
+              </div>
+              <div className="flex gap-stack-md group">
+                <div className="flex-shrink-0 w-12 h-12 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-orange-accent transition-transform group-hover:scale-110 shadow-sm">
+                  <span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>shield</span>
+                </div>
+                <div>
+                  <h4 className="font-headline-md text-headline-md mb-1 text-navy-deep">Sistem Lapor Bullying 🔐</h4>
+                  <p className="text-on-surface-variant text-body-md">Pelaporan anonim dengan enkripsi end-to-end untuk melindungi identitas pelapor, memastikan keberanian siswa untuk bersuara tidak berujung pada intimidasi tambahan.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer className="bg-slate-900 text-white pt-32 pb-10 px-8">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-20 pb-20 border-b border-white/5">
-          <div className="lg:col-span-5 space-y-8">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl">
-                <Image src="/images/telkom-indonesia.png" alt="Telkom Indonesia" width={80} height={40} className="h-8 w-auto" />
-                <Image src="/images/tjsl.png" alt="TJSL" width={80} height={40} className="h-8 w-auto" />
-              </div>
-              <div className="flex flex-col border-l border-white/20 pl-4">
-                <span className="text-3xl font-black text-primary leading-none tracking-tighter uppercase">EduMind</span>
-                <span className="text-[10px] font-bold text-slate-500 tracking-[0.3em] uppercase tracking-widest">Global Wellbeing</span>
-              </div>
+      {/* Global Reach Stats */}
+      <section className="py-section-gap bg-surface">
+        <div className="max-w-container-max mx-auto px-margin-mobile md:px-gutter">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-gutter border-y border-slate-100 py-12">
+            <div className="text-center">
+              <p className="font-metric-num text-headline-lg md:text-metric-num text-teal-action">150+</p>
+              <p className="text-label-caps text-on-surface-variant uppercase">Sekolah Binaan</p>
             </div>
-            <p className="text-slate-400 text-lg leading-relaxed max-w-sm">
-              Memberdayakan ekosistem pendidikan dengan teknologi AI untuk kesehatan mental yang inklusif dan aman.
-            </p>
-          </div>
-          <div className="lg:col-span-3 space-y-8 font-bold uppercase text-[10px] tracking-widest text-slate-500">
-            <h4 className="text-white text-sm tracking-normal">Navigasi</h4>
-            <ul className="space-y-4">
-              <li><Link href="/dashboard/student" className="hover:text-primary transition">Dashboard Student</Link></li>
-              <li><Link href="/dashboard/parent" className="hover:text-primary transition">Portal Orang Tua</Link></li>
-              <li><Link href="/dashboard/teacher" className="hover:text-primary transition">Teacher Dashboard</Link></li>
-            </ul>
-          </div>
-          <div className="lg:col-span-4 space-y-8">
-            <h4 className="text-white font-bold">Kontak Kami</h4>
-            <div className="space-y-4 text-slate-400 font-medium">
-              <p>📞 +62 821-4391-0521</p>
-              <p className="text-primary font-black">✉️ support@edumind.com</p>
+            <div className="text-center">
+              <p className="font-metric-num text-headline-lg md:text-metric-num text-navy-deep">500k</p>
+              <p className="text-label-caps text-on-surface-variant uppercase">Data Terenkripsi</p>
+            </div>
+            <div className="text-center">
+              <p className="font-metric-num text-headline-lg md:text-metric-num text-orange-accent">98%</p>
+              <p className="text-label-caps text-on-surface-variant uppercase">Tingkat Resolusi</p>
+            </div>
+            <div className="text-center">
+              <p className="font-metric-num text-headline-lg md:text-metric-num text-navy-deep">24/7</p>
+              <p className="text-label-caps text-on-surface-variant uppercase">Dukungan AI</p>
             </div>
           </div>
         </div>
-        <div className="text-center pt-10 text-[10px] font-black text-slate-600 uppercase tracking-widest">
-          © 2026 EduMind. Seluruh Hak Cipta Dilindungi.
-        </div>
-      </footer>
+      </section>
+
+      <Footer />
     </div>
   );
 }
-
-function FeatureItem({ icon, title, desc }) {
-  return (
-    <div className="flex gap-6 items-start group">
-      <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
-        {icon}
-      </div>
-      <div>
-        <h4 className="text-xl font-black text-slate-800 mb-2">{title}</h4>
-        <p className="text-slate-500 font-medium leading-relaxed text-sm">{desc}</p>
-      </div>
-    </div>
-  );
-}
-

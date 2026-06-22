@@ -13,8 +13,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id" className={`${urbanist.variable} scroll-smooth`}>
       <head>
-        <title>EduMind | AI-Powered Student Wellbeing Ecosystem</title>
+        <title>EduMind x Telkom TJSL | Aman Bercerita, Sehat Mentalnya</title>
         <meta name="description" content="Platform kesehatan mental siswa terintegrasi dengan AI Mood Buddy, Portal Orang Tua, dan Konsol Psikolog Profesional." />
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
       </head>
       <body className="antialiased font-sans">
         <noscript>

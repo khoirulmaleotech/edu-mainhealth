@@ -79,18 +79,11 @@ export default function LoginPage() {
         <div className="p-8 md:p-12 lg:p-20 space-y-8 md:space-y-10 flex flex-col justify-center">
 
           {/* Logo Section */}
-          <Link href="/" className="flex items-center gap-3 md:gap-4 group self-center lg:self-start">
-            <Image
-              src="/images/logo-edumind-transparan.png"
-              alt="EduMind"
-              width={60}
-              height={60}
-              className="md:w-[70px] md:h-[70px] group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="flex flex-col">
-              <span className="text-xl md:text-2xl font-black text-[#00adb5] leading-none tracking-tighter uppercase text-primary">EduMind</span>
-              <span className="text-[10px] md:text-xs font-bold text-slate-400">by Educourse</span>
-            </div>
+          <Link href="/" className="flex items-center gap-4 group self-center lg:self-start">
+            <Image src="/images/telkom-indonesia.png" alt="Telkom Indonesia" width={80} height={40} className="h-8 w-auto group-hover:scale-105 transition-transform duration-500" />
+            <div className="w-px h-6 bg-slate-200"></div>
+            <Image src="/images/tjsl.png" alt="TJSL" width={80} height={40} className="h-8 w-auto group-hover:scale-105 transition-transform duration-500" />
+            <span className="text-xl md:text-2xl font-black text-navy-deep ml-2 uppercase">EduMind</span>
           </Link>
 
           <div className="space-y-2 md:space-y-3 text-center lg:text-left">
@@ -169,13 +162,23 @@ export default function LoginPage() {
 
           <div className="relative z-10 text-white space-y-10">
             <div className="bg-white/5 backdrop-blur-2xl p-12 rounded-[60px] border border-white/10 shadow-2xl">
-              <Image
-                src="/images/logo-edumind-transparan.png"
-                alt="Large Mascot"
-                width={280}
-                height={280}
-                className="mx-auto drop-shadow-[0_20px_50px_rgba(0,173,181,0.3)]"
-              />
+              <div className="flex items-center justify-center gap-6 mb-8">
+                <Image
+                  src="/images/telkom-indonesia.png"
+                  alt="Telkom Indonesia"
+                  width={140}
+                  height={70}
+                  className="h-14 w-auto drop-shadow-[0_10px_30px_rgba(255,255,255,0.2)]"
+                />
+                <div className="w-px h-12 bg-white/20"></div>
+                <Image
+                  src="/images/tjsl.png"
+                  alt="TJSL"
+                  width={140}
+                  height={70}
+                  className="h-14 w-auto drop-shadow-[0_10px_30px_rgba(255,255,255,0.2)]"
+                />
+              </div>
               <div className="mt-10 space-y-4">
                 <h2 className="text-4xl font-black leading-tight">
                   Kesehatan Mentalmu <br />

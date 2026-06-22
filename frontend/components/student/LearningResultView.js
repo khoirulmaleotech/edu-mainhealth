@@ -126,7 +126,7 @@ export default function LearningResultView({ isCompleted, scores, hasilDominan, 
               <Lightbulb size={18} className="text-amber-500" />
               Tips Belajar Efektif
             </h3>
-            <p className="text-xs text-slate-400 font-medium">Rekomendasi taktik belajar ditenagai AI Educourse.</p>
+            <p className="text-xs text-slate-400 font-medium">Rekomendasi taktik belajar ditenagai AI Edumind.</p>
           </div>
 
           <div className="space-y-4">
