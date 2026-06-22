@@ -5,13 +5,18 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
-
-
   theme: {
     extend: {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        // ── PALET WARNA UTAMA GRAND DESIGN TELKOM CSR ──
+        telkom: {
+          red: "#EE2E24",       // Warna Merah Utama Telkom
+          dark: "#0F172A",      // Dark Slate untuk text/sidebar premium
+          gray: "#F8FAFC",      // Light Gray untuk background panel
+          accent: "#00ADB5"     // Tetap mempertahankan cyan sebagai aksen sekunder cerdas
+        },
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
@@ -20,15 +25,22 @@ module.exports = {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
         },
-        primary: "#00adb5",
-        secondary: "#fbcd2b",
+        // Mapping ulang primary & secondary agar sinkron dengan Grand Design baru
+        primary: {
+          DEFAULT: "#EE2E24",   // Menggeser warna cyan lama menjadi merah Telkom
+          foreground: "#FFFFFF",
+        },
+        secondary: {
+          DEFAULT: "#0F172A",
+          foreground: "#F8FAFC",
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: "#00ADB5",
+          foreground: "#FFFFFF",
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
@@ -37,52 +49,13 @@ module.exports = {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        chart: {
-          "1": "hsl(var(--chart-1))",
-          "2": "hsl(var(--chart-2))",
-          "3": "hsl(var(--chart-3))",
-          "4": "hsl(var(--chart-4))",
-          "5": "hsl(var(--chart-5))",
-        },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      keyframes: {
-        "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
-        },
-        "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
-        },
-      },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-      },
     },
   },
-  plugins: []
-};
+  plugins: [],
+}

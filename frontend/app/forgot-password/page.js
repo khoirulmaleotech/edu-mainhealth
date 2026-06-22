@@ -124,7 +124,7 @@ export default function ForgotPasswordPage() {
         </div>
 
         <div className="flex gap-2 items-center justify-center pt-6 text-[10px] font-semibold text-slate-400">
-          <ShieldCheck size={12} className="text-emerald-500" /> Automated Identity Protection By Maleotech
+          <ShieldCheck size={12} className="text-emerald-500" /> Automated Identity Protection EduMind
         </div>
       </div>
     </div>

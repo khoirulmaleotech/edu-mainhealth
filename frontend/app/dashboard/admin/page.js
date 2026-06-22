@@ -19,7 +19,6 @@ import {
   Star,
   Smile,
   Bell,
-  Clock,
   AlertTriangle
 } from "lucide-react";
 import { useRouter } from "next/navigation";

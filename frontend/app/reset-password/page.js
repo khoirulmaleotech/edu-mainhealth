@@ -128,7 +128,7 @@ function ResetPasswordFormInner() {
           <div className="space-y-2">
             <h3 className="text-lg font-black text-slate-800 tracking-tight">Sandi Berhasil Diubah!</h3>
             <p className="text-xs font-medium text-slate-400 leading-relaxed max-w-xs mx-auto">
-              Kata sandi baru Anda telah berhasil diperbarui di database enkripsi server aman Maleotech.
+              Kata sandi baru Anda telah berhasil diperbarui di database enkripsi server aman EduMind.
             </p>
           </div>
           <div className="pt-2">

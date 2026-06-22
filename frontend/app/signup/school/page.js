@@ -137,19 +137,28 @@ export default function SchoolSignupPage() {
           <div className='absolute inset-0 bg-[#00adb5]/10 opacity-50'></div>
           <div className='relative z-10 space-y-12'>
             <div className='bg-white/5 backdrop-blur-3xl p-10 rounded-[50px] border border-white/10 shadow-2xl'>
-              <div className='bg-white p-5 rounded-[35px] inline-block mb-8 shadow-xl shadow-[#00adb5]/20'>
+              <div className='bg-white p-5 rounded-[35px] inline-flex items-center gap-4 mb-8 shadow-xl shadow-[#00adb5]/20'>
                 <Image
-                  src='/images/logo-edumind-transparan.png'
-                  alt='Yayasan Maleo'
+                  src='/images/telkom-indonesia.png'
+                  alt='Telkom Indonesia'
                   width={130}
-                  height={130}
+                  height={65}
                   priority
+                  className="h-12 w-auto"
+                />
+                <Image
+                  src='/images/tjsl.png'
+                  alt='TJSL'
+                  width={130}
+                  height={65}
+                  priority
+                  className="h-12 w-auto"
                 />
               </div>
               <h2 className='text-4xl font-black text-white leading-tight mb-6 tracking-tight'>
                 Kemitraan <br />{" "}
                 <span className='text-[#fbcd2b] italic uppercase'>
-                  Yayasan Maleo.
+                  EduMind.
                 </span>
               </h2>
               <div className='space-y-6 text-left'>
@@ -165,12 +174,22 @@ export default function SchoolSignupPage() {
         <div className='p-8 md:p-12 lg:p-20 flex flex-col justify-center bg-white relative'>
           <div className='mb-8 md:mb-12 flex justify-between items-center'>
             <Link href='/' className='flex items-center gap-2 md:gap-3'>
-              <Image
-                src='/images/logo-edumind-transparan.png'
-                alt='Logo'
-                width={45}
-                height={45}
-              />
+              <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg">
+                <Image
+                  src='/images/telkom-indonesia.png'
+                  alt='Telkom Indonesia'
+                  width={60}
+                  height={30}
+                  className="h-6 md:h-8 w-auto"
+                />
+                <Image
+                  src='/images/tjsl.png'
+                  alt='TJSL'
+                  width={60}
+                  height={30}
+                  className="h-6 md:h-8 w-auto"
+                />
+              </div>
               <div className='flex flex-col'>
                 <span className='text-lg md:text-xl font-black text-[#00adb5] leading-none uppercase'>
                   EduMind

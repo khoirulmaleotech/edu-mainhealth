@@ -41,8 +41,11 @@ export default function AdminLayout({ children }) {
         fixed lg:sticky top-0 left-0 z-[70] h-screen w-72 bg-[#0b0e14] text-slate-400 p-6 flex flex-col transition-transform duration-300
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        <div className="flex items-center gap-3 px-2 mb-10">
-          <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={45} height={45} className="bg-white rounded-xl p-1" />
+        <div className="flex flex-col gap-3 px-2 mb-10">
+          <div className="flex items-center gap-2 bg-white p-2 rounded-xl w-fit">
+            <Image src="/images/telkom-indonesia.png" alt="Telkom Indonesia" width={60} height={30} className="h-6 w-auto" />
+            <Image src="/images/tjsl.png" alt="TJSL" width={60} height={30} className="h-6 w-auto" />
+          </div>
           <div className="flex flex-col">
             <span className="text-xl font-black text-white tracking-tighter uppercase">EduMind</span>
             <span className="text-[10px] font-bold text-[#00adb5] tracking-widest uppercase">Super Admin</span>
@@ -89,7 +92,7 @@ export default function AdminLayout({ children }) {
             <div className="h-10 w-[1px] bg-slate-100 mx-2"></div>
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-black text-slate-800 leading-none">{session?.user?.name || "Admin Maleo"}</p>
+                <p className="text-sm font-black text-slate-800 leading-none">{session?.user?.name || "Admin EduMind"}</p>
                 <p className="text-[10px] font-bold text-[#00adb5] uppercase mt-1">Super Admin</p>
               </div>
               <div className="h-11 w-11 bg-[#00adb5] rounded-2xl flex items-center justify-center text-white font-black shadow-lg shadow-[#00adb5]/20">

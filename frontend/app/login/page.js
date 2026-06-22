@@ -181,7 +181,7 @@ export default function LoginPage() {
                   Kesehatan Mentalmu <br />
                   <span className="text-[#fbcd2b] italic">Prioritas Kami.</span>
                 </h2>
-                <p className="text-slate-400 font-medium text-lg leading-relaxed italic">Platform terintegrasi Yayasan Maleo untuk generasi hebat.</p>
+                <p className="text-slate-400 font-medium text-lg leading-relaxed italic">Platform terintegrasi EduMind untuk generasi hebat.</p>
               </div>
             </div>
           </div>

@@ -31,10 +31,12 @@ export default function HomePage() {
       <nav className="fixed w-full bg-white/80 backdrop-blur-xl z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-5 md:px-8 py-4 md:py-5 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-3">
-            <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={50} height={50} className="h-11 w-11 md:h-[50px] md:w-[50px]" />
-            <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <Image src="/images/telkom-indonesia.png" alt="Telkom Indonesia" width={80} height={40} className="h-8 md:h-10 w-auto" />
+              <Image src="/images/tjsl.png" alt="TJSL" width={80} height={40} className="h-8 md:h-10 w-auto" />
+            </div>
+            <div className="flex flex-col ml-1 sm:ml-2 border-l-2 border-slate-200 pl-3 sm:pl-4">
               <span className="text-xl md:text-2xl font-black text-primary leading-none tracking-tighter uppercase">EduMind</span>
-              <span className="text-[9px] font-bold text-slate-400 tracking-[0.3em] uppercase">By Maleotech</span>
             </div>
           </Link>
 
@@ -186,9 +188,12 @@ export default function HomePage() {
       <footer className="bg-slate-900 text-white pt-32 pb-10 px-8">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-12 gap-20 pb-20 border-b border-white/5">
           <div className="lg:col-span-5 space-y-8">
-            <div className="flex items-center gap-4">
-              <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={60} height={60} className="brightness-125" />
-              <div className="flex flex-col">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl">
+                <Image src="/images/telkom-indonesia.png" alt="Telkom Indonesia" width={80} height={40} className="h-8 w-auto" />
+                <Image src="/images/tjsl.png" alt="TJSL" width={80} height={40} className="h-8 w-auto" />
+              </div>
+              <div className="flex flex-col border-l border-white/20 pl-4">
                 <span className="text-3xl font-black text-primary leading-none tracking-tighter uppercase">EduMind</span>
                 <span className="text-[10px] font-bold text-slate-500 tracking-[0.3em] uppercase tracking-widest">Global Wellbeing</span>
               </div>
@@ -208,14 +213,13 @@ export default function HomePage() {
           <div className="lg:col-span-4 space-y-8">
             <h4 className="text-white font-bold">Kontak Kami</h4>
             <div className="space-y-4 text-slate-400 font-medium">
-              <p>📍 Intermark Indonesia Ruko 8, Tangerang Selatan</p>
               <p>📞 +62 821-4391-0521</p>
-              <p className="text-primary font-black">✉️ support@maleotech.com</p>
+              <p className="text-primary font-black">✉️ support@edumind.com</p>
             </div>
           </div>
         </div>
         <div className="text-center pt-10 text-[10px] font-black text-slate-600 uppercase tracking-widest">
-          © 2026 PT. Maleo Teknologi Indonesia. Seluruh Hak Cipta Dilindungi.
+          © 2026 EduMind. Seluruh Hak Cipta Dilindungi.
         </div>
       </footer>
     </div>

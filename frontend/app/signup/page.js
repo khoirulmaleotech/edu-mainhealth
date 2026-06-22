@@ -142,18 +142,27 @@ export default function SignupPage() {
 
           {/* Logo besar di tengah */}
           <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-10 text-center">
-            <div className="bg-white rounded-[40px] p-8 shadow-2xl shadow-[#0b0e14]/20">
+            <div className="bg-white rounded-[40px] p-8 shadow-2xl shadow-[#0b0e14]/20 flex flex-col items-center gap-6">
               <Image
-                src="/images/logo-edumind-transparan.png"
-                alt="EduMind"
+                src="/images/telkom-indonesia.png"
+                alt="Telkom Indonesia"
                 width={160}
-                height={160}
+                height={80}
                 priority
+                className="h-16 w-auto"
+              />
+              <Image
+                src="/images/tjsl.png"
+                alt="TJSL"
+                width={160}
+                height={80}
+                priority
+                className="h-16 w-auto"
               />
             </div>
 
             <div>
-              <h2 className="text-3xl font-black uppercase tracking-tight">Yayasan Maleo</h2>
+              <h2 className="text-3xl font-black uppercase tracking-tight">EduMind</h2>
               <p className="text-sm opacity-75 font-medium mt-2 leading-relaxed max-w-[260px] mx-auto">
                 Ekosistem digital untuk keseimbangan emosional dan pemetaan bakat generasi hebat.
               </p>
@@ -195,10 +204,12 @@ export default function SignupPage() {
 
           <div className="mb-8 flex flex-col items-center lg:items-start space-y-5">
             <Link href="/" className="flex items-center gap-3">
-              <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={48} height={48} />
-              <div className="flex flex-col">
-                <span className="text-xl font-black text-[#00adb5] leading-none tracking-tighter">EduMind</span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Maleotech</span>
+              <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg">
+                <Image src="/images/telkom-indonesia.png" alt="Telkom Indonesia" width={60} height={30} className="h-6 sm:h-8 w-auto" />
+                <Image src="/images/tjsl.png" alt="TJSL" width={60} height={30} className="h-6 sm:h-8 w-auto" />
+              </div>
+              <div className="flex flex-col border-l-2 border-slate-200 pl-3">
+                <span className="text-xl font-black text-[#00adb5] leading-none tracking-tighter uppercase">EduMind</span>
               </div>
             </Link>
             <div>
