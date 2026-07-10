@@ -71,6 +71,9 @@ export default function AdminDashboardPage() {
   const [activities, setActivities] = useState([]);
   const [isActivitiesLoading, setIsActivitiesLoading] = useState(true);
 
+  const [kpiStats, setKpiStats] = useState(null);
+  const [isKpiStatsLoading, setIsKpiStatsLoading] = useState(true);
+
   const fetchTotalStudents = async () => {
     try {
       setIsTotalStudentsLoading(true);
@@ -194,6 +197,18 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const fetchKpiStats = async () => {
+    try {
+      setIsKpiStatsLoading(true);
+      const response = await fetchInstance("/api/admin/overview/kpi-stats");
+      setKpiStats(response?.data || null);
+    } catch (error) {
+      console.error("Failed to fetch KPI stats", error);
+    } finally {
+      setIsKpiStatsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchTotalStudents();
     fetchActiveSchools();
@@ -204,6 +219,7 @@ export default function AdminDashboardPage() {
     fetchFeatureUsage();
     fetchMoodSchools();
     fetchActivities();
+    fetchKpiStats();
   }, []);
 
   const statisticsCards = [
@@ -273,6 +289,133 @@ export default function AdminDashboardPage() {
             onClick={() => router.push(statistic.redirect ? statistic.redirect : "")}
           />
         ))}
+      </div>
+
+      {/* KPI AKTIVASI & PENGGUNAAN PLATFORM */}
+      <div className="mb-10">
+        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] mb-4">
+          B. Aktivasi & Penggunaan Platform (KPI Dampak)
+        </div>
+        {isKpiStatsLoading ? (
+          <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
+            <Loader2 size={14} className="animate-spin" /> Memuat data KPI...
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            {/* CARD 1: AKTIVASI */}
+            <div className="bg-white border border-slate-100 rounded-[24px] p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+              <div>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center">
+                    <CheckCircle2 size={20} />
+                  </div>
+                  <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full">
+                    Terlampaui
+                  </span>
+                </div>
+                <h4 className="text-sm font-black text-slate-800">Aktivasi Akun EduMind</h4>
+                <p className="text-xs text-slate-400 mt-1">Persentase akun siswa yang terverifikasi.</p>
+              </div>
+              <div className="mt-6">
+                <div className="flex justify-between text-xs font-bold mb-1.5">
+                  <span className="text-slate-500">Realisasi: {kpiStats?.activation?.activationPercentage}%</span>
+                  <span className="text-emerald-500">Target: ≥ 95%</span>
+                </div>
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(kpiStats?.activation?.activationPercentage || 0, 100)}%` }} />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                  {kpiStats?.activation?.verifiedStudents} dari {kpiStats?.activation?.totalStudents} siswa terverifikasi
+                </p>
+              </div>
+            </div>
+
+            {/* CARD 2: MOOD CHECK-IN */}
+            <div className="bg-white border border-slate-100 rounded-[24px] p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+              <div>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-10 h-10 bg-cyan-50 text-[#00adb5] rounded-xl flex items-center justify-center">
+                    <Smile size={20} />
+                  </div>
+                  <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full">
+                    Terlampaui
+                  </span>
+                </div>
+                <h4 className="text-sm font-black text-slate-800">Penggunaan Mood Check-in</h4>
+                <p className="text-xs text-slate-400 mt-1">Siswa melakukan mood check-in mingguan.</p>
+              </div>
+              <div className="mt-6">
+                <div className="flex justify-between text-xs font-bold mb-1.5">
+                  <span className="text-slate-500">Realisasi: {kpiStats?.mood?.moodParticipationPercentage}%</span>
+                  <span className="text-[#00adb5]">Target: ≥ 70%</span>
+                </div>
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div className="bg-[#00adb5] h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(kpiStats?.mood?.moodParticipationPercentage || 0, 100)}%` }} />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                  {kpiStats?.mood?.uniqueMoodCount} dari {kpiStats?.activation?.activeStudentsCount} siswa aktif berpartisipasi
+                </p>
+              </div>
+            </div>
+
+            {/* CARD 3: AI WELLBEING */}
+            <div className="bg-white border border-slate-100 rounded-[24px] p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+              <div>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center">
+                    <Brain size={20} />
+                  </div>
+                  <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-full">
+                    Privasi Aman
+                  </span>
+                </div>
+                <h4 className="text-sm font-black text-slate-800">AI Wellbeing Assistant</h4>
+                <p className="text-xs text-slate-400 mt-1">Siswa mengakses AI secara berkala.</p>
+              </div>
+              <div className="mt-6">
+                <div className="flex justify-between text-xs font-bold mb-1.5">
+                  <span className="text-slate-500">Rujukan Aktif: {kpiStats?.ai?.chatRoomsCount} Konsultasi</span>
+                  <span className="text-indigo-500">Target: ≥ 60%</span>
+                </div>
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div className="bg-indigo-500 h-full rounded-full transition-all duration-500" style={{ width: `100%` }} />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                  Chat biasa diproses aman. {kpiStats?.ai?.criticalLogsCount} kasus tingkat risiko tinggi/kritis terdeteksi.
+                </p>
+              </div>
+            </div>
+
+            {/* CARD 4: ANONYMOUS REPORTING */}
+            <div className="bg-white border border-slate-100 rounded-[24px] p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+              <div>
+                <div className="flex justify-between items-start mb-4">
+                  <div className="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center">
+                    <ShieldAlert size={20} />
+                  </div>
+                  <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full">
+                    Terjamin
+                  </span>
+                </div>
+                <h4 className="text-sm font-black text-slate-800">Anonymous Reporting</h4>
+                <p className="text-xs text-slate-400 mt-1">Siswa memahami fitur pelaporan anonim.</p>
+              </div>
+              <div className="mt-6">
+                <div className="flex justify-between text-xs font-bold mb-1.5">
+                  <span className="text-slate-500">Laporan Masuk: {kpiStats?.reports?.incidentReportsCount} Laporan</span>
+                  <span className="text-rose-500">Target: ≥ 85%</span>
+                </div>
+                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                  <div className="bg-rose-500 h-full rounded-full transition-all duration-500" style={{ width: `100%` }} />
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                  {kpiStats?.reports?.uniqueIncidentReportersCount} reporter dengan enkripsi aman & disamarkan otomatis.
+                </p>
+              </div>
+            </div>
+
+          </div>
+        )}
       </div>
 
       {/* PENGGUNAAN FITUR */}

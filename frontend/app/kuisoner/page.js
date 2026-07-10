@@ -318,9 +318,11 @@ export default function WellBeingCampQuestionnairePage() {
     <div className="min-h-screen bg-slate-50 font-sans selection:bg-[#00adb5] selection:text-white pb-24">
       <nav className="fixed w-full bg-white/80 backdrop-blur-xl z-50 border-b border-slate-100 px-4 md:px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0">
         <div className="flex items-center gap-3 self-start sm:self-center">
-          <Image src="/images/logo-edumind-transparan.png" alt="Logo" width={38} height={38} />
-          <div className="flex flex-col">
-            <span className="text-base md:text-lg font-black text-[#00adb5] leading-none tracking-tighter uppercase">EduMind</span>
+          <Image src="/images/telkom-indonesia.png" alt="Telkom Indonesia" width={60} height={30} className="h-6 w-auto" />
+          <Image src="/images/tjsl.png" alt="TJSL" width={60} height={30} className="h-6 w-auto" />
+          <div className="w-px h-6 bg-slate-200 hidden sm:block"></div>
+          <div className="flex flex-col sm:ml-1">
+            <span className="text-base md:text-lg font-black text-navy-deep leading-none tracking-tighter uppercase">EduMind</span>
             <span className="text-[8px] md:text-[9px] font-bold text-slate-400 tracking-[0.2em] uppercase">Wellbeing Camp Bukittinggi</span>
           </div>
         </div>
