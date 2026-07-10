@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Activity,
-  Users,
   LogIn,
   ClipboardCheck,
   Search,
@@ -21,7 +20,10 @@ import {
   BookOpen,
   Compass,
   Brain,
-  Award
+  Award,
+  X,
+  Clock,
+  ExternalLink
 } from "lucide-react";
 import { fetchInstance } from "@/lib/fetchInstance";
 
@@ -37,6 +39,9 @@ export default function ActivityMonitoringPage() {
 
   // Selected date breakdown details
   const [selectedDayDetail, setSelectedDayDetail] = useState(null);
+
+  // Drill-down Modal State
+  const [modalDetail, setModalDetail] = useState(null); // { date, activityType, label, data: [], loading: false }
 
   // Filter states
   const [search, setSearch] = useState("");
@@ -164,18 +169,49 @@ export default function ActivityMonitoringPage() {
     return r;
   };
 
+  // Fetch detailed drill-down users list for popup
+  const openDetailModal = async (activityType, label) => {
+    if (!selectedDayDetail) return;
+    
+    setModalDetail({
+      date: selectedDayDetail.date,
+      activityType,
+      label,
+      data: [],
+      loading: true
+    });
+
+    try {
+      const url = `/api/admin/activity-logs/detail?date=${selectedDayDetail.date}&activityType=${activityType}`;
+      const res = await fetchInstance(url);
+      if (res && res.success) {
+        setModalDetail(prev => prev ? { ...prev, data: res.data || [], loading: false } : null);
+      } else {
+        setModalDetail(prev => prev ? { ...prev, loading: false } : null);
+      }
+    } catch (err) {
+      console.error(err);
+      setModalDetail(prev => prev ? { ...prev, loading: false } : null);
+    }
+  };
+
   // Sub-component to render feature activity progress bar
-  const renderStatBar = (label, count, icon, colorClass, maxValOverride = null) => {
+  const renderStatBar = (label, count, icon, colorClass, activityType, maxValOverride = null) => {
     const maxVal = maxValOverride || Math.max(selectedDayDetail?.studentStats?.totalUniqueStudents || 1, 1);
+    const hasData = count > 0;
     return (
-      <div className="space-y-1">
+      <div 
+        onClick={() => hasData && openDetailModal(activityType, label)}
+        className={`group/bar space-y-1 ${hasData ? 'cursor-pointer hover:bg-slate-50 p-1.5 -mx-1.5 rounded-xl transition-all' : 'opacity-50'}`}
+      >
         <div className="flex justify-between items-center text-xs font-bold text-slate-700">
-          <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+          <span className="flex items-center gap-1.5 text-slate-600 font-medium group-hover/bar:text-[#00adb5] transition-colors">
             {icon}
             {label}
           </span>
-          <span className="text-slate-800 font-extrabold text-[10px] bg-slate-100 px-2 py-0.5 rounded-md">
+          <span className="text-slate-800 font-extrabold text-[10px] bg-slate-100 px-2 py-0.5 rounded-md group-hover/bar:bg-cyan-50 group-hover/bar:text-[#00adb5] transition-all flex items-center gap-1">
             {count} orang
+            {hasData && <ExternalLink size={10} className="opacity-60" />}
           </span>
         </div>
         <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -211,7 +247,7 @@ export default function ActivityMonitoringPage() {
         </button>
       </div>
 
-      {/* Top Filter Bar (Horizontal layout for better UX) */}
+      {/* Top Filter Bar */}
       <div className="bg-white border border-slate-100 rounded-[24px] p-6 shadow-sm mb-8 space-y-4">
         <div className="flex items-center gap-2 border-b border-slate-50 pb-3">
           <Filter size={16} className="text-[#00adb5]" />
@@ -284,7 +320,7 @@ export default function ActivityMonitoringPage() {
           </div>
         </div>
 
-        {/* Quick select range buttons */}
+        {/* Quick select buttons */}
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-50">
           <span className="text-[10px] font-bold text-slate-400">Pilih cepat:</span>
           <button
@@ -311,7 +347,7 @@ export default function ActivityMonitoringPage() {
         </div>
       </div>
 
-      {/* KPI Cards Section (3 columns since Parent is excluded) */}
+      {/* KPI Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white border border-slate-100 rounded-[24px] p-6 shadow-sm flex items-center gap-5 hover:shadow-md transition-all">
           <div className="w-12 h-12 bg-cyan-50 text-[#00adb5] rounded-xl flex items-center justify-center shrink-0">
@@ -454,17 +490,35 @@ export default function ActivityMonitoringPage() {
               </div>
 
               {/* Core metrics */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-                  <span className="text-[9px] font-bold text-slate-400">Siswa aktif</span>
-                  <p className="text-lg font-black text-slate-800 mt-0.5">
+              <div className="grid grid-cols-3 gap-2 mb-6">
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-center flex flex-col justify-between">
+                  <span className="text-[9px] font-bold text-slate-400 leading-tight">Siswa aktif</span>
+                  <p className="text-base font-black text-slate-800 mt-1">
                     {selectedDayDetail.studentStats.totalUniqueStudents} orang
                   </p>
                 </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 text-center">
-                  <span className="text-[9px] font-bold text-slate-400">Logins (unik)</span>
-                  <p className="text-lg font-black text-[#00adb5] mt-0.5">
-                    {selectedDayDetail.uniqueLogins} ({selectedDayDetail.logins})
+
+                <div 
+                  onClick={() => selectedDayDetail.uniqueLogins > 0 && openDetailModal("login", "Login Akun")}
+                  className={`border border-slate-100 rounded-xl p-2.5 text-center flex flex-col justify-between transition-all ${
+                    selectedDayDetail.uniqueLogins > 0 
+                      ? "bg-slate-50 hover:bg-cyan-50/50 hover:border-[#00adb5]/20 cursor-pointer group/login" 
+                      : "bg-slate-50 opacity-60"
+                  }`}
+                >
+                  <span className="text-[9px] font-bold text-slate-400 leading-tight group-hover/login:text-[#00adb5] transition-colors flex items-center justify-center gap-0.5">
+                    User login (unik)
+                    {selectedDayDetail.uniqueLogins > 0 && <ExternalLink size={8} />}
+                  </span>
+                  <p className="text-base font-black text-[#00adb5] mt-1">
+                    {selectedDayDetail.uniqueLogins} orang
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 text-center flex flex-col justify-between">
+                  <span className="text-[9px] font-bold text-slate-400 leading-tight">Total login</span>
+                  <p className="text-base font-black text-slate-800 mt-1">
+                    {selectedDayDetail.logins} kali
                   </p>
                 </div>
               </div>
@@ -479,56 +533,64 @@ export default function ActivityMonitoringPage() {
                   "Asesmen Tilik Diri", 
                   selectedDayDetail.studentStats.tilikDiri, 
                   <ClipboardCheck size={13} className="text-amber-500" />, 
-                  "bg-amber-500"
+                  "bg-amber-500",
+                  "tilik_diri"
                 )}
 
                 {renderStatBar(
                   "Tes Gaya Belajar (VAK)", 
                   selectedDayDetail.studentStats.learningStyle, 
                   <BookOpen size={13} className="text-indigo-500" />, 
-                  "bg-indigo-500"
+                  "bg-indigo-500",
+                  "learning_style"
                 )}
 
                 {renderStatBar(
                   "Tes Karir (RIASEC)", 
                   selectedDayDetail.studentStats.riasec, 
                   <Compass size={13} className="text-rose-500" />, 
-                  "bg-rose-500"
+                  "bg-rose-500",
+                  "riasec"
                 )}
 
                 {renderStatBar(
                   "Otak Kanan & Kiri", 
                   selectedDayDetail.studentStats.brainDominance, 
                   <Brain size={13} className="text-purple-500" />, 
-                  "bg-purple-500"
+                  "bg-purple-500",
+                  "brain_dominance"
                 )}
 
                 {renderStatBar(
                   "Talent Mapping", 
                   selectedDayDetail.studentStats.talentMapping, 
                   <Award size={13} className="text-teal-500" />, 
-                  "bg-teal-500"
+                  "bg-teal-500",
+                  "talent_mapping"
                 )}
 
                 {renderStatBar(
                   "Mood Check-in", 
                   selectedDayDetail.studentStats.mood, 
                   <Smile size={13} className="text-pink-500" />, 
-                  "bg-pink-500"
+                  "bg-pink-500",
+                  "mood"
                 )}
 
                 {renderStatBar(
                   "Laporan Insiden", 
                   selectedDayDetail.studentStats.incident, 
                   <AlertTriangle size={13} className="text-red-500" />, 
-                  "bg-red-500"
+                  "bg-red-500",
+                  "incident"
                 )}
 
                 {renderStatBar(
                   "Chat Konsultasi", 
                   selectedDayDetail.studentStats.chat, 
                   <MessageSquare size={13} className="text-blue-500" />, 
-                  "bg-blue-500"
+                  "bg-blue-500",
+                  "chat"
                 )}
 
                 {/* Teachers */}
@@ -541,6 +603,7 @@ export default function ActivityMonitoringPage() {
                     selectedDayDetail.teacherStats?.chat || 0, 
                     <MessageSquare size={13} className="text-indigo-500" />, 
                     "bg-indigo-500",
+                    "chatTeacher",
                     selectedDayDetail.teacherStats?.totalUniqueTeachers
                   )}
                   {renderStatBar(
@@ -548,6 +611,7 @@ export default function ActivityMonitoringPage() {
                     selectedDayDetail.teacherStats?.alertReview || 0, 
                     <AlertTriangle size={13} className="text-rose-500" />, 
                     "bg-rose-500",
+                    "alertReview",
                     selectedDayDetail.teacherStats?.totalUniqueTeachers
                   )}
                 </div>
@@ -698,6 +762,94 @@ export default function ActivityMonitoringPage() {
         )}
 
       </div>
+
+      {/* Drill-down Detail Modal Overlay */}
+      {modalDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white w-full max-w-2xl rounded-[30px] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 shrink-0">
+              <div>
+                <span className="text-[10px] font-bold text-[#00adb5] bg-cyan-50 px-2.5 py-1 rounded-md">
+                  Detail aktivitas harian
+                </span>
+                <h3 className="text-base font-black text-slate-800 mt-2">
+                  {modalDetail.label} ({formatIndoDate(modalDetail.date)})
+                </h3>
+              </div>
+              <button 
+                onClick={() => setModalDetail(null)}
+                className="w-9 h-9 bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-all rounded-full flex items-center justify-center active:scale-90"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+              {modalDetail.loading ? (
+                <div className="py-20 flex flex-col items-center justify-center text-slate-400 gap-3">
+                  <Loader2 size={32} className="animate-spin text-[#00adb5]" />
+                  <p className="text-xs font-bold">Mengambil detail aktivitas...</p>
+                </div>
+              ) : (
+                <>
+                  {modalDetail.data.length === 0 ? (
+                    <div className="py-20 text-center text-slate-400 space-y-2">
+                      <UserCheck size={36} className="mx-auto opacity-50" />
+                      <p className="text-xs font-bold">Tidak ada rincian aktivitas terdaftar.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {modalDetail.data.map((item) => {
+                        const timeStr = new Date(item.timestamp).toLocaleTimeString("id-ID", {
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        });
+                        return (
+                          <div key={item.id} className="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-50 pb-2 mb-3">
+                              <div>
+                                <h4 className="text-sm font-black text-slate-800">{item.name}</h4>
+                                <p className="text-[11px] text-slate-400 font-medium">{item.email}</p>
+                              </div>
+                              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
+                                {item.schoolName}
+                              </span>
+                            </div>
+
+                            <div className="flex justify-between items-end gap-4">
+                              <p className="text-xs font-semibold text-slate-700 bg-slate-50 px-3 py-2 rounded-xl flex-1 border border-slate-100/50">
+                                {item.description}
+                              </p>
+                              <div className="flex items-center gap-1.5 text-slate-400 text-[11px] font-bold pb-1 shrink-0">
+                                <Clock size={12} />
+                                {timeStr}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-slate-100 flex justify-end bg-white shrink-0">
+              <button 
+                onClick={() => setModalDetail(null)}
+                className="px-5 py-2.5 bg-[#00adb5] hover:bg-[#00929a] text-white text-xs font-bold rounded-xl shadow-sm active:scale-95 transition-all"
+              >
+                Tutup
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
