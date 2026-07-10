@@ -55,6 +55,24 @@ const handler = NextAuth({
 
   // 3. Callbacks: Memasukkan role dan id ke dalam session agar bisa terbaca di layout/page
   callbacks: {
+    async signIn({ user }) {
+      if (user) {
+        try {
+          const client = await connectDB();
+          const db = client.db();
+          await db.collection("login_logs").insertOne({
+            userId: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            createdAt: new Date(),
+          });
+        } catch (err) {
+          console.error("Failed to log login:", err);
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;

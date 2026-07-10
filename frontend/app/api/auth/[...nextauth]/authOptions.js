@@ -1,6 +1,7 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import { MongoClient } from "mongodb";
 import { compare } from "bcryptjs";
+import { connectDB } from "@/lib/mongodb";
 
 export const authOptions = {
   session: {
@@ -46,6 +47,24 @@ export const authOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user }) {
+      if (user) {
+        try {
+          const client = await connectDB();
+          const db = client.db();
+          await db.collection("login_logs").insertOne({
+            userId: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            createdAt: new Date(),
+          });
+        } catch (err) {
+          console.error("Failed to log login in authOptions:", err);
+        }
+      }
+      return true;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
