@@ -240,6 +240,7 @@ function ParentRequestsSection({ studentId }) {
 
 function MoodCheckIn({ sessionId }) {
   const [isMoodLoading, setIsMoodLoading] = useState(false);
+  const [isInitialCheckDone, setIsInitialCheckDone] = useState(false);
   const [lastMood, setLastMood] = useState(null);
   const [selectedMood, setSelectedMood] = useState(null);
   const [hoveredMood, setHoveredMood] = useState(null);
@@ -273,7 +274,8 @@ function MoodCheckIn({ sessionId }) {
           }
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setIsInitialCheckDone(true));
   }, [sessionId]);
 
   const handleMoodCheckIn = async () => {
@@ -312,99 +314,117 @@ function MoodCheckIn({ sessionId }) {
     }
   };
 
-  return (
-    <div className="bg-white border border-slate-100 rounded-[26px] shadow-sm p-4 w-full space-y-4">
-      <div className="flex justify-between items-center px-1">
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-          Mood Check-in
-        </p>
-
-        {!lastMood && (hoveredMood || selectedMood) && (
-          <span className="text-[10px] font-bold text-[#00adb5]">
-            {hoveredMood || selectedMood?.label}
-          </span>
-        )}
+  if (!isInitialCheckDone) {
+    return (
+      <div className="bg-white border border-slate-100 rounded-[26px] shadow-sm p-4 w-full h-32 flex items-center justify-center">
+         <Loader2 className="animate-spin text-slate-300" />
       </div>
+    );
+  }
 
-      {lastMood ? (
-        <div className="flex items-center justify-between gap-3 animate-in fade-in duration-300">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="text-3xl">{lastMood.mood}</div>
+  return (
+    <>
+      {/* Modal View for Forced Check-In */}
+      {!lastMood && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[32px] shadow-2xl p-6 md:p-8 w-full max-w-md space-y-6 transform scale-100 animate-in zoom-in-95 duration-300">
+             <div className="text-center space-y-2">
+                <h3 className="text-2xl font-bold text-slate-800">Bagaimana Perasaanmu Hari Ini?</h3>
+                <p className="text-sm text-slate-500">Pilih salah satu mood yang paling menggambarkan perasaanmu saat ini untuk melanjutkan explore.</p>
+             </div>
 
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-bold w-fit">
-                <CheckCircle2 size={13} />
-                {lastMood.label}
-              </div>
+             <div className="flex gap-3 justify-center flex-wrap">
+                {moodEmojis.map((m, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onMouseEnter={() => setHoveredMood(m.label)}
+                    onMouseLeave={() => setHoveredMood(null)}
+                    onClick={() => setSelectedMood(m)}
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl border-2 transition-all duration-300 ${
+                      selectedMood?.label === m.label
+                        ? "border-[#00adb5] bg-[#00adb5]/10 scale-110"
+                        : "border-slate-100 bg-slate-50/50 hover:border-[#00adb5]/30 hover:scale-105"
+                    }`}
+                  >
+                    {m.emoji}
+                  </button>
+                ))}
+             </div>
+             <div className="text-center h-4 flex items-center justify-center">
+               {(hoveredMood || selectedMood) && (
+                 <span className="text-sm font-bold text-[#00adb5]">
+                   {hoveredMood || selectedMood?.label}
+                 </span>
+               )}
+             </div>
 
-              {lastMood.note && (
-                <p className="text-xs text-slate-500 mt-1 truncate max-w-[180px]">
-                  "{lastMood.note}"
-                </p>
-              )}
-            </div>
-          </div>
+             <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Ada yang ingin diceritakan? (opsional)"
+                className="w-full h-24 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#00adb5] resize-none"
+              />
 
-          {/* Mengembalikan ke penampung input isian agar bisa update mood di hari yang sama */}
-          <button
-            onClick={() => {
-              setSelectedMood(moodEmojis.find(m => m.emoji === lastMood.mood) || null);
-              setNote(lastMood.note || "");
-              setLastMood(null); 
-            }}
-            className="text-[10px] font-bold text-slate-400 hover:text-[#00adb5] shrink-0"
-          >
-            Ganti
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4 animate-in fade-in duration-300">
-          {/* Emoji */}
-          <div className="flex gap-2 flex-wrap">
-            {moodEmojis.map((m, i) => (
               <button
-                key={i}
-                type="button"
-                onMouseEnter={() => setHoveredMood(m.label)}
-                onMouseLeave={() => setHoveredMood(null)}
-                onClick={() => setSelectedMood(m)}
-                className={`w-11 h-11 rounded-2xl flex items-center justify-center text-2xl border transition-all duration-300 ${
-                  selectedMood?.label === m.label
-                    ? "border-[#00adb5] bg-[#00adb5]/10 scale-110"
-                    : "border-slate-100 bg-slate-50/50 hover:border-[#00adb5]/30"
-                }`}
+                onClick={handleMoodCheckIn}
+                disabled={!selectedMood || isMoodLoading}
+                className="w-full h-12 rounded-2xl bg-[#00adb5] hover:bg-[#00929a] text-white text-sm font-black uppercase tracking-[0.2em] disabled:opacity-40 flex items-center justify-center gap-2 transition-colors"
               >
-                {m.emoji}
+                {isMoodLoading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  "Lanjutkan"
+                )}
               </button>
-            ))}
           </div>
-
-          {/* Note */}
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Apa yang sedang kamu rasakan hari ini? (opsional)"
-            className="w-full h-20 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-[#00adb5] resize-none"
-          />
-
-          {/* Button */}
-          <button
-            onClick={handleMoodCheckIn}
-            disabled={!selectedMood || isMoodLoading}
-            className="w-full h-11 rounded-2xl bg-[#00adb5] text-white text-xs font-black uppercase tracking-[0.2em] disabled:opacity-40 flex items-center justify-center gap-2"
-          >
-            {isMoodLoading ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Menyimpan...
-              </>
-            ) : (
-              "Simpan Mood"
-            )}
-          </button>
         </div>
       )}
-    </div>
+
+      {/* Summary View for Sidebar */}
+      {lastMood && (
+        <div className="bg-white border border-slate-100 rounded-[26px] shadow-sm p-4 w-full space-y-4">
+          <div className="flex justify-between items-center px-1">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+              Mood Check-in
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 animate-in fade-in duration-300">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="text-3xl">{lastMood.mood}</div>
+
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-bold w-fit">
+                  <CheckCircle2 size={13} />
+                  {lastMood.label}
+                </div>
+
+                {lastMood.note && (
+                  <p className="text-xs text-slate-500 mt-1 truncate max-w-[180px]">
+                    "{lastMood.note}"
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setSelectedMood(moodEmojis.find(m => m.emoji === lastMood.mood) || null);
+                setNote(lastMood.note || "");
+                setLastMood(null); 
+              }}
+              className="text-[10px] font-bold text-slate-400 hover:text-[#00adb5] shrink-0"
+            >
+              Ganti
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
