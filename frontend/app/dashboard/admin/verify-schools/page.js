@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import {
   Building2, CheckCircle, XCircle, Search,
-  Loader2, Mail, MapPin, Eye, Globe, User, X,
+  Loader2, Mail, MapPin, Eye, Globe, User, Users, X,
   Check, AlertTriangle
 } from 'lucide-react';
 import AdminPagination from "@/components/AdminPagination";
 import CustomSelect from "@/components/CustomSelect";
 import { fetchInstance } from "@/lib/fetchInstance";
 import { useDebounce } from "@/hooks/useDebounce";
+import Link from "next/link";
 
 const statusOptions = [
   { value: "all", label: "Semua Status" },
@@ -254,6 +255,7 @@ export default function VerifySchoolsPage() {
                   </td>
                   <td className="px-6 py-6 border border-slate-200 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      <Link href={`/dashboard/admin/verify-schools/${school._id}/manage-users`} className="p-3 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-600 hover:text-white transition-all"><Users size={18} /></Link>
                       <button onClick={() => openSchoolDetail(school._id)} className="p-3 bg-slate-100 text-slate-500 rounded-xl hover:bg-[#00adb5] hover:text-white transition-all"><Eye size={18} /></button>
                       {!school.is_verified && (
                         <button onClick={() => setConfirmAction({ show: true, id: school._id, name: school.name, type: 'approve' })} className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-600 hover:text-white transition-all"><Check size={18} /></button>
@@ -304,7 +306,13 @@ export default function VerifySchoolsPage() {
                   {school.address_preview || "-"}
                 </p>
 
-                <div className="mt-5 grid grid-cols-3 gap-2">
+                <div className="mt-5 grid grid-cols-4 gap-2">
+                  <Link
+                    href={`/dashboard/admin/verify-schools/${school._id}/manage-users`}
+                    className="col-span-1 py-3 flex justify-center items-center rounded-2xl bg-blue-50 border border-blue-100 text-xs font-black uppercase tracking-widest text-blue-500"
+                  >
+                    Kelola
+                  </Link>
                   <button
                     onClick={() => openSchoolDetail(school._id)}
                     className="col-span-1 py-3 rounded-2xl bg-white border border-slate-100 text-xs font-black uppercase tracking-widest text-[#00adb5]"

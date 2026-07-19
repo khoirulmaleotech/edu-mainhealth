@@ -154,3 +154,50 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
 }
+
+export async function PUT(request, { params }) {
+  try {
+    const userId = ObjectId.isValid(params.id) ? new ObjectId(params.id) : null;
+    if (!userId) {
+      return NextResponse.json({ success: false, message: "ID user tidak valid" }, { status: 400 });
+    }
+
+    const { fullname, email, role, password } = await request.json();
+    const db = (await connectDB()).db();
+
+    const updateFields = { updatedAt: new Date() };
+    
+    if (fullname) updateFields.fullname = fullname;
+    if (role) updateFields.role = role;
+    
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return NextResponse.json({ success: false, message: "Format email tidak valid" }, { status: 400 });
+      }
+      
+      const existingUser = await db.collection("users").findOne({ email: email.toLowerCase(), _id: { $ne: userId } });
+      if (existingUser) {
+        return NextResponse.json({ success: false, message: "Email sudah digunakan oleh user lain" }, { status: 400 });
+      }
+      
+      updateFields.email = email.toLowerCase();
+    }
+    
+    if (password) {
+      updateFields.password = await hash(password, 12);
+    }
+
+    if (Object.keys(updateFields).length > 1) {
+      await db.collection("users").updateOne(
+        { _id: userId },
+        { $set: updateFields }
+      );
+    }
+
+    return NextResponse.json({ success: true, message: "Data user berhasil diperbarui" });
+  } catch (error) {
+    console.error("ADMIN_USER_PUT_ERROR:", error);
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
+import { hash } from "bcryptjs";
 
 import { connectDB } from "@/lib/mongodb";
 
@@ -163,5 +164,94 @@ export async function PATCH(request) {
     return NextResponse.json({ message: "Action tidak valid" }, { status: 400 });
   } catch (error) {
     return NextResponse.json({ message: "Gagal memproses perubahan" }, { status: 500 });
+  }
+}
+
+export async function POST(request) {
+  try {
+    const body = await request.json();
+    const { action, users, school_id, fullname, email, password, role } = body;
+    
+    const db = (await connectDB()).db();
+    
+    if (action === "bulk") {
+      if (!users || !Array.isArray(users) || users.length === 0 || !school_id) {
+        return NextResponse.json({ message: "Data bulk registration tidak lengkap." }, { status: 400 });
+      }
+      
+      const schoolObjId = ObjectId.isValid(school_id) ? new ObjectId(school_id) : school_id;
+      
+      // Extract emails for duplicate check
+      const emails = users.map(u => u.email.toLowerCase());
+      const existingUsers = await db.collection("users").find({ email: { $in: emails } }).toArray();
+      const existingEmails = existingUsers.map(u => u.email);
+      
+      const usersToInsert = [];
+      const skippedEmails = [];
+      
+      for (const u of users) {
+        if (!u.email || !u.password || !u.fullname || !u.role) continue;
+        
+        const lowerEmail = u.email.toLowerCase();
+        if (existingEmails.includes(lowerEmail)) {
+          skippedEmails.push(lowerEmail);
+          continue;
+        }
+        
+        const hashedPassword = await hash(u.password.toString(), 12);
+        
+        usersToInsert.push({
+          fullname: u.fullname,
+          email: lowerEmail,
+          password: hashedPassword,
+          role: u.role,
+          is_verified: true,
+          school_id: schoolObjId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+      
+      if (usersToInsert.length > 0) {
+        await db.collection("users").insertMany(usersToInsert);
+      }
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: `Berhasil mendaftarkan ${usersToInsert.length} user. ${skippedEmails.length > 0 ? `(${skippedEmails.length} email dilewati karena sudah terdaftar)` : ""}` 
+      });
+      
+    } else {
+      // Single user creation
+      if (!fullname || !email || !password || !role || !school_id) {
+        return NextResponse.json({ message: "Data wajib diisi semua." }, { status: 400 });
+      }
+      
+      const existingUser = await db.collection("users").findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+        return NextResponse.json({ message: "Email sudah terdaftar." }, { status: 400 });
+      }
+      
+      const hashedPassword = await hash(password, 12);
+      const schoolObjId = ObjectId.isValid(school_id) ? new ObjectId(school_id) : school_id;
+      
+      const newUser = {
+        fullname,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        role,
+        is_verified: true,
+        school_id: schoolObjId,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      await db.collection("users").insertOne(newUser);
+      
+      return NextResponse.json({ success: true, message: "User berhasil dibuat." }, { status: 201 });
+    }
+  } catch (error) {
+    console.error("ADMIN_USERS_POST_ERROR:", error);
+    return NextResponse.json({ message: "Gagal memproses data", error: error.message }, { status: 500 });
   }
 }
