@@ -24,11 +24,13 @@ export default function WellBeingCampQuestionnairePage() {
   const { data: session } = useSession();
   const router = useRouter();
 
-  const [testType, setTestType] = useState("post_test"); 
+  const [testType, setTestType] = useState("pre_test"); 
   const [isSubmitted, setIsSuccessSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("A"); 
 
+  const [schools, setSchools] = useState([]);
+  const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [studentEmail, setStudentEmail] = useState("");
   const [studentWhatsapp, setStudentWhatsapp] = useState("");
   const [studentSchool, setStudentSchool] = useState("");
@@ -93,6 +95,25 @@ export default function WellBeingCampQuestionnairePage() {
       if (savedQ24) setQ24(JSON.parse(savedQ24));
       if (savedAnswersC) setAnswersC(JSON.parse(savedAnswersC));
     }
+    
+    const fetchSchools = async () => {
+      try {
+        const res = await fetch("/api/signup/school?verified=true");
+        const json = await res.json();
+        if (json.success) {
+          const makassarSchools = json.data.filter(s => 
+            s.name.toLowerCase().includes("makassar") || 
+            (s.address && s.address.toLowerCase().includes("makassar"))
+          );
+          const finalSchools = makassarSchools.length > 0 ? makassarSchools : json.data;
+          finalSchools.sort((a, b) => a.name.localeCompare(b.name));
+          setSchools(finalSchools);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchSchools();
   }, []);
 
   useEffect(() => {
@@ -230,8 +251,96 @@ export default function WellBeingCampQuestionnairePage() {
     localStorage.removeItem("wb_camp_answersC");
   };
 
+  const validatePart = (part) => {
+    if (part === "A") {
+      if (!studentEmail.trim() || !studentWhatsapp.trim() || !studentSchool.trim() || !studentClass.trim()) {
+        alert("Harap lengkapi data diri (Email, WhatsApp, Sekolah, Kelas) terlebih dahulu.");
+        return false;
+      }
+      if (Object.keys(answersA).length < 15) {
+        alert("Harap isi semua pertanyaan (1-15) di Bagian A.");
+        return false;
+      }
+      if (q16.length === 0) {
+        alert("Harap pilih setidaknya satu orang yang paling mungkin diajak bicara pada soal no 16.");
+        return false;
+      }
+      if (q16.includes("Lainnya") && !q16Others.trim()) {
+        alert("Harap sebutkan orang lainnya pada soal no 16.");
+        return false;
+      }
+      if (!q17.trim()) {
+        alert("Harap isi pandangan Anda pada soal no 17.");
+        return false;
+      }
+      return true;
+    }
+    if (part === "B") {
+      if (!q18) {
+        alert("Harap jawab pertanyaan no 18.");
+        return false;
+      }
+      if (!q19) {
+        alert("Harap jawab pertanyaan no 19.");
+        return false;
+      }
+      if (q20.length === 0) {
+        alert("Harap jawab pertanyaan no 20.");
+        return false;
+      }
+      if (q20.includes("Lainnya") && !q20Others.trim()) {
+        alert("Harap sebutkan bentuk bullying lainnya pada soal no 20.");
+        return false;
+      }
+      if (!q21) {
+        alert("Harap jawab pertanyaan no 21.");
+        return false;
+      }
+      if (!q22) {
+        alert("Harap jawab pertanyaan no 22.");
+        return false;
+      }
+      if (q23.length === 0) {
+        alert("Harap jawab pertanyaan no 23.");
+        return false;
+      }
+      if (q23.includes("Lainnya") && !q23Others.trim()) {
+        alert("Harap sebutkan platform lainnya pada soal no 23.");
+        return false;
+      }
+      if (q24.length === 0) {
+        alert("Harap jawab pertanyaan no 24.");
+        return false;
+      }
+      return true;
+    }
+    if (part === "C") {
+      if (!answersC.q25?.trim() || !answersC.q26?.trim() || !answersC.q27?.trim() || !answersC.q28_target?.trim() || !answersC.q28_reason?.trim() || !answersC.q29?.trim() || !answersC.q30?.trim()) {
+        alert("Harap isi semua pertanyaan esai di Bagian C.");
+        return false;
+      }
+      return true;
+    }
+    return true;
+  };
+
+  const handleTabChange = (targetTab) => {
+    // Validasi sebelum pindah tab ke kanan
+    if (targetTab === "B") {
+      if (!validatePart("A")) return;
+    } else if (targetTab === "C") {
+      if (!validatePart("A") || !validatePart("B")) return;
+    }
+    setActiveTab(targetTab);
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validatePart("A")) { setActiveTab("A"); return; }
+    if (!validatePart("B")) { setActiveTab("B"); return; }
+    if (!validatePart("C")) { setActiveTab("C"); return; }
+
     setSubmitting(true);
 
     const payload = {
@@ -297,7 +406,7 @@ export default function WellBeingCampQuestionnairePage() {
           <div className="w-20 h-20 md:w-24 md:h-24 bg-emerald-50 text-emerald-500 rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-6 md:mb-8 border border-emerald-100">
             <CheckCircle2 className="w-10 h-10 md:w-12 md:h-12" />
           </div>
-          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">Kuesioner Berhasil Dikirim!</h2>
+          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">Pretest Berhasil Dikirim!</h2>
           <p className="text-slate-500 font-bold text-sm mt-4 leading-relaxed text-emerald-600 bg-emerald-50/50 py-3 px-5 rounded-2xl border border-emerald-100/40">
             Riwayat isian Anda telah dikirimkan ke alamat email.
           </p>
@@ -332,22 +441,22 @@ export default function WellBeingCampQuestionnairePage() {
             type="button"
             className="flex-1 sm:flex-none text-center px-3 md:px-4 py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-[#00adb5] text-white shadow-md cursor-default"
           >
-            🚀 Post-Test
+            🚀 Pre-Test
           </button>
         </div>
       </nav>
 
       <div className="max-w-4xl mx-auto pt-44 sm:pt-32 px-4">
-        <header className="bg-white border border-slate-100 rounded-[28px] md:rounded-[35px] p-6 md:p-10 shadow-sm mb-6 relative overflow-hidden">
-          <div className={`absolute top-0 left-0 right-0 h-2 ${testType === "pre_test" ? "bg-slate-900" : "bg-[#00adb5]"}`}></div>
+        <header className="bg-white border border-slate-100 rounded-[28px] md:rounded-[35px] p-6 md:p-10 shadow-sm mb-6 relative">
+          <div className={`absolute top-0 left-0 right-0 h-2 rounded-t-[28px] md:rounded-t-[35px] ${testType === "pre_test" ? "bg-slate-900" : "bg-[#00adb5]"}`}></div>
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-2">
               <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest ${testType === "pre_test" ? "bg-slate-100 text-slate-800" : "bg-[#00adb5]/10 text-[#00adb5]"}`}>
                 {testType === "pre_test" ? "Phase 1: Pre-Camp Assessment" : "Phase 2: Post-Camp Evaluation"}
               </span>
-              <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">Kuesioner Pengalaman & Kesehatan Mental Remaja</h1>
+              <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">Pretest Pengalaman & Kesehatan Mental Remaja</h1>
               <p className="text-xs text-slate-400 leading-relaxed font-medium italic">
-                Kuesioner ini bukan ujian dan tidak ada jawaban benar atau salah. Jawabanmu dijamin rahasia & tidak memengaruhi nilai sekolah. Isilah sejujur-jujurnya.
+                Pretest ini bukan ujian dan tidak ada jawaban benar atau salah. Jawabanmu dijamin rahasia & tidak memengaruhi nilai sekolah. Isilah sejujur-jujurnya.
               </p>
             </div>
             <div className="text-center p-4 bg-slate-50 border border-slate-100 rounded-2xl shrink-0 lg:w-44">
@@ -367,7 +476,7 @@ export default function WellBeingCampQuestionnairePage() {
               <h4 className="text-xs font-black uppercase tracking-widest">Hai, Teman-Teman!</h4>
             </div>
             <p className="text-xs md:text-sm text-slate-600 font-medium leading-relaxed [text-shadow:_0_0_1px_rgba(241,245,249,0.1)]">
-              Sebelum memulai, kami ingin mengucapkan terima kasih karena sudah meluangkan waktu untuk mengisi kuesioner ini. Kuesioner ini bukan ujian dan tidak ada jawaban benar atau salah. Kami hanya ingin mengetahui bagaimana pengalaman, perasaan, dan pandangan kalian tentang kehidupan sebagai remaja saat ini, termasuk tentang pertemanan, bullying, media sosial, dan kesehatan mental.
+              Sebelum memulai, kami ingin mengucapkan terima kasih karena sudah meluangkan waktu untuk mengisi pretest ini. Pretest ini bukan ujian dan tidak ada jawaban benar atau salah. Kami hanya ingin mengetahui bagaimana pengalaman, perasaan, dan pandangan kalian tentang kehidupan sebagai remaja saat ini, termasuk tentang pertemanan, bullying, media sosial, dan kesehatan mental.
             </p>
             <p className="text-xs md:text-sm text-slate-600 font-medium leading-relaxed mt-2.5">
               Jangan khawatir, semua jawaban yang kamu berikan akan dirahasiakan dan tidak akan memengaruhi nilai maupun statusmu di sekolah. Karena itu, isilah sesuai dengan kondisi dan pengalaman yang sebenarnya. Semakin jujur jawaban yang diberikan, semakin membantu kami memahami kebutuhan remaja dan menciptakan lingkungan sekolah yang lebih aman, nyaman, dan suportif bagi semua.
@@ -409,14 +518,61 @@ export default function WellBeingCampQuestionnairePage() {
               <label className="text-[11px] font-black text-slate-500 uppercase ml-1">Nama Asal Sekolah</label>
               <div className="relative">
                 <School className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                <input
-                  type="text"
-                  required
-                  value={studentSchool}
-                  onChange={(e) => setStudentSchool(e.target.value.toUpperCase())}
-                  placeholder="SMAN 1 BUKITTINGGI"
-                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 focus:border-[#00adb5] focus:bg-white rounded-xl outline-none text-xs font-black transition-all shadow-inner tracking-wide"
-                />
+                {schools.length > 0 ? (
+                  <div className="relative w-full">
+                    <input
+                      type="text"
+                      required
+                      value={studentSchool}
+                      onChange={(e) => {
+                        setStudentSchool(e.target.value);
+                        setShowSchoolDropdown(true);
+                      }}
+                      onFocus={(e) => {
+                        setShowSchoolDropdown(true);
+                        e.target.select();
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => setShowSchoolDropdown(false), 200);
+                      }}
+                      placeholder="Cari nama sekolah..."
+                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 focus:border-[#00adb5] focus:bg-white rounded-xl outline-none text-xs font-black transition-all shadow-inner tracking-wide"
+                    />
+                    {showSchoolDropdown && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl max-h-72 overflow-y-auto">
+                        {schools
+                          .filter((s) => s.name.toLowerCase().includes(studentSchool.toLowerCase()))
+                          .map((s) => (
+                            <div
+                              key={s._id}
+                              className="px-4 py-3 hover:bg-slate-50 cursor-pointer text-xs font-bold text-slate-700 border-b border-slate-100 last:border-none"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setStudentSchool(s.name);
+                                setShowSchoolDropdown(false);
+                              }}
+                            >
+                              {s.name}
+                            </div>
+                          ))}
+                        {schools.filter((s) => s.name.toLowerCase().includes(studentSchool.toLowerCase())).length === 0 && (
+                          <div className="px-4 py-3 text-xs font-bold text-slate-400 text-center">
+                            Sekolah tidak ditemukan di wilayah Makassar
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    required
+                    value={studentSchool}
+                    onChange={(e) => setStudentSchool(e.target.value.toUpperCase())}
+                    placeholder="SMAN 1 MAKASSAR"
+                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 focus:border-[#00adb5] focus:bg-white rounded-xl outline-none text-xs font-black transition-all shadow-inner tracking-wide"
+                  />
+                )}
               </div>
             </div>
 
@@ -437,13 +593,13 @@ export default function WellBeingCampQuestionnairePage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 mt-6 md:mt-8 pt-6 md:pt-8 border-t border-slate-100 text-center">
-            <button type="button" onClick={() => setActiveTab("A")} className={`flex-1 py-3 md:py-3.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest border transition-all ${activeTab === "A" ? "bg-[#00adb5] text-white border-transparent shadow-md shadow-[#00adb5]/10" : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"}`}>
+            <button type="button" onClick={() => handleTabChange("A")} className={`flex-1 py-3 md:py-3.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest border transition-all ${activeTab === "A" ? "bg-[#00adb5] text-white border-transparent shadow-md shadow-[#00adb5]/10" : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"}`}>
               Bagian A: Well-Being
             </button>
-            <button type="button" onClick={() => setActiveTab("B")} className={`flex-1 py-3 md:py-3.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest border transition-all ${activeTab === "B" ? "bg-[#00adb5] text-white border-transparent shadow-md shadow-[#00adb5]/10" : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"}`}>
+            <button type="button" onClick={() => handleTabChange("B")} className={`flex-1 py-3 md:py-3.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest border transition-all ${activeTab === "B" ? "bg-[#00adb5] text-white border-transparent shadow-md shadow-[#00adb5]/10" : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"}`}>
               Bagian B: Bullying
             </button>
-            <button type="button" onClick={() => setActiveTab("C")} className={`flex-1 py-3 md:py-3.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest border transition-all ${activeTab === "C" ? "bg-[#00adb5] text-white border-transparent shadow-md shadow-[#00adb5]/10" : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"}`}>
+            <button type="button" onClick={() => handleTabChange("C")} className={`flex-1 py-3 md:py-3.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-widest border transition-all ${activeTab === "C" ? "bg-[#00adb5] text-white border-transparent shadow-md shadow-[#00adb5]/10" : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"}`}>
               Bagian C: Pemahaman
             </button>
           </div>
@@ -465,7 +621,7 @@ export default function WellBeingCampQuestionnairePage() {
               <div className="bg-white border border-slate-100 rounded-[28px] md:rounded-[35px] overflow-hidden shadow-sm">
                 <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col gap-4">
                   <div className="flex items-center justify-between text-[10px] md:text-[11px] font-black uppercase tracking-wider text-slate-400">
-                    <span>Butir Kuesioner Evaluasi 1 - 15</span>
+                    <span>Butir Pretest Evaluasi 1 - 15</span>
                     <span className="text-[#00adb5] bg-[#00adb5]/10 px-2.5 py-1 rounded-md">[PILIHAN TUNGGAL]</span>
                   </div>
                   
@@ -484,7 +640,7 @@ export default function WellBeingCampQuestionnairePage() {
                     <thead>
                       <tr className="bg-slate-50/30 border-b border-slate-100 text-xs font-black uppercase tracking-wider text-slate-400">
                         <th className="py-5 px-6 w-12 text-center">No</th>
-                        <th className="py-5 px-6">Butir Pertanyaan Kuesioner</th>
+                        <th className="py-5 px-6">Butir Pertanyaan Pretest</th>
                         <th className="py-5 px-6 text-center w-80">Skala Penilaian (1 - 5)</th>
                       </tr>
                     </thead>
@@ -601,7 +757,7 @@ export default function WellBeingCampQuestionnairePage() {
               </div>
 
               <div className="flex justify-end pt-4">
-                <button type="button" onClick={() => setActiveTab("B")} className="w-full sm:w-auto h-14 px-8 bg-slate-900 text-white font-bold text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 hover:bg-[#00adb5] transition-all shadow-md">
+                <button type="button" onClick={() => handleTabChange("B")} className="w-full sm:w-auto h-14 px-8 bg-slate-900 text-white font-bold text-xs uppercase tracking-widest rounded-2xl flex items-center justify-center gap-2 hover:bg-[#00adb5] transition-all shadow-md">
                   Lanjut ke Bagian B <ChevronRight size={16} />
                 </button>
               </div>
@@ -765,10 +921,10 @@ export default function WellBeingCampQuestionnairePage() {
               </div>
 
               <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4">
-                <button type="button" onClick={() => setActiveTab("A")} className="w-full sm:w-auto h-14 px-8 bg-white text-slate-700 font-bold text-xs uppercase tracking-widest rounded-2xl border border-slate-200 flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
+                <button type="button" onClick={() => handleTabChange("A")} className="w-full sm:w-auto h-14 px-8 bg-white text-slate-700 font-bold text-xs uppercase tracking-widest rounded-2xl border border-slate-200 flex items-center justify-center gap-2 hover:bg-slate-50 transition-all">
                   <ChevronLeft size={16} /> Kembali ke Bagian A
                 </button>
-                <button type="button" onClick={() => setActiveTab("C")} className="w-full sm:w-auto h-14 px-8 bg-slate-900 text-white font-bold text-xs uppercase tracking-widest rounded-2xl border-none flex items-center justify-center gap-2 hover:bg-[#00adb5] transition-all shadow-md">
+                <button type="button" onClick={() => handleTabChange("C")} className="w-full sm:w-auto h-14 px-8 bg-slate-900 text-white font-bold text-xs uppercase tracking-widest rounded-2xl border-none flex items-center justify-center gap-2 hover:bg-[#00adb5] transition-all shadow-md">
                   Lanjut ke Bagian C <ChevronRight size={16} />
                 </button>
               </div>
