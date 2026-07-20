@@ -122,7 +122,14 @@ export default function QuestionnaireResponsesPage() {
     const matchesFilter = 
       filterType === "all" || item.assessment_type === filterType;
 
-    return matchesSearch && matchesFilter;
+    const itemDate = new Date(item.timestamp);
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+    const isToday = itemDate >= todayStart && itemDate <= todayEnd;
+
+    return matchesSearch && matchesFilter && isToday;
   });
 
   const handleDownloadExcel = () => {
@@ -242,6 +249,10 @@ export default function QuestionnaireResponsesPage() {
     );
   }
 
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayPretestCount = responses.filter(r => r.assessment_type === "pre_test" && new Date(r.timestamp) >= todayStart).length;
+
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-700 pb-16 selection:bg-[#00adb5] selection:text-white">
       <nav className="fixed w-full bg-white/80 backdrop-blur-xl z-40 border-b border-slate-100 px-4 md:px-8 py-4 flex justify-between items-center h-16">
@@ -300,6 +311,9 @@ export default function QuestionnaireResponsesPage() {
                 <ClipboardList size={14} className="text-[#00adb5]" />
                 <span>Daftar Peserta Real-time ({filteredResponses.length})</span>
               </div>
+              <div className="text-[9px] font-bold text-[#00adb5] bg-[#00adb5]/10 px-2 py-0.5 rounded">
+                Pre-Test Hari Ini: {todayPretestCount}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
@@ -342,7 +356,7 @@ export default function QuestionnaireResponsesPage() {
               <header className="border-b border-slate-100 pb-5 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                 <div className="space-y-1">
                   <span className={`inline-flex px-2.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${selectedResponse.assessment_type === "pre_test" ? "bg-slate-100 text-slate-800" : "bg-[#00adb5]/10 text-[#00adb5]"}`}>
-                    Lembar Hasil: {selectedResponse.assessment_type === "pre_test" ? "Pre-Test (13 Juni)" : "Post-Test (14 Juni)"}
+                    Lembar Hasil: {selectedResponse.assessment_type === "pre_test" ? "Pre-Test" : "Post-Test"} ({new Date(selectedResponse.timestamp).toLocaleDateString("id-ID", { day: "numeric", month: "short" })})
                   </span>
                   <h2 className="text-xl font-black text-slate-800 truncate">{selectedResponse.metadata?.email}</h2>
                 </div>
