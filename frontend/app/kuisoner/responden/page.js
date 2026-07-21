@@ -252,6 +252,7 @@ export default function QuestionnaireResponsesPage() {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
   const todayPretestCount = responses.filter(r => r.assessment_type === "pre_test" && new Date(r.timestamp) >= todayStart).length;
+  const todayPosttestCount = responses.filter(r => r.assessment_type === "post_test" && new Date(r.timestamp) >= todayStart).length;
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-700 pb-16 selection:bg-[#00adb5] selection:text-white">
@@ -311,8 +312,17 @@ export default function QuestionnaireResponsesPage() {
                 <ClipboardList size={14} className="text-[#00adb5]" />
                 <span>Daftar Peserta Real-time ({filteredResponses.length})</span>
               </div>
-              <div className="text-[9px] font-bold text-[#00adb5] bg-[#00adb5]/10 px-2 py-0.5 rounded">
-                Pre-Test Hari Ini: {todayPretestCount}
+              <div className="flex gap-2">
+                {(filterType === "all" || filterType === "pre_test") && (
+                  <div className="text-[9px] font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
+                    Pre-Test Hari Ini: {todayPretestCount}
+                  </div>
+                )}
+                {(filterType === "all" || filterType === "post_test") && (
+                  <div className="text-[9px] font-bold text-[#00adb5] bg-[#00adb5]/10 px-2 py-0.5 rounded">
+                    Post-Test Hari Ini: {todayPosttestCount}
+                  </div>
+                )}
               </div>
             </div>
 

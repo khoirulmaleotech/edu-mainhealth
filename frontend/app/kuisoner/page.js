@@ -24,7 +24,7 @@ export default function WellBeingCampQuestionnairePage() {
   const { data: session } = useSession();
   const router = useRouter();
 
-  const [testType, setTestType] = useState("pre_test"); 
+  const [testType, setTestType] = useState("post_test"); 
   const [isSubmitted, setIsSuccessSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("A"); 
@@ -406,7 +406,7 @@ export default function WellBeingCampQuestionnairePage() {
           <div className="w-20 h-20 md:w-24 md:h-24 bg-emerald-50 text-emerald-500 rounded-2xl md:rounded-3xl flex items-center justify-center mx-auto mb-6 md:mb-8 border border-emerald-100">
             <CheckCircle2 className="w-10 h-10 md:w-12 md:h-12" />
           </div>
-          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">Pretest Berhasil Dikirim!</h2>
+          <h2 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">{testType === "pre_test" ? "Pretest" : "Postest"} Berhasil Dikirim!</h2>
           <p className="text-slate-500 font-bold text-sm mt-4 leading-relaxed text-emerald-600 bg-emerald-50/50 py-3 px-5 rounded-2xl border border-emerald-100/40">
             Riwayat isian Anda telah dikirimkan ke alamat email.
           </p>
@@ -441,7 +441,7 @@ export default function WellBeingCampQuestionnairePage() {
             type="button"
             className="flex-1 sm:flex-none text-center px-3 md:px-4 py-2.5 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap bg-[#00adb5] text-white shadow-md cursor-default"
           >
-            🚀 Pre-Test
+            🚀 {testType === "pre_test" ? "Pre-Test" : "Post-Test"}
           </button>
         </div>
       </nav>
@@ -454,9 +454,9 @@ export default function WellBeingCampQuestionnairePage() {
               <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest ${testType === "pre_test" ? "bg-slate-100 text-slate-800" : "bg-[#00adb5]/10 text-[#00adb5]"}`}>
                 {testType === "pre_test" ? "Phase 1: Pre-Camp Assessment" : "Phase 2: Post-Camp Evaluation"}
               </span>
-              <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">Pretest Pengalaman & Kesehatan Mental Remaja</h1>
+              <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight leading-tight">{testType === "pre_test" ? "Pretest" : "Postest"} Pengalaman & Kesehatan Mental Remaja</h1>
               <p className="text-xs text-slate-400 leading-relaxed font-medium italic">
-                Pretest ini bukan ujian dan tidak ada jawaban benar atau salah. Jawabanmu dijamin rahasia & tidak memengaruhi nilai sekolah. Isilah sejujur-jujurnya.
+                {testType === "pre_test" ? "Pretest" : "Postest"} ini bukan ujian dan tidak ada jawaban benar atau salah. Jawabanmu dijamin rahasia & tidak memengaruhi nilai sekolah. Isilah sejujur-jujurnya.
               </p>
             </div>
             <div className="text-center p-4 bg-slate-50 border border-slate-100 rounded-2xl shrink-0 lg:w-44">
@@ -476,7 +476,7 @@ export default function WellBeingCampQuestionnairePage() {
               <h4 className="text-xs font-black uppercase tracking-widest">Hai, Teman-Teman!</h4>
             </div>
             <p className="text-xs md:text-sm text-slate-600 font-medium leading-relaxed [text-shadow:_0_0_1px_rgba(241,245,249,0.1)]">
-              Sebelum memulai, kami ingin mengucapkan terima kasih karena sudah meluangkan waktu untuk mengisi pretest ini. Pretest ini bukan ujian dan tidak ada jawaban benar atau salah. Kami hanya ingin mengetahui bagaimana pengalaman, perasaan, dan pandangan kalian tentang kehidupan sebagai remaja saat ini, termasuk tentang pertemanan, bullying, media sosial, dan kesehatan mental.
+              Sebelum memulai, kami ingin mengucapkan terima kasih karena sudah meluangkan waktu untuk mengisi {testType === "pre_test" ? "pretest" : "postest"} ini. {testType === "pre_test" ? "Pretest" : "Postest"} ini bukan ujian dan tidak ada jawaban benar atau salah. Kami hanya ingin mengetahui bagaimana pengalaman, perasaan, dan pandangan kalian tentang kehidupan sebagai remaja saat ini, termasuk tentang pertemanan, bullying, media sosial, dan kesehatan mental.
             </p>
             <p className="text-xs md:text-sm text-slate-600 font-medium leading-relaxed mt-2.5">
               Jangan khawatir, semua jawaban yang kamu berikan akan dirahasiakan dan tidak akan memengaruhi nilai maupun statusmu di sekolah. Karena itu, isilah sesuai dengan kondisi dan pengalaman yang sebenarnya. Semakin jujur jawaban yang diberikan, semakin membantu kami memahami kebutuhan remaja dan menciptakan lingkungan sekolah yang lebih aman, nyaman, dan suportif bagi semua.
@@ -621,7 +621,7 @@ export default function WellBeingCampQuestionnairePage() {
               <div className="bg-white border border-slate-100 rounded-[28px] md:rounded-[35px] overflow-hidden shadow-sm">
                 <div className="p-4 bg-slate-50/50 border-b border-slate-100 flex flex-col gap-4">
                   <div className="flex items-center justify-between text-[10px] md:text-[11px] font-black uppercase tracking-wider text-slate-400">
-                    <span>Butir Pretest Evaluasi 1 - 15</span>
+                    <span>Butir {testType === "pre_test" ? "Pretest" : "Postest"} Evaluasi 1 - 15</span>
                     <span className="text-[#00adb5] bg-[#00adb5]/10 px-2.5 py-1 rounded-md">[PILIHAN TUNGGAL]</span>
                   </div>
                   
@@ -640,7 +640,7 @@ export default function WellBeingCampQuestionnairePage() {
                     <thead>
                       <tr className="bg-slate-50/30 border-b border-slate-100 text-xs font-black uppercase tracking-wider text-slate-400">
                         <th className="py-5 px-6 w-12 text-center">No</th>
-                        <th className="py-5 px-6">Butir Pertanyaan Pretest</th>
+                        <th className="py-5 px-6">Butir Pertanyaan {testType === "pre_test" ? "Pretest" : "Postest"}</th>
                         <th className="py-5 px-6 text-center w-80">Skala Penilaian (1 - 5)</th>
                       </tr>
                     </thead>
