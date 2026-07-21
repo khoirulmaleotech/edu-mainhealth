@@ -258,7 +258,7 @@ export async function POST(request) {
       
       if (studentEmail) {
         await mailTransporter.sendMail({
-          from: `"EduMind Support" <${process.env.EMAIL_USERNAME || "edumind.educourse@gmail.com"}>`,
+          from: `"EduMind Support" <${process.env.EMAIL_USERNAME || "edumind8@gmail.com"}>`,
           to: studentEmail,
           subject: `Hasil Asesmen Tilik Diri — ${severity.level}`,
           html: buildTilikDiriEmailHtml({

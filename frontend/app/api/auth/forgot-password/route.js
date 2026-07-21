@@ -11,8 +11,8 @@ const mailTransporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: process.env.EMAIL_USERNAME || "edumind.educourse@gmail.com",
-    pass: process.env.EMAIL_PASSWORD || "gvxzcntlifpsxxqd",
+    user: process.env.EMAIL_USERNAME || "edumind8@gmail.com",
+    pass: process.env.EMAIL_PASSWORD || "pmiievjfbevzzetu",
   },
 });
 
@@ -64,7 +64,7 @@ export async function POST(request) {
 
     // 5. Kirim Email Instruksi Penyetelan Ulang
     await mailTransporter.sendMail({
-      from: `"EduMind Security" <${process.env.EMAIL_USERNAME || "edumind.educourse@gmail.com"}>`,
+      from: `"EduMind Security" <${process.env.EMAIL_USERNAME || "edumind8@gmail.com"}>`,
       to: user.email,
       subject: "🔒 Atur Ulang Kata Sandi Akun EduMind Anda",
       html: `
