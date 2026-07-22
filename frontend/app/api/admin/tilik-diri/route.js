@@ -3,18 +3,27 @@ import { connectDB } from "@/lib/mongodb";
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
+    const searchParams = new URL(request.url).searchParams;
     const page = parseInt(searchParams.get("page")) || 1;
     const pageSize = parseInt(searchParams.get("pageSize")) || 10;
     const search = searchParams.get("search") || "";
     const schoolFilter = searchParams.get("school") || "";
     const severityFilter = searchParams.get("severity") || "";
+    const startDate = searchParams.get("startDate");
+    const endDate = searchParams.get("endDate");
     const isExport = searchParams.get("export") === "true";
 
     const client = await connectDB();
     const db = client.db("edumind");
 
     const matchStage = {};
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      matchStage.completedAt = { $gte: start, $lte: end };
+    }
 
     const pipeline = [
       { $match: matchStage },
@@ -84,9 +93,27 @@ export async function GET(request) {
       });
     }
 
-    const totalPipeline = [...pipeline, { $count: "count" }];
-    const totalResult = await db.collection("student_tilik_diri").aggregate(totalPipeline).toArray();
-    const totalData = totalResult.length > 0 ? totalResult[0].count : 0;
+    const statsPipeline = [
+      ...pipeline,
+      {
+        $facet: {
+          total: [{ $count: "count" }],
+          makassar: [
+            { $match: { school_name: { $regex: "makassar", $options: "i" } } },
+            { $count: "count" }
+          ],
+          bukittinggi: [
+            { $match: { school_name: { $regex: "bukittinggi", $options: "i" } } },
+            { $count: "count" }
+          ]
+        }
+      }
+    ];
+    
+    const statsResult = await db.collection("student_tilik_diri").aggregate(statsPipeline).toArray();
+    const totalData = statsResult[0]?.total[0]?.count || 0;
+    const countMakassar = statsResult[0]?.makassar[0]?.count || 0;
+    const countBukittinggi = statsResult[0]?.bukittinggi[0]?.count || 0;
 
     let data = [];
     if (isExport) {
@@ -105,6 +132,10 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       data,
+      counts: {
+        makassar: countMakassar,
+        bukittinggi: countBukittinggi,
+      },
       pagination: {
         currentPage: page,
         pageSize,

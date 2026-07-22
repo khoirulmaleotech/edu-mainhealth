@@ -25,6 +25,9 @@ export default function AdminTilikDiriPage() {
   const [schools, setSchools] = useState([]);
   const [schoolFilter, setSchoolFilter] = useState("");
   const [severityFilter, setSeverityFilter] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [counts, setCounts] = useState({ makassar: 0, bukittinggi: 0 });
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageSize: 10,
@@ -44,10 +47,16 @@ export default function AdminTilikDiriPage() {
         severity: params.severity !== undefined ? params.severity : severityFilter,
       });
 
+      const sDate = params.startDate !== undefined ? params.startDate : startDate;
+      const eDate = params.endDate !== undefined ? params.endDate : endDate;
+      if (sDate) queryParams.append("startDate", sDate);
+      if (eDate) queryParams.append("endDate", eDate);
+
       const res = await fetchInstance(`/api/admin/tilik-diri?${queryParams.toString()}`);
       if (res.success) {
         setData(res.data);
         setPagination(res.pagination);
+        if (res.counts) setCounts(res.counts);
       }
     } catch (error) {
       console.error("Failed to fetch tilik diri:", error);
@@ -67,8 +76,8 @@ export default function AdminTilikDiriPage() {
   }, []);
 
   useEffect(() => {
-    fetchData({ page: 1, search: debouncedSearch, school: schoolFilter, severity: severityFilter });
-  }, [debouncedSearch, schoolFilter, severityFilter]);
+    fetchData({ page: 1, search: debouncedSearch, school: schoolFilter, severity: severityFilter, startDate, endDate });
+  }, [debouncedSearch, schoolFilter, severityFilter, startDate, endDate]);
 
   const handleTableChange = (page, pageSize) => {
     fetchData({ page, pageSize });
@@ -77,7 +86,9 @@ export default function AdminTilikDiriPage() {
   const handleExportExcel = async () => {
     try {
       setLoading(true);
-      const res = await fetchInstance(`/api/admin/tilik-diri?export=true&search=${encodeURIComponent(search)}&school=${encodeURIComponent(schoolFilter)}&severity=${encodeURIComponent(severityFilter)}`);
+      const sDateParam = startDate ? `&startDate=${startDate}` : "";
+      const eDateParam = endDate ? `&endDate=${endDate}` : "";
+      const res = await fetchInstance(`/api/admin/tilik-diri?export=true&search=${encodeURIComponent(search)}&school=${encodeURIComponent(schoolFilter)}&severity=${encodeURIComponent(severityFilter)}${sDateParam}${eDateParam}`);
       
       if (res.success && res.data) {
         const excelData = res.data.map((item, index) => {
@@ -151,6 +162,14 @@ export default function AdminTilikDiriPage() {
             <span>{pagination.totalData}</span>
             <span className="font-medium text-xs opacity-80">Total Data</span>
           </div>
+          <div className="bg-orange-50 text-orange-600 px-3 py-1 rounded-xl text-sm font-bold border border-orange-200 flex items-center gap-1.5 ml-2">
+            <span>{counts.makassar}</span>
+            <span className="font-medium text-xs opacity-80">Makassar</span>
+          </div>
+          <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-xl text-sm font-bold border border-emerald-200 flex items-center gap-1.5 ml-2">
+            <span>{counts.bukittinggi}</span>
+            <span className="font-medium text-xs opacity-80">Bukittinggi</span>
+          </div>
         </h1>
         <p className="text-slate-400 font-medium mt-2">
           Pantau semua hasil asesmen Tilik Diri siswa dari seluruh sekolah.
@@ -160,6 +179,22 @@ export default function AdminTilikDiriPage() {
       <div className="bg-white rounded-[35px] border border-slate-100 shadow-sm overflow-hidden mb-8">
         <div className="p-6 md:p-8 border-b border-slate-50 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
           <div className="flex flex-col sm:flex-row flex-wrap gap-4 w-full xl:w-auto">
+            <div className="flex gap-2 w-full sm:w-auto items-center">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:ring-2 focus:ring-[#00adb5]/20 outline-none w-full sm:w-auto"
+              />
+              <span className="text-slate-400 text-xs font-bold">-</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 focus:ring-2 focus:ring-[#00adb5]/20 outline-none w-full sm:w-auto"
+              />
+            </div>
+            
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
               <input
