@@ -12,6 +12,7 @@ export async function GET(request) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const isExport = searchParams.get("export") === "true";
+    const wilayah = searchParams.get("wilayah") || "";
 
     const client = await connectDB();
     const db = client.db("edumind");
@@ -89,6 +90,14 @@ export async function GET(request) {
       pipeline.push({
         $match: {
           "severity.level": severityFilter,
+        },
+      });
+    }
+
+    if (wilayah) {
+      pipeline.push({
+        $match: {
+          school_name: { $regex: wilayah, $options: "i" },
         },
       });
     }
