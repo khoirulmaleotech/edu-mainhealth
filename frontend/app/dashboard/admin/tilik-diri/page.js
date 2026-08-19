@@ -33,6 +33,7 @@ export default function AdminTilikDiriPage() {
     pageSize: 10,
     totalData: 0,
   });
+  const [wilayahExport, setWilayahExport] = useState(false);
 
   const debouncedSearch = useDebounce(search, 500);
 
@@ -83,54 +84,67 @@ export default function AdminTilikDiriPage() {
     fetchData({ page, pageSize });
   };
 
+  const buildExportUrl = (wilayah = "") => {
+    const sDateParam = startDate ? `&startDate=${startDate}` : "";
+    const eDateParam = endDate ? `&endDate=${endDate}` : "";
+    const wilayahParam = wilayah ? `&wilayah=${encodeURIComponent(wilayah)}` : "";
+    return `/api/admin/tilik-diri?export=true&search=${encodeURIComponent(search)}&school=${encodeURIComponent(schoolFilter)}&severity=${encodeURIComponent(severityFilter)}${sDateParam}${eDateParam}${wilayahParam}`;
+  };
+
+  const exportToExcel = async (url, filenameSuffix = "") => {
+    const res = await fetchInstance(url);
+    if (res.success && res.data) {
+      const excelData = res.data.map((item, index) => {
+        const row = {
+          "No": index + 1,
+          "Nama Anak": item.student_name || "-",
+          "Email": item.student_email || "-",
+          "Sekolah": item.school_name || "-",
+          "Skor Total": item.totalScore,
+          "Tingkat Keparahan": item.severity?.level || "-",
+          "Tanggal Pengisian": formatDate(item.completedAt),
+        };
+        if (item.breakdown && Array.isArray(item.breakdown)) {
+          item.breakdown.forEach((q) => {
+            row[`Skor Q${q.questionId}`] = q.score;
+          });
+        }
+        if (item.openEnded) {
+          row["Perasaan Saat Ini"] = item.openEnded.feelings || "-";
+          row["Pikiran Mengganggu"] = item.openEnded.thoughts || "-";
+          row["Perubahan Perilaku"] = item.openEnded.behaviors || "-";
+        }
+        return row;
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Hasil Tilik Diri");
+      const suffix = filenameSuffix ? `_${filenameSuffix}` : "";
+      XLSX.writeFile(workbook, `Data_Tilik_Diri${suffix}_${new Date().toISOString().split("T")[0]}.xlsx`);
+    }
+  };
+
   const handleExportExcel = async () => {
     try {
       setLoading(true);
-      const sDateParam = startDate ? `&startDate=${startDate}` : "";
-      const eDateParam = endDate ? `&endDate=${endDate}` : "";
-      const res = await fetchInstance(`/api/admin/tilik-diri?export=true&search=${encodeURIComponent(search)}&school=${encodeURIComponent(schoolFilter)}&severity=${encodeURIComponent(severityFilter)}${sDateParam}${eDateParam}`);
-      
-      if (res.success && res.data) {
-        const excelData = res.data.map((item, index) => {
-          const row = {
-            "No": index + 1,
-            "Nama Anak": item.student_name || "-",
-            "Email": item.student_email || "-",
-            "Sekolah": item.school_name || "-",
-            "Skor Total": item.totalScore,
-            "Tingkat Keparahan": item.severity?.level || "-",
-            "Tanggal Pengisian": formatDate(item.completedAt),
-          };
-
-          // Tambahkan skor per pertanyaan (sumbu x)
-          if (item.breakdown && Array.isArray(item.breakdown)) {
-            item.breakdown.forEach((q) => {
-              row[`Skor Q${q.questionId}`] = q.score;
-            });
-          }
-
-          // Tambahkan jawaban terbuka (sumbu x)
-          if (item.openEnded) {
-            row["Perasaan Saat Ini"] = item.openEnded.feelings || "-";
-            row["Pikiran Mengganggu"] = item.openEnded.thoughts || "-";
-            row["Perubahan Perilaku"] = item.openEnded.behaviors || "-";
-          }
-
-          return row;
-        });
-
-        const worksheet = XLSX.utils.json_to_sheet(excelData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Hasil Tilik Diri");
-        
-        // Generate dan download file excel
-        XLSX.writeFile(workbook, `Data_Tilik_Diri_${new Date().toISOString().split('T')[0]}.xlsx`);
-      }
+      await exportToExcel(buildExportUrl(), "");
     } catch (error) {
       console.error("Failed to export excel:", error);
     } finally {
       setLoading(false);
-      fetchData({ page: pagination.currentPage }); // refresh table state
+      fetchData({ page: pagination.currentPage });
+    }
+  };
+
+  const handleExportWilayah = async (wilayah) => {
+    try {
+      setWilayahExport(wilayah);
+      await exportToExcel(buildExportUrl(wilayah), wilayah.charAt(0).toUpperCase() + wilayah.slice(1));
+    } catch (error) {
+      console.error(`Failed to export ${wilayah}:`, error);
+    } finally {
+      setWilayahExport(false);
     }
   };
 
@@ -231,14 +245,32 @@ export default function AdminTilikDiriPage() {
             </select>
           </div>
           
-          <button
-            onClick={handleExportExcel}
-            disabled={loading || data.length === 0}
-            className="w-full sm:w-auto px-6 py-2.5 bg-[#00adb5] text-white font-bold rounded-xl shadow-lg shadow-[#00adb5]/20 hover:bg-[#00969e] hover:shadow-xl hover:shadow-[#00adb5]/30 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Download size={18} />
-            Export Excel
-          </button>
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <button
+              onClick={handleExportExcel}
+              disabled={loading || data.length === 0}
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-[#00adb5] text-white font-bold rounded-xl shadow-lg shadow-[#00adb5]/20 hover:bg-[#00969e] hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              Semua
+            </button>
+            <button
+              onClick={() => handleExportWilayah("makassar")}
+              disabled={loading || wilayahExport !== false || counts.makassar === 0}
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-orange-500 text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-600 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              {wilayahExport === "makassar" ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              Makassar
+            </button>
+            <button
+              onClick={() => handleExportWilayah("bukittinggi")}
+              disabled={loading || wilayahExport !== false || counts.bukittinggi === 0}
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            >
+              {wilayahExport === "bukittinggi" ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              Bukittinggi
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">

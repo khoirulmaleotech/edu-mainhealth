@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   LayoutDashboard, Building2, Users, ShieldCheck,
-  LogOut, Menu, HeartPulse, Newspaper, ClipboardList, Activity
+  LogOut, Menu, HeartPulse, Newspaper, ClipboardList, Activity, Trophy
 } from 'lucide-react';
 import { signOut, useSession } from "next-auth/react";
 import { usePathname } from 'next/navigation';
@@ -16,6 +16,7 @@ export default function AdminLayout({ children }) {
 
   const menuItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/dashboard/admin' },
+    { name: 'Wellbeing League', icon: <Trophy size={20} />, path: '/dashboard/admin/wellbeing-league' },
     { name: 'Monitoring Aktivitas', icon: <Activity size={20} />, path: '/dashboard/admin/activity-monitoring' },
     { name: 'Fasilitator', icon: <Users size={20} />, path: '/dashboard/admin/fasilitator' },
     { name: 'Antrean Verifikasi', icon: <ShieldCheck size={20} />, path: '/dashboard/admin/verification-queue' },

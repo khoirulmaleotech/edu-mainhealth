@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, Search, Loader2, Mail, Trash2, X,
-  Eye, Calendar, Pencil,
+  Eye, Calendar, Pencil, Download,
   Building2, GraduationCap, School, HeartPulse, Home, ShieldCheck
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import AdminPagination from "@/components/AdminPagination";
 import CustomSelect from "@/components/CustomSelect";
 import { fetchInstance } from "@/lib/fetchInstance";
@@ -32,6 +33,7 @@ export default function ManageUsersPage() {
   const [editingCell, setEditingCell] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState(null);
+  const [isExporting, setIsExporting] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const pageSize = 10;
 
@@ -262,6 +264,49 @@ export default function ManageUsersPage() {
     fetchData({ page, search: debouncedSearchTerm, role: roleFilter, school: schoolFilter });
   };
 
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      const queryParams = new URLSearchParams({
+        page: "1",
+        pageSize: "100000",
+        search: debouncedSearchTerm,
+        role: roleFilter,
+        school: schoolFilter,
+      });
+      const res = await fetchInstance(`/api/admin/users?${queryParams.toString()}`);
+      if (res.success && res.data) {
+        // Urutkan berdasarkan nama sekolah terlebih dahulu
+        const sortedData = [...res.data].sort((a, b) => {
+          const schoolA = (a.school_name || "Z_Tanpa Sekolah").toLowerCase();
+          const schoolB = (b.school_name || "Z_Tanpa Sekolah").toLowerCase();
+          return schoolA.localeCompare(schoolB);
+        });
+
+        const dataToExport = sortedData.map((user, index) => ({
+          "No.": index + 1,
+          "Sekolah": user.school_name || "-",
+          "Nama Lengkap": user.fullname || "-",
+          "Role": user.role === 'student' ? 'Siswa' : user.role === 'teacher' ? 'Guru' : user.role === 'psychologist' ? 'Psikolog' : user.role === 'parent' ? 'Orang Tua' : user.role,
+          "Email": user.email || "-",
+        }));
+        
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pengguna");
+        
+        XLSX.writeFile(workbook, `Data_Pengguna_${new Date().toISOString().split('T')[0]}.xlsx`);
+      } else {
+        showAlert("Gagal", "Gagal mengambil data untuk export");
+      }
+    } catch (err) {
+      console.error(err);
+      showAlert("Error", "Terjadi kesalahan saat export");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const getRoleBadge = (role) => {
     const styles = {
       student: { bg: 'bg-blue-50', text: 'text-blue-600', icon: <GraduationCap size={12} />, label: 'Siswa' },
@@ -449,7 +494,7 @@ export default function ManageUsersPage() {
           <p className="text-slate-400 text-[10px] font-black uppercase mt-1 tracking-widest">EduMind Master User Control • {pagination ? pagination.totalData : 0} Pengguna</p>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto">
+        <div className="flex flex-col md:flex-row gap-4 w-full lg:w-auto flex-wrap">
           <div className="bg-white px-4 py-2.5 rounded-2xl border border-slate-200 flex items-center gap-3 shadow-sm">
             <Search size={18} className="text-slate-300" />
             <input
@@ -477,6 +522,14 @@ export default function ManageUsersPage() {
             placeholder="Pilih Sekolah"
             className="md:w-48"
           />
+          <button 
+            onClick={handleExportExcel}
+            disabled={isExporting}
+            className="px-4 py-2.5 bg-emerald-500 text-white rounded-2xl font-black text-xs hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 md:w-auto"
+          >
+            {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            {isExporting ? 'Mengekspor...' : 'Export Excel'}
+          </button>
         </div>
       </div>
 
