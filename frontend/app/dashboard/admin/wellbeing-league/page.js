@@ -24,7 +24,8 @@ import {
   Gift,
   Heart,
   ChevronRight,
-  Database
+  Database,
+  X
 } from "lucide-react";
 import { fetchInstance } from "@/lib/fetchInstance";
 import { 
@@ -35,14 +36,25 @@ import {
   Tooltip 
 } from "recharts";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 // Custom styles for charts
 const COLORS = ["#10B981", "#F59E0B", "#3B82F6", "#EF4444"];
 
 export default function WellbeingLeaguePage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [isMounted, setIsMounted] = useState(false);
+
+  // Info Modal states
+  const [infoModalOpen, setInfoModalOpen] = useState(false);
+  const [infoSection, setInfoSection] = useState("all");
+
+  const openInfoModal = (section) => {
+    setInfoSection(section);
+    setInfoModalOpen(true);
+  };
 
   useEffect(() => {
     setIsMounted(true);
@@ -153,6 +165,13 @@ export default function WellbeingLeaguePage() {
             Lihat pencapaian, reduksi tingkat keparahan, profil gaya belajar, dan dominasi otak siswa serta partisipasi aktif guru (Data Real-time).
           </p>
         </div>
+        <button
+          onClick={() => openInfoModal("all")}
+          className="w-full sm:w-auto px-4 py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 border border-slate-200/60"
+        >
+          <HelpCircle size={14} className="text-[#00adb5]" />
+          Info Parameter BK
+        </button>
       </div>
 
       {loading && (
@@ -164,12 +183,25 @@ export default function WellbeingLeaguePage() {
 
       {!loading && currentData && (
         <>
-          {/* 3. FIVE TOP METRIC CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+          {/* 3. THREE TOP METRIC CARDS */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {/* Card 1: School Wellbeing Index */}
-            <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:scale-[1.02] transition-all duration-300">
+            <div 
+              onClick={() => router.push("/dashboard/admin/tilik-diri")}
+              className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:scale-[1.03] hover:shadow-md hover:border-[#00adb5]/30 cursor-pointer transition-all duration-300 relative group"
+            >
               <div className="flex justify-between items-start">
-                <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">School Wellbeing Index</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">School Wellbeing Index</span>
+                  <HelpCircle 
+                    size={13} 
+                    className="text-slate-350 hover:text-[#00adb5] transition-all cursor-help"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openInfoModal("wellbeing");
+                    }}
+                  />
+                </div>
                 <div className="p-2.5 bg-blue-50 text-blue-500 rounded-xl">
                   <Trophy size={16} />
                 </div>
@@ -188,9 +220,22 @@ export default function WellbeingLeaguePage() {
             </div>
 
             {/* Card 2: Bullying Reduction */}
-            <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:scale-[1.02] transition-all duration-300">
+            <div 
+              onClick={() => router.push("/dashboard/admin/reports")}
+              className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:scale-[1.03] hover:shadow-md hover:border-[#00adb5]/30 cursor-pointer transition-all duration-300 relative group"
+            >
               <div className="flex justify-between items-start">
-                <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">Bullying Reduction</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">Bullying Reduction</span>
+                  <HelpCircle 
+                    size={13} 
+                    className="text-slate-350 hover:text-[#00adb5] transition-all cursor-help"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openInfoModal("bullying");
+                    }}
+                  />
+                </div>
                 <div className="p-2.5 bg-red-50 text-red-500 rounded-xl">
                   <ShieldAlert size={16} />
                 </div>
@@ -209,9 +254,22 @@ export default function WellbeingLeaguePage() {
             </div>
 
             {/* Card 3: Risk Reduction */}
-            <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:scale-[1.02] transition-all duration-300">
+            <div 
+              onClick={() => router.push("/dashboard/admin/tilik-diri")}
+              className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:scale-[1.03] hover:shadow-md hover:border-[#00adb5]/30 cursor-pointer transition-all duration-300 relative group"
+            >
               <div className="flex justify-between items-start">
-                <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">Wellbeing Risk Reduction</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">Wellbeing Risk Reduction</span>
+                  <HelpCircle 
+                    size={13} 
+                    className="text-slate-350 hover:text-[#00adb5] transition-all cursor-help"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openInfoModal("risk");
+                    }}
+                  />
+                </div>
                 <div className="p-2.5 bg-amber-50 text-amber-500 rounded-xl">
                   <AlertTriangle size={16} />
                 </div>
@@ -225,48 +283,6 @@ export default function WellbeingLeaguePage() {
                 </span>
                 <div className="flex items-center gap-1 text-[11px] font-black text-slate-400 mt-3">
                   <span>Kategori At Risk + Critical</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 4: Help-Seeking Improvement */}
-            <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:scale-[1.02] transition-all duration-300">
-              <div className="flex justify-between items-start">
-                <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">Help-Seeking Improvement</span>
-                <div className="p-2.5 bg-emerald-50 text-emerald-500 rounded-xl">
-                  <Smile size={16} />
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black text-slate-850">▲ {currentData.summary.helpSeekingImprovement}%</span>
-                </div>
-                <span className="text-xs font-black text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md inline-block mt-1">
-                  {currentData.summary.helpSeekingBaseline}% → {currentData.summary.helpSeekingCurrent}% mencari bantuan
-                </span>
-                <div className="flex items-center gap-1 text-[11px] font-black text-slate-400 mt-3">
-                  <span>Konsultasi bimbingan aktif</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Card 5: Teacher Engagement Rate */}
-            <div className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:scale-[1.02] transition-all duration-300">
-              <div className="flex justify-between items-start">
-                <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">Teacher Engagement Rate</span>
-                <div className="p-2.5 bg-indigo-50 text-indigo-500 rounded-xl">
-                  <Users size={16} />
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-black text-slate-850">{currentData.summary.teacherEngagement}%</span>
-                </div>
-                <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md inline-block mt-1">
-                  ▲ +{currentData.summary.teacherEngagementChange}%
-                </span>
-                <div className="flex items-center gap-1 text-[11px] font-black text-slate-400 mt-3">
-                  <span>Keaktifan guru di dashboard</span>
                 </div>
               </div>
             </div>
@@ -286,7 +302,10 @@ export default function WellbeingLeaguePage() {
                 
                 <div className="space-y-6">
                   {/* Item 1 */}
-                  <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+                  <div 
+                    onClick={() => router.push("/dashboard/admin/verify-schools")}
+                    className="flex items-center justify-between border-b border-slate-50 pb-4 cursor-pointer hover:bg-slate-50/50 p-2 rounded-xl transition-all"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-blue-50 text-blue-500 rounded-xl">
                         <Building2 size={18} />
@@ -300,7 +319,10 @@ export default function WellbeingLeaguePage() {
                   </div>
 
                   {/* Item 2 */}
-                  <div className="flex items-center justify-between border-b border-slate-50 pb-4">
+                  <div 
+                    onClick={() => router.push("/dashboard/admin/users")}
+                    className="flex items-center justify-between border-b border-slate-50 pb-4 cursor-pointer hover:bg-slate-50/50 p-2 rounded-xl transition-all"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-emerald-50 text-emerald-500 rounded-xl">
                         <UserCheck size={18} />
@@ -314,7 +336,10 @@ export default function WellbeingLeaguePage() {
                   </div>
 
                   {/* Item 3 */}
-                  <div className="flex items-center justify-between pb-2">
+                  <div 
+                    onClick={() => router.push("/dashboard/admin/users")}
+                    className="flex items-center justify-between pb-2 cursor-pointer hover:bg-slate-50/50 p-2 rounded-xl transition-all"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-indigo-50 text-indigo-500 rounded-xl">
                         <Users size={18} />
@@ -640,6 +665,144 @@ export default function WellbeingLeaguePage() {
 
 
         </>
+      )}
+
+      {/* 9. INFORMATION MODAL */}
+      {infoModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[35px] border border-slate-100 max-w-2xl w-full p-6 md:p-8 shadow-2xl max-h-[85vh] overflow-y-auto flex flex-col justify-between transition-all duration-300 transform scale-100">
+            <div>
+              {/* Modal Header */}
+              <div className="flex justify-between items-start border-b border-slate-50 pb-4 mb-6">
+                <div>
+                  <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                    <Sparkles className="text-amber-500" size={22} />
+                    Parameter & Indikator Pengukuran
+                  </h3>
+                  <p className="text-xs text-slate-400 font-bold mt-1">
+                    Pelajari bagaimana masing-masing metrik diukur dan diklasifikasikan dalam sistem EduMind.
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setInfoModalOpen(false)}
+                  className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-slate-650 transition-all"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Tabs */}
+              <div className="flex bg-slate-50 p-1.5 rounded-2xl gap-1 mb-6 overflow-x-auto">
+                {[
+                  { key: "all", label: "Semua" },
+                  { key: "wellbeing", label: "Wellbeing" },
+                  { key: "bullying", label: "Bullying" },
+                  { key: "risk", label: "Risk" },
+                  { key: "coverage", label: "Coverage" },
+                  { key: "intelligence", label: "Intelligence" }
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setInfoSection(tab.key)}
+                    className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                      infoSection === tab.key
+                        ? "bg-[#00adb5] text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Modal Content */}
+              <div className="space-y-6">
+                {(infoSection === "all" || infoSection === "wellbeing") && (
+                  <div className="bg-blue-50/35 border border-blue-100 p-5 rounded-2xl space-y-2">
+                    <div className="flex items-center gap-2 text-blue-600">
+                      <Trophy size={18} />
+                      <h4 className="text-sm font-black uppercase tracking-wider">School Wellbeing Index</h4>
+                    </div>
+                    <p className="text-xs text-slate-650 leading-relaxed font-bold">
+                      <strong>Definisi:</strong> Indeks representasi tingkat kesehatan mental rata-rata seluruh siswa di sekolah.
+                    </p>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      <strong>Cara Kerja:</strong> Sistem menghitung nilai rata-rata skor asesmen kuesioner <span className="font-bold text-slate-750">Tilik Diri</span> siswa (skor maksimum 30). Nilai tersebut dikonversi ke skala 100 dengan rumus: <code className="bg-slate-100 px-1 py-0.5 rounded text-blue-600 font-bold">(Rata-rata Skor / 30) * 100</code>.
+                    </p>
+                  </div>
+                )}
+
+                {(infoSection === "all" || infoSection === "bullying") && (
+                  <div className="bg-red-50/35 border border-red-100 p-5 rounded-2xl space-y-2">
+                    <div className="flex items-center gap-2 text-red-600">
+                      <ShieldAlert size={18} />
+                      <h4 className="text-sm font-black uppercase tracking-wider">Bullying Reduction</h4>
+                    </div>
+                    <p className="text-xs text-slate-655 leading-relaxed font-bold">
+                      <strong>Definisi:</strong> Persentase penurunan kasus perundungan (verbal, fisik, cyberbullying) di sekolah.
+                    </p>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      <strong>Cara Kerja:</strong> Diambil dari total aduan anonim di modul <span className="font-bold text-slate-750">Laporan Insiden</span>. Dibandingkan secara berkala dengan baseline kasus terdaftar untuk mendeteksi tren perbaikan iklim kenyamanan sekolah.
+                    </p>
+                  </div>
+                )}
+
+                {(infoSection === "all" || infoSection === "risk") && (
+                  <div className="bg-amber-50/35 border border-amber-100 p-5 rounded-2xl space-y-2">
+                    <div className="flex items-center gap-2 text-amber-600">
+                      <AlertTriangle size={18} />
+                      <h4 className="text-sm font-black uppercase tracking-wider">Wellbeing Risk Reduction</h4>
+                    </div>
+                    <p className="text-xs text-slate-655 leading-relaxed font-bold">
+                      <strong>Definisi:</strong> Persentase penurunan jumlah siswa dalam kategori kesehatan mental rentan/kritis.
+                    </p>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      <strong>Cara Kerja:</strong> Hasil Tilik Diri dengan klasifikasi keparahan <span className="font-bold text-slate-750">Depresi Sedang</span> (At Risk) dan <span className="font-bold text-slate-750">Depresi Berat</span> (Critical) dijumlahkan, kemudian dipantau rasionya terhadap total siswa aktif agar intervensi BK dapat dioptimalkan.
+                    </p>
+                  </div>
+                )}
+
+                {(infoSection === "all" || infoSection === "coverage") && (
+                  <div className="bg-teal-50/35 border border-teal-100 p-5 rounded-2xl space-y-2">
+                    <div className="flex items-center gap-2 text-teal-600">
+                      <Compass size={18} />
+                      <h4 className="text-sm font-black uppercase tracking-wider">Program Coverage</h4>
+                    </div>
+                    <ul className="text-xs text-slate-500 space-y-2.5 list-disc pl-4">
+                      <li><strong>Sekolah Aktif:</strong> Jumlah institusi sekolah yang terverifikasi dan aktif mengimplementasikan program.</li>
+                      <li><strong>Guru Aktif:</strong> Jumlah guru penggerak yang aktif mengakses dashboard untuk memantau siswa.</li>
+                      <li><strong>Siswa Terdaftar:</strong> Jumlah siswa teronboarding yang aktif menggunakan aplikasi EduMind.</li>
+                    </ul>
+                  </div>
+                )}
+
+                {(infoSection === "all" || infoSection === "intelligence") && (
+                  <div className="bg-purple-50/35 border border-purple-100 p-5 rounded-2xl space-y-2">
+                    <div className="flex items-center gap-2 text-purple-600">
+                      <BrainCircuit size={18} />
+                      <h4 className="text-sm font-black uppercase tracking-wider">Student Intelligence</h4>
+                    </div>
+                    <ul className="text-xs text-slate-500 space-y-2.5 list-disc pl-4">
+                      <li><strong>Learning Style:</strong> Gaya belajar dominan siswa (Visual, Kinestetik, Auditori, Reading/Writing).</li>
+                      <li><strong>Brain Preference:</strong> Profil kecenderungan belahan otak berpikir siswa (Analitis vs Kreatif).</li>
+                      <li><strong>Talent Intelligence:</strong> Pemetaan potensi bakat utama siswa untuk penempatan Duta Anti-Bullying.</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="mt-8 pt-4 border-t border-slate-50 flex justify-end">
+              <button
+                onClick={() => setInfoModalOpen(false)}
+                className="px-5 py-2.5 bg-[#0b0e14] hover:bg-slate-800 text-white font-bold rounded-xl text-xs shadow-md transition-all"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
