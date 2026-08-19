@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/requiredRole";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request) {
   try {
     // 1. Authorize role
     await requireRole(["admin", "superadmin"]);
@@ -12,22 +12,44 @@ export async function GET() {
     const client = await connectDB();
     const db = client.db();
 
+    // Get cities from query parameters
+    const { searchParams } = new URL(request.url);
+    const citiesParam = searchParams.get("cities");
+    
+    let schoolFilter = {
+      is_verified: true,
+      is_hide: { $ne: "true" }
+    };
+
+    if (citiesParam) {
+      const cities = citiesParam.split(",").map(c => c.trim()).filter(Boolean);
+      if (cities.length > 0) {
+        const regexStr = cities.join("|");
+        schoolFilter.$or = [
+          { city: { $in: cities } },
+          { name: { $regex: regexStr, $options: "i" } }
+        ];
+      }
+    }
+
     // --- Dynamic Stats Query ---
     
     // Schools Count
-    const activeSchools = await db.collection("schools").countDocuments({
-      is_verified: true,
-      is_hide: "false"
-    });
+    const activeSchools = await db.collection("schools").countDocuments(schoolFilter);
 
-    const activeSchoolDocs = await db.collection("schools").find({ is_hide: "false" }).project({ _id: 1 }).toArray();
+    const activeSchoolDocs = await db.collection("schools").find(schoolFilter).project({ _id: 1 }).toArray();
     const activeSchoolIds = activeSchoolDocs.map(s => s._id);
 
     // Users counts
-    const totalStudents = await db.collection("users").countDocuments({
+    const activeStudents = await db.collection("users").find({
       role: "student",
       school_id: { $in: activeSchoolIds }
-    });
+    }).project({ _id: 1 }).toArray();
+    const activeStudentIds = activeStudents.map(s => s._id);
+    const activeStudentIdStrings = activeStudents.map(s => s._id.toString());
+    const activeStudentMatchIds = [...activeStudentIds, ...activeStudentIdStrings];
+
+    const totalStudents = activeStudents.length;
 
     const totalTeachers = await db.collection("users").countDocuments({
       role: "teacher",
@@ -37,6 +59,11 @@ export async function GET() {
     // Tilik Diri (Wellbeing Index)
     // Tilik Diri is out of 30 max score. Let's find average and map to 100.
     const tilikDiriStats = await db.collection("student_tilik_diri").aggregate([
+      {
+        $match: {
+          student_id: { $in: activeStudentMatchIds }
+        }
+      },
       {
         $group: {
           _id: null,
@@ -74,37 +101,83 @@ export async function GET() {
     const schoolWellbeingIndex = avgScore > 0 ? Math.round((avgScore / 30) * 100) : 74;
 
     // Bullying Cases & Reduction
-    const totalIncidentReports = await db.collection("incident_reports").countDocuments();
+    const totalIncidentReports = await db.collection("incident_reports").countDocuments({
+      reporter_id: { $in: activeStudentMatchIds }
+    });
     // Risk rate
     const riskPercentage = totalAssessments > 0 ? Math.round(((atRiskCount + criticalCount) / totalAssessments) * 100) : 0;
 
     // Help Seeking Rate
     // Active consultation rooms / critical logs
-    const criticalLogsCount = await db.collection("critical_chat_logs").countDocuments();
-    const activeChatsCount = await db.collection("chat_rooms").countDocuments();
+    const criticalLogsCount = await db.collection("critical_chat_logs").countDocuments({
+      student_id: { $in: activeStudentMatchIds }
+    });
+    const activeChatsCount = await db.collection("chat_rooms").countDocuments({
+      patient_id: { $in: activeStudentMatchIds }
+    });
     const helpSeekingRate = criticalLogsCount > 0 ? Math.round((activeChatsCount / criticalLogsCount) * 100) : 0;
 
     // Mood averages
-    const totalMoodLogs = await db.collection("mood_logs").countDocuments();
+    const totalMoodLogs = await db.collection("mood_logs").countDocuments({
+      student_id: { $in: activeStudentMatchIds }
+    });
     const positiveMoodLogs = await db.collection("mood_logs").countDocuments({
+      student_id: { $in: activeStudentMatchIds },
       mood: { $in: ["senang", "bahagia", "gembira", "baik", "happy", "excited", 4, 5] }
     });
     const positiveMoodRate = totalMoodLogs > 0 ? Math.round((positiveMoodLogs / totalMoodLogs) * 100) : 58;
 
     // Learning Styles distribution
     const learningStyles = await db.collection("student_learning_style").aggregate([
-      { $group: { _id: "$result.style", count: { $sum: 1 } } }
+      {
+        $match: {
+          student_id: { $in: activeStudentMatchIds }
+        }
+      },
+      { $group: { _id: "$hasil_dominan.category", count: { $sum: 1 } } }
     ]).toArray();
     
     // Brain preference
     const brainPreferences = await db.collection("student_brain_dominance").aggregate([
-      { $group: { _id: "$result.dominance", count: { $sum: 1 } } }
+      {
+        $match: {
+          student_id: { $in: activeStudentMatchIds }
+        }
+      },
+      { $group: { _id: "$dominasi", count: { $sum: 1 } } }
     ]).toArray();
 
     // Talent Profile
     const talentStats = await db.collection("student_talents").aggregate([
-      { $unwind: "$result.talents" },
-      { $group: { _id: "$result.talents", count: { $sum: 1 } } },
+      {
+        $match: {
+          student_id: { $in: activeStudentMatchIds }
+        }
+      },
+      {
+        $project: {
+          topTalent: {
+            $arrayElemAt: [
+              {
+                $filter: {
+                  input: "$scores",
+                  as: "s",
+                  cond: {
+                    $eq: ["$$s.value", { $max: "$scores.value" }]
+                  }
+                }
+              },
+              0
+            ]
+          }
+        }
+      },
+      {
+        $group: {
+          _id: "$topTalent.subject",
+          count: { $sum: 1 }
+        }
+      },
       { $sort: { count: -1 } },
       { $limit: 5 }
     ]).toArray();
@@ -272,7 +345,19 @@ export async function GET() {
         { name: "Creative (Kanan)", value: Math.round((brainMap.Right / totalBrainMapped) * 100) || 25, color: "#F59E0B" }
       ],
       talentIntelligence: talentStats.length > 0 
-        ? talentStats.map(t => ({ name: t._id, value: Math.round((t.count / (totalStudents || 1)) * 100) }))
+        ? talentStats.map(t => {
+            const talentNames = {
+              "Kepemimpinan": "Leadership",
+              "Seni & Kreatif": "Creative Thinking",
+              "Logika & Riset": "Problem Solving",
+              "Sosial & Empati": "Empathy",
+              "Teknis & Praktis": "Technical Skill"
+            };
+            return {
+              name: talentNames[t._id] || t._id,
+              value: Math.round((t.count / (totalStudents || 1)) * 100)
+            };
+          })
         : [
             { name: "Leadership", value: 28 },
             { name: "Creative Thinking", value: 24 },

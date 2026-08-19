@@ -61,7 +61,7 @@ export default function WellbeingLeaguePage() {
     const getStats = async () => {
       try {
         setLoading(true);
-        const res = await fetchInstance("/api/admin/wellbeing-league");
+        const res = await fetchInstance("/api/admin/wellbeing-league?cities=Bukittinggi,Makassar");
         if (res.success) {
           setStats(res.data);
         }
