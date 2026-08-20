@@ -14,10 +14,10 @@ export async function GET(request) {
     await client.connect();
     const db = client.db();
     
-    // Filter berdasarkan status verifikasi
-    let matchQuery = { is_verified: true };
+    // Filter berdasarkan status verifikasi dan status tersembunyi
+    let matchQuery = { is_verified: true, is_hide: { $ne: "true" } };
     if (isVerifiedQuery === 'false') {
-      matchQuery = { is_verified: false };
+      matchQuery = { is_verified: false, is_hide: { $ne: "true" } };
     }
 
     /**

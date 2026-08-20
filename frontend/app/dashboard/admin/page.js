@@ -74,6 +74,40 @@ export default function AdminDashboardPage() {
   const [kpiStats, setKpiStats] = useState(null);
   const [isKpiStatsLoading, setIsKpiStatsLoading] = useState(true);
 
+  const [activeTestType, setActiveTestType] = useState("post_test");
+  const [isTestTypeLoading, setIsTestTypeLoading] = useState(false);
+
+  const fetchActiveTestType = async () => {
+    try {
+      const response = await fetchInstance("/api/kuisoner/settings");
+      if (response?.success) {
+        setActiveTestType(response.testType);
+      }
+    } catch (error) {
+      console.error("Failed to fetch active test type", error);
+    }
+  };
+
+  const handleUpdateTestType = async (type) => {
+    setIsTestTypeLoading(true);
+    try {
+      const response = await fetchInstance("/api/kuisoner/settings", {
+        method: "POST",
+        body: JSON.stringify({ testType: type }),
+      });
+      if (response?.success) {
+        setActiveTestType(type);
+      } else {
+        alert("Gagal memperbarui tipe kuesioner.");
+      }
+    } catch (error) {
+      console.error("Failed to update test type", error);
+      alert("Terjadi kesalahan.");
+    } finally {
+      setIsTestTypeLoading(false);
+    }
+  };
+
   const fetchTotalStudents = async () => {
     try {
       setIsTotalStudentsLoading(true);
@@ -220,6 +254,7 @@ export default function AdminDashboardPage() {
     fetchMoodSchools();
     fetchActivities();
     fetchKpiStats();
+    fetchActiveTestType();
   }, []);
 
   const statisticsCards = [
@@ -274,6 +309,37 @@ export default function AdminDashboardPage() {
           <p className="text-slate-400 font-medium mt-1">
             Pantau data siswa, sekolah, psikolog, dan antrean verifikasi dari database.
           </p>
+        </div>
+
+        {/* Dynamic Pre-Test/Post-Test Active Switcher */}
+        <div className="bg-white border border-slate-100 p-2.5 rounded-[22px] shadow-sm flex items-center gap-2">
+          <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider ml-3 mr-2">Kuesioner Aktif:</span>
+          <div className="flex gap-1">
+            <button
+              onClick={() => handleUpdateTestType("pre_test")}
+              disabled={isTestTypeLoading || activeTestType === "pre_test"}
+              className={`h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                activeTestType === "pre_test"
+                  ? "bg-slate-900 text-white shadow-sm"
+                  : "bg-slate-50 text-slate-500 hover:bg-slate-100/80 cursor-pointer"
+              } disabled:opacity-85`}
+            >
+              {isTestTypeLoading && activeTestType === "pre_test" && <Loader2 size={12} className="animate-spin" />}
+              Pre-Test
+            </button>
+            <button
+              onClick={() => handleUpdateTestType("post_test")}
+              disabled={isTestTypeLoading || activeTestType === "post_test"}
+              className={`h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                activeTestType === "post_test"
+                  ? "bg-[#00adb5] text-white shadow-sm"
+                  : "bg-slate-50 text-slate-500 hover:bg-slate-100/80 cursor-pointer"
+              } disabled:opacity-85`}
+            >
+              {isTestTypeLoading && activeTestType === "post_test" && <Loader2 size={12} className="animate-spin" />}
+              Post-Test
+            </button>
+          </div>
         </div>
       </div>
 

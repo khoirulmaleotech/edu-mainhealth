@@ -260,7 +260,7 @@ export default function QuestionnaireResponsesPage() {
         <div className="flex items-center gap-3">
           <div className="flex flex-col">
             <span className="text-base md:text-lg font-black text-[#00adb5] leading-none tracking-tighter uppercase">EduMind Responses</span>
-            <span className="text-[8px] md:text-[9px] font-bold text-slate-400 tracking-[0.2em] uppercase">Wellbeing Camp Bukittinggi</span>
+            <span className="text-[8px] md:text-[9px] font-bold text-slate-400 tracking-[0.2em] uppercase">Wellbeing Camp</span>
           </div>
         </div>
         {/* TOMBOL KUNCI KEMBALI: Menggunakan Tinggi Standar h-10 */}

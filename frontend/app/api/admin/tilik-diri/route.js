@@ -95,11 +95,23 @@ export async function GET(request) {
     }
 
     if (wilayah) {
-      pipeline.push({
-        $match: {
-          school_name: { $regex: wilayah, $options: "i" },
-        },
-      });
+      if (wilayah.toLowerCase() === "lainnya") {
+        pipeline.push({
+          $match: {
+            school_name: { $not: { $regex: /makassar|bukittinggi|semarang/i } }
+          }
+        });
+      } else {
+        pipeline.push({
+          $match: {
+            $or: [
+              { school_name: { $regex: wilayah, $options: "i" } },
+              { "school_data.city": { $regex: wilayah, $options: "i" } },
+              { "school_data.province": { $regex: wilayah, $options: "i" } },
+            ]
+          },
+        });
+      }
     }
 
     const statsPipeline = [
@@ -107,22 +119,45 @@ export async function GET(request) {
       {
         $facet: {
           total: [{ $count: "count" }],
-          makassar: [
-            { $match: { school_name: { $regex: "makassar", $options: "i" } } },
-            { $count: "count" }
-          ],
-          bukittinggi: [
-            { $match: { school_name: { $regex: "bukittinggi", $options: "i" } } },
-            { $count: "count" }
+          byCity: [
+            {
+              $addFields: {
+                school_city: {
+                  $cond: {
+                    if: { $regexMatch: { input: { $ifNull: ["$school_name", ""] }, regex: /makassar/i } },
+                    then: "Makassar",
+                    else: {
+                      $cond: {
+                        if: { $regexMatch: { input: { $ifNull: ["$school_name", ""] }, regex: /bukittinggi/i } },
+                        then: "Bukittinggi",
+                        else: {
+                          $cond: {
+                            if: { $regexMatch: { input: { $ifNull: ["$school_name", ""] }, regex: /semarang/i } },
+                            then: "Semarang",
+                            else: { $ifNull: ["$school_data.city", "Lainnya"] }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              $group: {
+                _id: "$school_city",
+                count: { $sum: 1 }
+              }
+            },
+            { $sort: { count: -1 } }
           ]
         }
       }
     ];
-    
+
     const statsResult = await db.collection("student_tilik_diri").aggregate(statsPipeline).toArray();
     const totalData = statsResult[0]?.total[0]?.count || 0;
-    const countMakassar = statsResult[0]?.makassar[0]?.count || 0;
-    const countBukittinggi = statsResult[0]?.bukittinggi[0]?.count || 0;
+    const cityCounts = statsResult[0]?.byCity || [];
 
     let data = [];
     if (isExport) {
@@ -141,10 +176,7 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       data,
-      counts: {
-        makassar: countMakassar,
-        bukittinggi: countBukittinggi,
-      },
+      counts: cityCounts,
       pagination: {
         currentPage: page,
         pageSize,

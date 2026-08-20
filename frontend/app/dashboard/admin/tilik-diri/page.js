@@ -27,7 +27,7 @@ export default function AdminTilikDiriPage() {
   const [severityFilter, setSeverityFilter] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [counts, setCounts] = useState({ makassar: 0, bukittinggi: 0 });
+  const [counts, setCounts] = useState([]);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     pageSize: 10,
@@ -176,14 +176,23 @@ export default function AdminTilikDiriPage() {
             <span>{pagination.totalData}</span>
             <span className="font-medium text-xs opacity-80">Total Data</span>
           </div>
-          <div className="bg-orange-50 text-orange-600 px-3 py-1 rounded-xl text-sm font-bold border border-orange-200 flex items-center gap-1.5 ml-2">
-            <span>{counts.makassar}</span>
-            <span className="font-medium text-xs opacity-80">Makassar</span>
-          </div>
-          <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-xl text-sm font-bold border border-emerald-200 flex items-center gap-1.5 ml-2">
-            <span>{counts.bukittinggi}</span>
-            <span className="font-medium text-xs opacity-80">Bukittinggi</span>
-          </div>
+          {counts.map((item, index) => {
+            const colors = [
+              "bg-orange-50 text-orange-600 border-orange-200",
+              "bg-emerald-50 text-emerald-600 border-emerald-200",
+              "bg-indigo-50 text-indigo-600 border-indigo-200",
+              "bg-blue-50 text-blue-600 border-blue-200",
+              "bg-rose-50 text-rose-600 border-rose-200",
+              "bg-purple-50 text-purple-600 border-purple-200",
+            ];
+            const colorClass = colors[index % colors.length];
+            return (
+              <div key={item._id} className={`${colorClass} px-3 py-1 rounded-xl text-sm font-bold border flex items-center gap-1.5 ml-2`}>
+                <span>{item.count}</span>
+                <span className="font-medium text-xs opacity-80">{item._id || "Lainnya"}</span>
+              </div>
+            );
+          })}
         </h1>
         <p className="text-slate-400 font-medium mt-2">
           Pantau semua hasil asesmen Tilik Diri siswa dari seluruh sekolah.
@@ -254,22 +263,29 @@ export default function AdminTilikDiriPage() {
               {loading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
               Semua
             </button>
-            <button
-              onClick={() => handleExportWilayah("makassar")}
-              disabled={loading || wilayahExport !== false || counts.makassar === 0}
-              className="flex-1 sm:flex-none px-5 py-2.5 bg-orange-500 text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 hover:bg-orange-600 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-            >
-              {wilayahExport === "makassar" ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-              Makassar
-            </button>
-            <button
-              onClick={() => handleExportWilayah("bukittinggi")}
-              disabled={loading || wilayahExport !== false || counts.bukittinggi === 0}
-              className="flex-1 sm:flex-none px-5 py-2.5 bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-            >
-              {wilayahExport === "bukittinggi" ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-              Bukittinggi
-            </button>
+            {counts.map((item, index) => {
+              const bgColors = [
+                "bg-orange-500 hover:bg-orange-600 shadow-orange-500/20",
+                "bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20",
+                "bg-indigo-500 hover:bg-indigo-600 shadow-indigo-500/20",
+                "bg-blue-500 hover:bg-blue-600 shadow-blue-500/20",
+                "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20",
+                "bg-purple-500 hover:bg-purple-600 shadow-purple-500/20",
+              ];
+              const btnColorClass = bgColors[index % bgColors.length];
+              const provinceName = item._id || "Lainnya";
+              return (
+                <button
+                  key={provinceName}
+                  onClick={() => handleExportWilayah(provinceName)}
+                  disabled={loading || wilayahExport !== false || item.count === 0}
+                  className={`flex-1 sm:flex-none px-5 py-2.5 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm ${btnColorClass}`}
+                >
+                  {wilayahExport === provinceName ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                  {provinceName}
+                </button>
+              );
+            })}
           </div>
         </div>
 

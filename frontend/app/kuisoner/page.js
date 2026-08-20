@@ -35,6 +35,7 @@ export default function WellBeingCampQuestionnairePage() {
   const [studentWhatsapp, setStudentWhatsapp] = useState("");
   const [studentSchool, setStudentSchool] = useState("");
   const [studentClass, setStudentClass] = useState("");
+  const [cityParam, setCityParam] = useState("");
 
   const [answersA, setAnswersA] = useState({});
   const [q16, setQ16] = useState([]);
@@ -57,6 +58,10 @@ export default function WellBeingCampQuestionnairePage() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const city = params.get("city");
+      if (city) setCityParam(city.toLowerCase());
+
       const savedEmail = localStorage.getItem("wb_camp_email");
       const savedWhatsapp = localStorage.getItem("wb_camp_whatsapp");
       const savedSchool = localStorage.getItem("wb_camp_school");
@@ -101,19 +106,29 @@ export default function WellBeingCampQuestionnairePage() {
         const res = await fetch("/api/signup/school?verified=true");
         const json = await res.json();
         if (json.success) {
-          const makassarSchools = json.data.filter(s => 
-            s.name.toLowerCase().includes("makassar") || 
-            (s.address && s.address.toLowerCase().includes("makassar"))
-          );
-          const finalSchools = makassarSchools.length > 0 ? makassarSchools : json.data;
-          finalSchools.sort((a, b) => a.name.localeCompare(b.name));
+          const finalSchools = json.data;
+          finalSchools.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           setSchools(finalSchools);
         }
       } catch (e) {
         console.error(e);
       }
     };
+
+    const fetchActiveTestType = async () => {
+      try {
+        const res = await fetch("/api/kuisoner/settings");
+        const json = await res.json();
+        if (json.success) {
+          setTestType(json.testType);
+        }
+      } catch (e) {
+        console.error("Failed to load active test type settings", e);
+      }
+    };
+
     fetchSchools();
+    fetchActiveTestType();
   }, []);
 
   useEffect(() => {
@@ -398,6 +413,17 @@ export default function WellBeingCampQuestionnairePage() {
     }
   };
 
+  const getCampTitle = () => {
+    const schoolLower = studentSchool.toLowerCase();
+    if (schoolLower.includes("semarang") || cityParam === "semarang") {
+      return "Wellbeing Camp Semarang";
+    }
+    if (schoolLower.includes("bukittinggi") || cityParam === "bukittinggi") {
+      return "Wellbeing Camp Bukittinggi";
+    }
+    return "Wellbeing Camp Bukittinggi & Semarang";
+  };
+
   if (isSubmitted) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans selection:bg-[#00adb5] selection:text-white">
@@ -432,7 +458,7 @@ export default function WellBeingCampQuestionnairePage() {
           <div className="w-px h-6 bg-slate-200 hidden sm:block"></div>
           <div className="flex flex-col sm:ml-1">
             <span className="text-base md:text-lg font-black text-navy-deep leading-none tracking-tighter uppercase">EduMind</span>
-            <span className="text-[8px] md:text-[9px] font-bold text-slate-400 tracking-[0.2em] uppercase">Wellbeing Camp Bukittinggi</span>
+            <span className="text-[8px] md:text-[9px] font-bold text-slate-400 tracking-[0.2em] uppercase">{getCampTitle()}</span>
           </div>
         </div>
         
@@ -557,7 +583,7 @@ export default function WellBeingCampQuestionnairePage() {
                           ))}
                         {schools.filter((s) => s.name.toLowerCase().includes(studentSchool.toLowerCase())).length === 0 && (
                           <div className="px-4 py-3 text-xs font-bold text-slate-400 text-center">
-                            Sekolah tidak ditemukan di wilayah Makassar
+                            Sekolah tidak ditemukan
                           </div>
                         )}
                       </div>
@@ -569,7 +595,7 @@ export default function WellBeingCampQuestionnairePage() {
                     required
                     value={studentSchool}
                     onChange={(e) => setStudentSchool(e.target.value.toUpperCase())}
-                    placeholder="SMAN 1 MAKASSAR"
+                    placeholder="SMAN 1 BUKITTINGGI / SMAN 1 SEMARANG"
                     className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 focus:border-[#00adb5] focus:bg-white rounded-xl outline-none text-xs font-black transition-all shadow-inner tracking-wide"
                   />
                 )}
