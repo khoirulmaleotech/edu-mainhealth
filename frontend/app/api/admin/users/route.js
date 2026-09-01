@@ -20,6 +20,7 @@ export async function GET(request) {
   try {
     const db = (await connectDB()).db();
     const { searchParams } = new URL(request.url);
+    const isExport = searchParams.get("export") === "true";
     const currentPage = getPositiveInteger(searchParams.get("page"), 1, 100000);
     const pageSize = getPositiveInteger(searchParams.get("pageSize"), 20, 100);
     const search = (searchParams.get("search") || "").trim();
@@ -56,54 +57,55 @@ export async function GET(request) {
       }
     }
 
+    const dataPipeline = [
+      { $sort: { createdAt: -1, _id: -1 } },
+      ...(!isExport ? [{ $skip: skipData }, { $limit: pageSize }] : []),
+      {
+        $addFields: {
+          converted_school_id: {
+            $convert: {
+              input: { $ifNull: ["$school_id", "$institution_id"] },
+              to: "objectId",
+              onError: null,
+              onNull: null
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: "schools",
+          localField: "converted_school_id",
+          foreignField: "_id",
+          pipeline: [{ $project: { _id: 0, name: 1 } }],
+          as: "school_data",
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          fullname: 1,
+          role: 1,
+          email: 1,
+          school_id: 1,
+          institution_id: 1,
+          school_name: { 
+            $ifNull: [
+              { $arrayElemAt: ["$school_data.name", 0] }, 
+              { $ifNull: ["$school_name", "$institution_name"] }
+            ] 
+          },
+        },
+      },
+    ];
+
     const [payload = { data: [], totalData: [] }] = await db
       .collection("users")
       .aggregate([
         { $match: matchFilter },
         {
           $facet: {
-            data: [
-              { $sort: { createdAt: -1, _id: -1 } },
-              { $skip: skipData },
-              { $limit: pageSize },
-              {
-                $addFields: {
-                  converted_school_id: {
-                    $convert: {
-                      input: { $ifNull: ["$school_id", "$institution_id"] },
-                      to: "objectId",
-                      onError: null,
-                      onNull: null
-                    }
-                  }
-                }
-              },
-              {
-                $lookup: {
-                  from: "schools",
-                  localField: "converted_school_id",
-                  foreignField: "_id",
-                  pipeline: [{ $project: { _id: 0, name: 1 } }],
-                  as: "school_data",
-                },
-              },
-              {
-                $project: {
-                  _id: 1,
-                  fullname: 1,
-                  role: 1,
-                  email: 1,
-                  school_id: 1,
-                  institution_id: 1,
-                  school_name: { 
-                    $ifNull: [
-                      { $arrayElemAt: ["$school_data.name", 0] }, 
-                      { $ifNull: ["$school_name", "$institution_name"] }
-                    ] 
-                  },
-                },
-              },
-            ],
+            data: dataPipeline,
             totalData: [{ $count: "count" }],
           },
         },

@@ -268,8 +268,7 @@ export default function ManageUsersPage() {
     setIsExporting(true);
     try {
       const queryParams = new URLSearchParams({
-        page: "1",
-        pageSize: "100000",
+        export: "true",
         search: debouncedSearchTerm,
         role: roleFilter,
         school: schoolFilter,

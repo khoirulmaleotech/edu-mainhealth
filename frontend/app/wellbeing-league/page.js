@@ -1,21 +1,21 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { 
-  Trophy, 
-  TrendingUp, 
-  TrendingDown, 
-  Users, 
-  Building2, 
-  UserCheck, 
-  Smile, 
-  ShieldAlert, 
-  AlertTriangle, 
-  HelpCircle, 
-  Compass, 
-  Award, 
-  CheckCircle2, 
-  QrCode, 
+import {
+  Trophy,
+  TrendingUp,
+  TrendingDown,
+  Users,
+  Building2,
+  UserCheck,
+  Smile,
+  ShieldAlert,
+  AlertTriangle,
+  HelpCircle,
+  Compass,
+  Award,
+  CheckCircle2,
+  QrCode,
   MessageSquare,
   Sparkles,
   BookOpen,
@@ -28,12 +28,12 @@ import {
   X
 } from "lucide-react";
 import { fetchInstance } from "@/lib/fetchInstance";
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  ResponsiveContainer, 
-  Tooltip 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip
 } from "recharts";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -86,8 +86,8 @@ export default function StandaloneWellbeingLeaguePage() {
     return (
       <div className="w-full flex items-center gap-3">
         <div className="flex-1 bg-slate-100 h-2.5 rounded-full overflow-hidden">
-          <div 
-            className={`h-full ${colorClass} rounded-full transition-all duration-1000`} 
+          <div
+            className={`h-full ${colorClass} rounded-full transition-all duration-1000`}
             style={{ width: `${percentage}%` }}
           />
         </div>
@@ -99,7 +99,7 @@ export default function StandaloneWellbeingLeaguePage() {
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-12">
       <div className="space-y-8 font-sans max-w-[1600px] mx-auto pb-16">
-        
+
         {/* 1. HEADER BANNER */}
         <div className="relative overflow-hidden rounded-[35px] bg-gradient-to-r from-[#eef2f7] via-white to-[#eef2f7] border border-slate-100 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-6">
           {/* Left Side: Telkom Indonesia */}
@@ -124,7 +124,7 @@ export default function StandaloneWellbeingLeaguePage() {
             <p className="text-sm md:text-md text-slate-500 font-semibold mt-3 max-w-lg mx-auto">
               Kompetisi untuk Membangun Sekolah Paling Aman, Sehat dan Peduli di Indonesia
             </p>
-            
+
             {/* Badge Satu Gerakan • Satu Tujuan • Satu Dampak */}
             <div className="inline-flex items-center gap-2 bg-[#0052cc]/10 text-[#0052cc] border border-[#0052cc]/20 rounded-full px-5 py-1.5 mt-5 text-xs md:text-sm font-black tracking-wide uppercase">
               <span>Satu Gerakan</span>
@@ -144,7 +144,7 @@ export default function StandaloneWellbeingLeaguePage() {
                 <span className="block text-[9px] font-bold text-[#00adb5] tracking-widest uppercase">AI for Wellbeing</span>
               </div>
             </div>
-            
+
             {/* Decorative Student Art Card */}
             <div className="bg-white/80 backdrop-blur-sm p-2 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-2 mt-2">
               <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">🎓</div>
@@ -188,15 +188,15 @@ export default function StandaloneWellbeingLeaguePage() {
             {/* 3. THREE TOP METRIC CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {/* Card 1: School Wellbeing Index */}
-              <div 
+              <div
                 onClick={() => router.push("/dashboard/admin/tilik-diri")}
                 className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:scale-[1.03] hover:shadow-md hover:border-[#00adb5]/30 cursor-pointer transition-all duration-300 relative group"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">School Wellbeing Index</span>
-                    <HelpCircle 
-                      size={13} 
+                    <HelpCircle
+                      size={13}
                       className="text-slate-350 hover:text-[#00adb5] transition-all cursor-help"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -222,15 +222,15 @@ export default function StandaloneWellbeingLeaguePage() {
               </div>
 
               {/* Card 2: Bullying Reduction */}
-              <div 
+              <div
                 onClick={() => router.push("/dashboard/admin/reports")}
                 className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:scale-[1.03] hover:shadow-md hover:border-[#00adb5]/30 cursor-pointer transition-all duration-300 relative group"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">Bullying Reduction</span>
-                    <HelpCircle 
-                      size={13} 
+                    <HelpCircle
+                      size={13}
                       className="text-slate-350 hover:text-[#00adb5] transition-all cursor-help"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -256,15 +256,15 @@ export default function StandaloneWellbeingLeaguePage() {
               </div>
 
               {/* Card 3: Risk Reduction */}
-              <div 
+              <div
                 onClick={() => router.push("/dashboard/admin/tilik-diri")}
                 className="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm hover:scale-[1.03] hover:shadow-md hover:border-[#00adb5]/30 cursor-pointer transition-all duration-300 relative group"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider block">Wellbeing Risk Reduction</span>
-                    <HelpCircle 
-                      size={13} 
+                    <HelpCircle
+                      size={13}
                       className="text-slate-350 hover:text-[#00adb5] transition-all cursor-help"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -292,7 +292,7 @@ export default function StandaloneWellbeingLeaguePage() {
 
             {/* 4. PROGRAM COVERAGE, IMPACT DASHBOARD & WELLBEING INTELLIGENCE */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-              
+
               {/* Left Box: Program Coverage */}
               <div className="bg-white p-6 rounded-[35px] border border-slate-100 shadow-sm flex flex-col justify-between">
                 <div>
@@ -301,10 +301,10 @@ export default function StandaloneWellbeingLeaguePage() {
                     <Compass className="text-[#00adb5]" size={20} />
                     Program Coverage
                   </h3>
-                  
+
                   <div className="space-y-6">
                     {/* Item 1 */}
-                    <div 
+                    <div
                       onClick={() => router.push("/dashboard/admin/verify-schools")}
                       className="flex items-center justify-between border-b border-slate-50 pb-4 cursor-pointer hover:bg-slate-50/50 p-2 rounded-xl transition-all"
                     >
@@ -321,7 +321,7 @@ export default function StandaloneWellbeingLeaguePage() {
                     </div>
 
                     {/* Item 2 */}
-                    <div 
+                    <div
                       onClick={() => router.push("/dashboard/admin/users")}
                       className="flex items-center justify-between border-b border-slate-50 pb-4 cursor-pointer hover:bg-slate-50/50 p-2 rounded-xl transition-all"
                     >
@@ -338,7 +338,7 @@ export default function StandaloneWellbeingLeaguePage() {
                     </div>
 
                     {/* Item 3 */}
-                    <div 
+                    <div
                       onClick={() => router.push("/dashboard/admin/users")}
                       className="flex items-center justify-between pb-2 cursor-pointer hover:bg-slate-50/50 p-2 rounded-xl transition-all"
                     >
@@ -365,7 +365,7 @@ export default function StandaloneWellbeingLeaguePage() {
                     <TrendingUp className="text-[#00adb5]" size={20} />
                     Impact Dashboard
                   </h3>
-                  
+
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
@@ -382,9 +382,8 @@ export default function StandaloneWellbeingLeaguePage() {
                             <td className="py-4 pr-2 font-bold text-xs text-slate-800">{row.kpi}</td>
                             <td className="py-4 px-2 text-center text-xs font-bold text-slate-500">{row.baseline}</td>
                             <td className="py-4 px-2 text-center text-xs font-black text-slate-800">{row.current}</td>
-                            <td className={`py-4 pl-2 text-right text-xs font-black ${
-                              row.isPositive ? "text-emerald-600" : "text-amber-500"
-                            }`}>
+                            <td className={`py-4 pl-2 text-right text-xs font-black ${row.isPositive ? "text-emerald-600" : "text-amber-500"
+                              }`}>
                               {row.change}
                             </td>
                           </tr>
@@ -403,7 +402,7 @@ export default function StandaloneWellbeingLeaguePage() {
                     <BrainCircuit className="text-[#00adb5]" size={20} />
                     Distribusi Wellbeing Siswa
                   </h3>
-                  
+
                   {/* Donut Chart and Legend */}
                   <div className="flex flex-col sm:flex-row items-center gap-6 py-2">
                     <div className="h-[140px] w-[140px] relative flex-shrink-0">
@@ -523,14 +522,14 @@ export default function StandaloneWellbeingLeaguePage() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                
+
                 {/* Learning Style Donut */}
                 <div className="space-y-4 border-r border-slate-100 pr-0 lg:pr-4">
                   <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                     <BookOpen size={16} className="text-blue-500" />
                     Learning Style
                   </h4>
-                  
+
                   <div className="h-[120px] w-full relative flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -551,7 +550,7 @@ export default function StandaloneWellbeingLeaguePage() {
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
-                  
+
                   <div className="space-y-1.5">
                     {currentData.learningStyles.map((style, idx) => (
                       <div key={idx} className="flex justify-between items-center text-xs">
@@ -574,7 +573,7 @@ export default function StandaloneWellbeingLeaguePage() {
                     <Briefcase size={16} className="text-purple-500" />
                     Career Interest (Top 5)
                   </h4>
-                  
+
                   <div className="space-y-3.5">
                     {currentData.careerInterests.map((item, idx) => (
                       <div key={idx} className="space-y-1">
@@ -599,7 +598,7 @@ export default function StandaloneWellbeingLeaguePage() {
                     <BrainCircuit size={16} className="text-emerald-500" />
                     Brain Preference
                   </h4>
-                  
+
                   <div className="h-[120px] w-full relative flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -684,7 +683,7 @@ export default function StandaloneWellbeingLeaguePage() {
                       Pelajari bagaimana masing-masing metrik diukur dan diklasifikasikan dalam sistem EduMind.
                     </p>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setInfoModalOpen(false)}
                     className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-slate-650 transition-all"
                   >
@@ -705,11 +704,10 @@ export default function StandaloneWellbeingLeaguePage() {
                     <button
                       key={tab.key}
                       onClick={() => setInfoSection(tab.key)}
-                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
-                        infoSection === tab.key
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${infoSection === tab.key
                           ? "bg-[#00adb5] text-white shadow-sm"
                           : "text-slate-500 hover:text-slate-700"
-                      }`}
+                        }`}
                     >
                       {tab.label}
                     </button>

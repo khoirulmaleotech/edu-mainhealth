@@ -318,11 +318,10 @@ export default function AdminDashboardPage() {
             <button
               onClick={() => handleUpdateTestType("pre_test")}
               disabled={isTestTypeLoading || activeTestType === "pre_test"}
-              className={`h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                activeTestType === "pre_test"
-                  ? "bg-slate-900 text-white shadow-sm"
-                  : "bg-slate-50 text-slate-500 hover:bg-slate-100/80 cursor-pointer"
-              } disabled:opacity-85`}
+              className={`h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${activeTestType === "pre_test"
+                ? "bg-slate-900 text-white shadow-sm"
+                : "bg-slate-50 text-slate-500 hover:bg-slate-100/80 cursor-pointer"
+                } disabled:opacity-85`}
             >
               {isTestTypeLoading && activeTestType === "pre_test" && <Loader2 size={12} className="animate-spin" />}
               Pre-Test
@@ -330,11 +329,10 @@ export default function AdminDashboardPage() {
             <button
               onClick={() => handleUpdateTestType("post_test")}
               disabled={isTestTypeLoading || activeTestType === "post_test"}
-              className={`h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-                activeTestType === "post_test"
-                  ? "bg-[#00adb5] text-white shadow-sm"
-                  : "bg-slate-50 text-slate-500 hover:bg-slate-100/80 cursor-pointer"
-              } disabled:opacity-85`}
+              className={`h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${activeTestType === "post_test"
+                ? "bg-[#00adb5] text-white shadow-sm"
+                : "bg-slate-50 text-slate-500 hover:bg-slate-100/80 cursor-pointer"
+                } disabled:opacity-85`}
             >
               {isTestTypeLoading && activeTestType === "post_test" && <Loader2 size={12} className="animate-spin" />}
               Post-Test
@@ -419,7 +417,7 @@ export default function AdminDashboardPage() {
                   <div className="bg-[#00adb5] h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(kpiStats?.mood?.moodParticipationPercentage || 0, 100)}%` }} />
                 </div>
                 <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                  {kpiStats?.mood?.uniqueMoodCount} dari {kpiStats?.activation?.activeStudentsCount} siswa aktif berpartisipasi
+                  {kpiStats?.mood?.uniqueMoodCount} dari {kpiStats?.activation?.totalStudents} siswa aktif berpartisipasi
                 </p>
               </div>
             </div>
@@ -488,59 +486,59 @@ export default function AdminDashboardPage() {
       <div className="mb-10">
         <div className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] mb-4">Penggunaan Fitur Siswa</div>
         {isFeatureUsageLoading ? (
-           <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
-              <Loader2 size={14} className="animate-spin" /> Memuat data penggunaan fitur...
-           </div>
+          <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
+            <Loader2 size={14} className="animate-spin" /> Memuat data penggunaan fitur...
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="bg-white border border-slate-100 rounded-[16px] p-5 shadow-sm flex items-center gap-4">
-               <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center shrink-0">
-                  <ClipboardCheck size={24} />
-               </div>
-               <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tilik Diri</p>
-                  <h4 className="text-xl font-black text-slate-800">{featureUsage?.tilikDiri || 0}</h4>
-               </div>
+              <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center shrink-0">
+                <ClipboardCheck size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tilik Diri</p>
+                <h4 className="text-xl font-black text-slate-800">{featureUsage?.tilikDiri || 0}</h4>
+              </div>
             </div>
 
             <div className="bg-white border border-slate-100 rounded-[16px] p-5 shadow-sm flex items-center gap-4">
-               <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center shrink-0">
-                  <Lightbulb size={24} />
-               </div>
-               <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tes Gaya Belajar</p>
-                  <h4 className="text-xl font-black text-slate-800">{featureUsage?.learningStyle || 0}</h4>
-               </div>
+              <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center shrink-0">
+                <Lightbulb size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tes Gaya Belajar</p>
+                <h4 className="text-xl font-black text-slate-800">{featureUsage?.learningStyle || 0}</h4>
+              </div>
             </div>
 
             <div className="bg-white border border-slate-100 rounded-[16px] p-5 shadow-sm flex items-center gap-4">
-               <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center shrink-0">
-                  <Compass size={24} />
-               </div>
-               <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tes Karir (RIASEC)</p>
-                  <h4 className="text-xl font-black text-slate-800">{featureUsage?.riasec || 0}</h4>
-               </div>
+              <div className="w-12 h-12 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center shrink-0">
+                <Compass size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tes Karir (RIASEC)</p>
+                <h4 className="text-xl font-black text-slate-800">{featureUsage?.riasec || 0}</h4>
+              </div>
             </div>
 
             <div className="bg-white border border-slate-100 rounded-[16px] p-5 shadow-sm flex items-center gap-4">
-               <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center shrink-0">
-                  <Brain size={24} />
-               </div>
-               <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Otak Kanan & Kiri</p>
-                  <h4 className="text-xl font-black text-slate-800">{featureUsage?.brainDominance || 0}</h4>
-               </div>
+              <div className="w-12 h-12 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center shrink-0">
+                <Brain size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Otak Kanan & Kiri</p>
+                <h4 className="text-xl font-black text-slate-800">{featureUsage?.brainDominance || 0}</h4>
+              </div>
             </div>
 
             <div className="bg-white border border-slate-100 rounded-[16px] p-5 shadow-sm flex items-center gap-4">
-               <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center shrink-0">
-                  <Star size={24} />
-               </div>
-               <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">EduMind Talent</p>
-                  <h4 className="text-xl font-black text-slate-800">{featureUsage?.talentMapping || 0}</h4>
-               </div>
+              <div className="w-12 h-12 bg-emerald-50 text-emerald-500 rounded-xl flex items-center justify-center shrink-0">
+                <Star size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">EduMind Talent</p>
+                <h4 className="text-xl font-black text-slate-800">{featureUsage?.talentMapping || 0}</h4>
+              </div>
             </div>
           </div>
         )}
@@ -553,9 +551,9 @@ export default function AdminDashboardPage() {
           <a href="/dashboard/admin/mood-monitoring" className="text-[10px] font-black text-[#00adb5] uppercase tracking-wider hover:underline flex items-center gap-1">Learn More <ArrowUpRight size={12} /></a>
         </div>
         {isMoodSchoolsLoading ? (
-           <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
-              <Loader2 size={14} className="animate-spin" /> Memuat data mood...
-           </div>
+          <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
+            <Loader2 size={14} className="animate-spin" /> Memuat data mood...
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {moodSchools.map((item, i) => (
@@ -575,7 +573,7 @@ export default function AdminDashboardPage() {
             ))}
             {moodSchools.length === 0 && (
               <div className="col-span-full py-8 text-center text-sm font-bold text-slate-400">
-                 Belum ada data mood checking.
+                Belum ada data mood checking.
               </div>
             )}
           </div>
@@ -586,9 +584,9 @@ export default function AdminDashboardPage() {
       <div className="mb-10">
         <div className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] mb-4">Statistik per kota</div>
         {isCitiesStatsLoading ? (
-           <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
-              <Loader2 size={14} className="animate-spin" /> Memuat data kota...
-           </div>
+          <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
+            <Loader2 size={14} className="animate-spin" /> Memuat data kota...
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {citiesStats.map((cityData, i) => (
@@ -597,7 +595,7 @@ export default function AdminDashboardPage() {
                   <MapPin size={14} className="text-[#00adb5] flex-shrink-0 mt-0.5" />
                   {cityData.city}
                 </div>
-                
+
                 <div className="flex justify-between items-center py-1 border-b border-slate-50">
                   <span className="text-[10px] text-slate-500">Sekolah Aktif</span>
                   <span className="text-xs font-bold text-[#00adb5]">{cityData.activeSchools}</span>
@@ -628,9 +626,9 @@ export default function AdminDashboardPage() {
       <div className="mb-10">
         <div className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em] mb-4">Statistik per sekolah</div>
         {isSchoolsStatsLoading ? (
-           <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
-              <Loader2 size={14} className="animate-spin" /> Memuat data sekolah...
-           </div>
+          <div className="flex items-center gap-2 text-slate-400 text-xs font-bold">
+            <Loader2 size={14} className="animate-spin" /> Memuat data sekolah...
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {schoolsStats.map((schoolData, i) => (
@@ -640,7 +638,7 @@ export default function AdminDashboardPage() {
                   <span className="line-clamp-2">{schoolData.name}</span>
                 </div>
                 <div className="text-[10px] text-slate-400 mb-3 ml-5">{schoolData.city || "Tidak diketahui"}</div>
-                
+
                 <div className="flex justify-between items-center py-1 border-b border-slate-50">
                   <span className="text-[10px] text-slate-500">Total Siswa</span>
                   <span className="text-xs font-bold text-slate-800">{schoolData.totalStudents}</span>

@@ -11,8 +11,16 @@ export async function GET() {
     const database = client.db();
 
     // 1. Activation Stats
-    const totalStudents = await database.collection("users").countDocuments({ role: "student" });
-    const verifiedStudents = await database.collection("users").countDocuments({ role: "student", is_verified: true });
+    const activeSchools = await database.collection("schools").find({ is_hide: "false" }).project({ _id: 1 }).toArray();
+    const activeSchoolIds = activeSchools.map(s => s._id);
+
+    const totalStudents = await database.collection("users").countDocuments({
+      role: "student",
+      school_id: { $in: activeSchoolIds }
+    });
+    const verifiedStudents = await database.collection("users").countDocuments({
+      role: "student", is_verified: true, school_id: { $in: activeSchoolIds }
+    });
 
     // 2. Active Student Stats
     const uniqueMoodUsers = await database.collection("mood_logs").distinct("student_id");
@@ -36,7 +44,7 @@ export async function GET() {
     ]);
 
     const activeStudentsCount = allActiveUserIds.size;
-    
+
     // Percentages
     const activationPercentage = totalStudents > 0 ? (verifiedStudents / totalStudents) * 100 : 0;
     const activeActivityPercentage = totalStudents > 0 ? (activeStudentsCount / totalStudents) * 100 : 0;
