@@ -24,6 +24,7 @@ export default function AdminLayout({ children }) {
     { name: 'Verifikasi Psikolog', icon: <ShieldCheck size={20} />, path: '/dashboard/admin/verify-psychologist' },
     { name: 'Manajemen User', icon: <Users size={20} />, path: '/dashboard/admin/users' },
     { name: 'Manajemen Konten', icon: <Newspaper size={20} />, path: '/dashboard/admin/articles' },
+    { name: 'Indikator Chat Kritis', icon: <HeartPulse size={20} />, path: '/dashboard/admin/critical-chat-logs' },
     { name: 'Laporan Insiden', icon: <HeartPulse size={20} />, path: '/dashboard/admin/reports' },
     { name: 'Hasil Tilik Diri', icon: <ClipboardList size={20} />, path: '/dashboard/admin/tilik-diri' },
     { name: 'Pre-Test Kuesioner', icon: <ClipboardList size={20} />, path: '/dashboard/admin/pretest-summary' },
