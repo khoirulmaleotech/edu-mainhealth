@@ -21,7 +21,8 @@ import {
   Bell,
   AlertTriangle,
   Award,
-  TrendingUp
+  TrendingDown,
+
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -546,10 +547,10 @@ export default function AdminDashboardPage() {
         )}
       </div>
 
-      {/* SCHOOL WELLBEING INDEX TERTINGGI */}
+      {/* SCHOOL WELLBEING INDEX TERENDAH */}
       <div className="mb-10">
         <div className="flex items-center gap-2 mb-4">
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em]">School Wellbeing Index Tertinggi</div>
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.08em]">School Wellbeing Index Terendah</div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {[
@@ -563,20 +564,20 @@ export default function AdminDashboardPage() {
               key={school.rank}
               className={`bg-white border rounded-[16px] p-5 shadow-sm flex items-center gap-4 transition-all ${
                 school.rank === 1
-                  ? "border-amber-200 hover:shadow-md ring-1 ring-amber-100"
-                  : "border-slate-100 hover:shadow-md"
+                  ? "border-red-200 hover:shadow-md ring-1 ring-red-100"
+                  : "border-red-100 hover:shadow-md"
               }`}
             >
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-black text-sm ${
                 school.rank === 1
-                  ? "bg-amber-400 text-white"
+                  ? "bg-red-400 text-white"
                   : "bg-slate-100 text-slate-500"
               }`}>
-                {school.rank === 1 ? <TrendingUp size={22} /> : `#${school.rank}`}
+                {school.rank === 1 ? <TrendingDown size={22} /> : `#${school.rank}`}
               </div>
               <div className="min-w-0">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                  {school.rank === 1 ? "Tertinggi" : `Peringkat ${school.rank}`}
+                  {school.rank === 1 ? "Terendah" : `Peringkat ${school.rank}`}
                 </p>
                 <h4 className="text-sm font-black text-slate-800 truncate">{school.name}</h4>
               </div>
