@@ -668,6 +668,104 @@ export default function WellbeingLeaguePage() {
             </div>
           </div>
 
+          {/* 6B. STUDENT INTELLIGENCE - JUMLAH SISWA (RIIL COUNT) */}
+          <div className="bg-white p-8 rounded-[35px] border border-slate-100 shadow-sm space-y-6">
+            <div>
+              <span className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1">Student Profiling</span>
+              <h3 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
+                <Users size={20} className="text-indigo-500" />
+                Student Intelligence
+              </h3>
+              <p className="text-xs text-slate-450 mt-1">Jumlah siswa pada tiap kategori asesmen (dari total siswa yang mengikuti tes).</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+
+              {/* Learning Style Count */}
+              <div className="space-y-4 border-r border-slate-100 pr-0 lg:pr-4">
+                <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <BookOpen size={16} className="text-blue-500" />
+                  Learning Style
+                </h4>
+                <div className="space-y-2.5">
+                  {currentData.learningStyles.map((style, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: style.color }} />
+                        <span className="font-bold text-slate-600">{style.name}</span>
+                      </div>
+                      <span className="font-black text-slate-700">{style.count ?? 0} siswa</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-500 font-semibold bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                  Total {currentData.learningStyleCounts?.total ?? 0} siswa mengikuti Tes Gaya Belajar.
+                </p>
+              </div>
+
+              {/* Career Interest Count */}
+              <div className="space-y-4 border-r border-slate-100 pr-0 lg:pr-4">
+                <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Briefcase size={16} className="text-purple-500" />
+                  Career Interest
+                </h4>
+                <div className="space-y-2.5">
+                  {currentData.careerInterests.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-slate-600">{item.name}</span>
+                      <span className="font-black text-slate-700">{item.count ?? 0} siswa</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-500 font-semibold bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                  Total {currentData.careerInterestCounts?.total ?? 0} siswa mengikuti Tes Karir (RIASEC).
+                </p>
+              </div>
+
+              {/* Brain Preference Count */}
+              <div className="space-y-4 border-r border-slate-100 pr-0 lg:pr-4">
+                <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <BrainCircuit size={16} className="text-emerald-500" />
+                  Brain Preference
+                </h4>
+                <div className="space-y-2.5">
+                  {currentData.brainPreference.map((brain, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: brain.color }} />
+                        <span className="font-bold text-slate-600">{brain.name}</span>
+                      </div>
+                      <span className="font-black text-slate-700">{brain.count ?? 0} siswa</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-500 font-semibold bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                  Total {currentData.brainPreferenceCounts?.total ?? 0} siswa mengikuti Tes Otak Kiri-Kanan.
+                </p>
+              </div>
+
+              {/* Talent Intelligence Count */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Award size={16} className="text-rose-500" />
+                  Talent Intelligence
+                </h4>
+                <div className="space-y-2.5">
+                  {currentData.talentIntelligence.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-slate-600">{item.name}</span>
+                      <span className="font-black text-slate-700">{item.count ?? 0} siswa</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[11px] text-slate-500 font-semibold bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                  Total {currentData.talentIntelligenceCounts?.total ?? 0} siswa mengikuti Talent Mapping.
+                </p>
+              </div>
+
+            </div>
+          </div>
+
 
         </>
       )}

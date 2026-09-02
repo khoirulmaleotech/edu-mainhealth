@@ -85,9 +85,13 @@ function emptyData() {
     ],
     riskFactors: [],
     learningStyles: [],
+    learningStyleCounts: { total: 0 },
     careerInterests: [],
+    careerInterestCounts: { total: 0 },
     brainPreference: [],
+    brainPreferenceCounts: { total: 0 },
     talentIntelligence: [],
+    talentIntelligenceCounts: { total: 0 },
     engagement: []
   };
 }
@@ -211,10 +215,10 @@ export async function GET(request) {
     });
     const lsTotal = Object.values(lsCounts).reduce((a, b) => a + b, 0) || 1;
     const learningStyles = [
-      { name: "Visual", value: Math.round((lsCounts.Visual / lsTotal) * 100), color: "#3B82F6" },
-      { name: "Kinestetik", value: Math.round((lsCounts.Kinestetik / lsTotal) * 100), color: "#10B981" },
-      { name: "Auditori", value: Math.round((lsCounts.Auditori / lsTotal) * 100), color: "#F59E0B" },
-      { name: "Reading/Writing", value: Math.round((lsCounts["Reading/Writing"] / lsTotal) * 100), color: "#EF4444" }
+      { name: "Visual", value: Math.round((lsCounts.Visual / lsTotal) * 100), count: lsCounts.Visual, color: "#3B82F6" },
+      { name: "Kinestetik", value: Math.round((lsCounts.Kinestetik / lsTotal) * 100), count: lsCounts.Kinestetik, color: "#10B981" },
+      { name: "Auditori", value: Math.round((lsCounts.Auditori / lsTotal) * 100), count: lsCounts.Auditori, color: "#F59E0B" },
+      { name: "Reading/Writing", value: Math.round((lsCounts["Reading/Writing"] / lsTotal) * 100), count: lsCounts["Reading/Writing"], color: "#EF4444" }
     ];
 
     const bdCounts = { Left: 0, Right: 0, Middle: 0 };
@@ -226,9 +230,9 @@ export async function GET(request) {
     });
     const bdTotal = Object.values(bdCounts).reduce((a, b) => a + b, 0) || 1;
     const brainPreference = [
-      { name: "Analytical (Kiri)", value: Math.round((bdCounts.Left / bdTotal) * 100), color: "#10B981" },
-      { name: "Balanced (Tengah)", value: Math.round((bdCounts.Middle / bdTotal) * 100), color: "#3B82F6" },
-      { name: "Creative (Kanan)", value: Math.round((bdCounts.Right / bdTotal) * 100), color: "#F59E0B" }
+      { name: "Analytical (Kiri)", value: Math.round((bdCounts.Left / bdTotal) * 100), count: bdCounts.Left, color: "#10B981" },
+      { name: "Balanced (Tengah)", value: Math.round((bdCounts.Middle / bdTotal) * 100), count: bdCounts.Middle, color: "#3B82F6" },
+      { name: "Creative (Kanan)", value: Math.round((bdCounts.Right / bdTotal) * 100), count: bdCounts.Right, color: "#F59E0B" }
     ];
 
     // 6. RIASEC / Career Interests
@@ -254,7 +258,8 @@ export async function GET(request) {
     const riasecTotal = riasecDocs.length || 1;
     const careerInterests = Object.entries(riasecCounts).map(([name, count]) => ({
       name,
-      value: Math.round((count / riasecTotal) * 100)
+      value: Math.round((count / riasecTotal) * 100),
+      count
     })).sort((a, b) => b.value - a.value);
 
     // 7. Risk Factors from Incident Reports
@@ -282,7 +287,8 @@ export async function GET(request) {
     const talentTotal = talentDocs.length || 1;
     const talentIntelligence = Object.entries(talentCounts).map(([name, count]) => ({
       name,
-      value: Math.round((count / talentTotal) * 100)
+      value: Math.round((count / talentTotal) * 100),
+      count
     })).sort((a, b) => b.value - a.value);
 
     const uniqueMoodStudents = new Set(moodLogsDocs.map(d => String(d.student_id))).size;
@@ -342,9 +348,13 @@ export async function GET(request) {
         ],
         riskFactors,
         learningStyles,
+        learningStyleCounts: { total: learningStyleDocs.length },
         careerInterests,
+        careerInterestCounts: { total: riasecDocs.length },
         brainPreference,
+        brainPreferenceCounts: { total: brainDominanceDocs.length },
         talentIntelligence,
+        talentIntelligenceCounts: { total: talentDocs.length },
         engagement
       }
     });
