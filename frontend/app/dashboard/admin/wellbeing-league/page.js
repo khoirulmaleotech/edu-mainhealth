@@ -458,7 +458,10 @@ export default function WellbeingLeaguePage() {
           {/* 5. TOP 5 RISK FACTORS & ENGAGEMENT DASHBOARD */}
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
             {/* Top 5 Risk Factors (Progress bars) */}
-            <div className="bg-white p-6 rounded-[35px] border border-slate-100 shadow-sm xl:col-span-1 flex flex-col justify-between">
+            <div
+              onClick={() => router.push("/dashboard/admin/pretest-summary")}
+              className="bg-white p-6 rounded-[35px] border border-slate-100 shadow-sm xl:col-span-1 flex flex-col justify-between group cursor-pointer hover:border-[#00adb5]/30 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
+            >
               <div>
                 <span className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1">Intelligence Risk</span>
                 <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2 mb-6">
@@ -483,7 +486,10 @@ export default function WellbeingLeaguePage() {
             </div>
 
             {/* Engagement Dashboard (Progress bars) */}
-            <div className="bg-white p-6 rounded-[35px] border border-slate-100 shadow-sm xl:col-span-2 flex flex-col justify-between">
+            <div
+              onClick={() => router.push("/dashboard/admin/activity-monitoring")}
+              className="bg-white p-6 rounded-[35px] border border-slate-100 shadow-sm xl:col-span-2 flex flex-col justify-between group cursor-pointer hover:border-[#00adb5]/30 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
+            >
               <div>
                 <span className="text-xs font-black text-slate-400 uppercase tracking-widest block mb-1">Engagement</span>
                 <h3 className="text-xl font-black text-slate-800 tracking-tight flex items-center gap-2 mb-6">
